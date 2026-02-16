@@ -1,0 +1,368 @@
+@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopId:int}/badges/{BadgeId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
+@using Skojjt.Web.Services
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject ISemesterRepository SemesterRepository
+@inject ITroopRepository TroopRepository
+@inject IBadgeService BadgeService
+@inject BadgeNotificationService NotificationService
+@inject BadgeStateService StateService
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<PageTitle>@(_badge?.Name ?? "Märke") - @(_troop?.Name ?? "Avdelning") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-8">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">Du har inte behörighet att visa denna avdelning.</MudAlert>
+    }
+    else if (_badge == null || _troop == null)
+    {
+        <MudAlert Severity="Severity.Error">Märket eller avdelningen kunde inte hittas.</MudAlert>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap align-center gap-4 mb-4">
+            @if (!string.IsNullOrEmpty(_badge.ImageUrl))
+            {
+                <MudAvatar Src="@_badge.ImageUrl" Size="Size.Large" />
+            }
+            else
+            {
+                <MudAvatar Color="Color.Primary" Size="Size.Large">
+                    <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" />
+                </MudAvatar>
+            }
+            <div class="flex-grow-1">
+                <MudText Typo="Typo.h4">@_badge.Name</MudText>
+                <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
+                    @_troop.Name - @_semester?.DisplayName
+                    <MudTooltip Text="Realtidssynkronisering aktiv">
+                        <MudIcon Icon="@Icons.Material.Filled.Wifi" Size="Size.Small" Color="Color.Success" Class="ml-2" />
+                    </MudTooltip>
+                </MudText>
+            </div>
+            <MudButton Variant="Variant.Outlined" Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.Info"
+                       Href="@($"/sk/{ScoutGroupId}/badges/{BadgeId}")">
+                Märkesinfo
+            </MudButton>
+        </div>
+
+        @if (_progress == null || _progress.PersonProgress.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">Inga scouter i avdelningen.</MudAlert>
+        }
+        else
+        {
+            var scoutParts = _progress.Parts.Where(p => !p.IsAdminPart).ToList();
+            var adminParts = _progress.Parts.Where(p => p.IsAdminPart).ToList();
+            var scoutPhase = _progress.PersonProgress.Where(p => !p.IsCompleted && p.CompletedPartIds.Count < scoutParts.Count).ToList();
+            var adminPhase = _progress.PersonProgress.Where(p => !p.IsCompleted && p.CompletedPartIds.Count >= scoutParts.Count).ToList();
+            var completed = _progress.PersonProgress.Where(p => p.IsCompleted).ToList();
+
+            @if (scoutParts.Count > 0 && scoutPhase.Count > 0)
+            {
+                <MudPaper Elevation="2" Class="pa-2 pa-sm-4 mb-4">
+                    <MudText Typo="Typo.h6" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" Class="mr-1" />
+                        Scoutdelar (@scoutPhase.Count scouter)
+                    </MudText>
+                    <div class="badge-grid-wrapper">
+                        <table class="badge-grid">
+                            <thead>
+                                <tr>
+                                    <th class="sticky-col name-col">Namn</th>
+                                    @foreach (var part in scoutParts)
+                                    {
+                                        <th class="part-col">
+                                            <MudTooltip Text="@(part.LongDescription ?? part.ShortDescription)">
+                                                <span>@part.ShortDescription</span>
+                                            </MudTooltip>
+                                        </th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var pp in scoutPhase)
+                                {
+                                    <tr>
+                                        <td class="sticky-col name-col">@pp.Person.FullName</td>
+                                        @foreach (var part in scoutParts)
+                                        {
+                                            var isDone = pp.CompletedPartIds.Contains(part.Id);
+                                            <td class="check-col">
+                                                <MudCheckBox T="bool"
+                                                             Value="isDone"
+                                                             ValueChanged="@(val => TogglePart(part.Id, pp.Person.Id, val))"
+                                                             Color="Color.Success"
+                                                             Dense="true" />
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </MudPaper>
+            }
+
+            @if (adminParts.Count > 0 && adminPhase.Count > 0)
+            {
+                <MudPaper Elevation="2" Class="pa-2 pa-sm-4 mb-4">
+                    <MudText Typo="Typo.h6" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Color="Color.Info" Size="Size.Small" Class="mr-1" />
+                        Admindelar kvar (@adminPhase.Count scouter)
+                    </MudText>
+                    <div class="badge-grid-wrapper">
+                        <table class="badge-grid">
+                            <thead>
+                                <tr>
+                                    <th class="sticky-col name-col">Namn</th>
+                                    @foreach (var part in adminParts)
+                                    {
+                                        <th class="part-col">
+                                            <MudTooltip Text="@(part.LongDescription ?? part.ShortDescription)">
+                                                <span>@part.ShortDescription</span>
+                                            </MudTooltip>
+                                        </th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var pp in adminPhase)
+                                {
+                                    <tr>
+                                        <td class="sticky-col name-col">@pp.Person.FullName</td>
+                                        @foreach (var part in adminParts)
+                                        {
+                                            var isDone = pp.CompletedPartIds.Contains(part.Id);
+                                            <td class="check-col">
+                                                <MudCheckBox T="bool"
+                                                             Value="isDone"
+                                                             ValueChanged="@(val => TogglePart(part.Id, pp.Person.Id, val))"
+                                                             Color="Color.Info"
+                                                             Dense="true" />
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </MudPaper>
+            }
+
+            @if (completed.Count > 0)
+            {
+                <MudPaper Elevation="2" Class="pa-2 pa-sm-4">
+                    <MudText Typo="Typo.h6" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" Size="Size.Small" Class="mr-1" />
+                        Helt klara (@completed.Count)
+                    </MudText>
+                    <MudChipSet T="string" ReadOnly="true">
+                        @foreach (var pp in completed)
+                        {
+                            <MudChip T="string" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle">
+                                @pp.Person.FullName
+                            </MudChip>
+                        }
+                    </MudChipSet>
+                </MudPaper>
+            }
+        }
+    }
+</MudContainer>
+
+<style>
+    .badge-grid-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .badge-grid {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    .badge-grid th, .badge-grid td {
+        padding: 4px 8px;
+        text-align: center;
+        border-bottom: 1px solid var(--mud-palette-table-lines);
+        white-space: nowrap;
+    }
+    .badge-grid .name-col {
+        text-align: left;
+        min-width: 160px;
+        position: sticky;
+        left: 0;
+        background: var(--mud-palette-surface);
+        z-index: 1;
+    }
+    .badge-grid .part-col {
+        min-width: 80px;
+        font-size: 0.8rem;
+    }
+    .badge-grid .check-col {
+        min-width: 48px;
+    }
+    .badge-grid thead th {
+        background: var(--mud-palette-surface);
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        border-bottom: 2px solid var(--mud-palette-table-lines);
+    }
+    .badge-grid thead .name-col {
+        z-index: 3;
+    }
+    .badge-grid tbody tr:hover {
+        background: var(--mud-palette-table-hover);
+    }
+</style>
+
+@code {
+    [Parameter] public int ScoutGroupId { get; set; }
+    [Parameter] public int SemesterId { get; set; }
+    [Parameter] public int TroopId { get; set; }
+    [Parameter] public int BadgeId { get; set; }
+
+    private ScoutGroup? _scoutGroup;
+    private Semester? _semester;
+    private Troop? _troop;
+    private Badge? _badge;
+    private BadgeTroopProgress? _progress;
+    private bool _loading = true;
+    private bool _hasAccess;
+    private bool _disposed;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private readonly string _instanceId = Guid.NewGuid().ToString();
+    private string? _handlerId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
+        if (!_hasAccess)
+        {
+            _breadcrumbs = [new("Scoutkårer", href: "/sk"), new("Ingen behörighet", href: null, disabled: true)];
+            _loading = false;
+            return;
+        }
+
+        _handlerId = StateService.RegisterPartToggledHandler(HandlePartToggledAsync);
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+            _semester = await SemesterRepository.GetByIdAsync(SemesterId);
+            _troop = await TroopRepository.GetByIdAsync(TroopId);
+            _badge = await BadgeService.GetBadgeWithPartsAsync(BadgeId);
+
+            if (_badge != null && _troop != null)
+            {
+                _progress = await BadgeService.GetTroopProgressAsync(BadgeId, TroopId);
+            }
+
+            _breadcrumbs =
+            [
+                new("Scoutkårer", href: "/sk"),
+                new(_scoutGroup?.Name ?? "Kår", href: $"/sk/{ScoutGroupId}"),
+                new(_semester?.DisplayName ?? "Termin", href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
+                new(_troop?.Name ?? "Avdelning", href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}"),
+                new(_badge?.Name ?? "Märke", href: null, disabled: true)
+            ];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task TogglePart(int badgePartId, int personId, bool newValue)
+    {
+        try
+        {
+            var examiner = CurrentUserService.DisplayName ?? CurrentUserService.Email ?? "Okänd";
+            var result = await BadgeService.TogglePartAsync(BadgeId, badgePartId, personId, examiner);
+
+            // Update local state immediately
+            if (_progress != null)
+            {
+                var pp = _progress.PersonProgress.FirstOrDefault(p => p.Person.Id == personId);
+                if (pp != null)
+                {
+                    if (result.IsDone)
+                        pp.CompletedPartIds.Add(badgePartId);
+                    else
+                        pp.CompletedPartIds.Remove(badgePartId);
+                    pp.IsCompleted = result.BadgeCompleted || (pp.IsCompleted && !result.BadgeUncompleted);
+                }
+            }
+
+            if (result.BadgeCompleted)
+            {
+                Snackbar.Add($"?? Märke klart!", Severity.Success);
+            }
+
+            // Broadcast to other circuits
+            await NotificationService.NotifyPartToggledAsync(
+                BadgeId, badgePartId, personId,
+                result.IsDone, result.BadgeCompleted, result.BadgeUncompleted,
+                _instanceId);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+            await LoadData();
+        }
+    }
+
+    private Task HandlePartToggledAsync(int badgeId, int badgePartId, int personId, bool isDone, bool badgeCompleted, bool badgeUncompleted, string sourceInstanceId)
+    {
+        if (_disposed || sourceInstanceId == _instanceId || badgeId != BadgeId) return Task.CompletedTask;
+
+        try
+        {
+            if (_progress != null)
+            {
+                var pp = _progress.PersonProgress.FirstOrDefault(p => p.Person.Id == personId);
+                if (pp != null)
+                {
+                    if (isDone)
+                        pp.CompletedPartIds.Add(badgePartId);
+                    else
+                        pp.CompletedPartIds.Remove(badgePartId);
+                    pp.IsCompleted = badgeCompleted || (pp.IsCompleted && !badgeUncompleted);
+                }
+            }
+            _ = InvokeAsync(StateHasChanged);
+        }
+        catch { }
+
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        if (_handlerId != null)
+            StateService.UnregisterPartToggledHandler(_handlerId);
+    }
+}

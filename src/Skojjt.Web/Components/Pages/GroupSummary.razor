@@ -1,0 +1,222 @@
+@page "/sk/{ScoutGroupId:int}/summary/{SemesterId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject ISemesterRepository SemesterRepository
+@inject IGroupSummaryService GroupSummaryService
+
+<PageTitle>Föreningsredovisning - @(_scoutGroup?.Name ?? "Kår") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_scoutGroup == null || _semester == null || _summaryData == null)
+    {
+        <MudAlert Severity="Severity.Error">Data kunde inte laddas.</MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Class="mb-2">Föreningsredovisning år @_summaryData.Year</MudText>
+        <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-4">@_scoutGroup.Name</MudText>
+
+        @* Age Distribution Section *@
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" Class="mb-2">Åldersfördelning</MudText>
+            <MudText Typo="Typo.body2" Class="mb-4">
+                Som bidragsberättigad medlem räknas den som deltagit i föreningens planerade aktiviteter vid minst 
+                <strong>@_summaryData.MinMeetingsRequired</strong> tillfällen under året.
+                <br />
+                Lägerdagar är @(_summaryData.IncludesHikeMeetings ? "" : "inte ") inkluderade.
+                <br />
+                <em>Inom parantes visas totalt antal medlemmar i åldern.</em>
+            </MudText>
+
+            <MudTable Items="@_summaryData.AgeGroups" Hover="true" Dense="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Ålder</MudTh>
+                    <MudTh>Kvinnor</MudTh>
+                    <MudTh>Män</MudTh>
+                    <MudTh>Totalt</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Ålder">
+                        @if (context.AgeLabel == "Totalt")
+                        {
+                            <strong>@context.AgeLabel</strong>
+                        }
+                        else
+                        {
+                            @context.AgeLabel
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Kvinnor">@context.WomenWithMinMeetings (@context.Women)</MudTd>
+                    <MudTd DataLabel="Män">@context.MenWithMinMeetings (@context.Men)</MudTd>
+                    <MudTd DataLabel="Totalt">@(context.WomenWithMinMeetings + context.MenWithMinMeetings) (@(context.Women + context.Men))</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+
+        @* Board Members Section *@
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" Class="mb-2">Styrelsemedlemmar</MudText>
+            <MudSimpleTable Hover="true" Dense="true" Striped="true">
+                <thead>
+                    <tr>
+                        <th>Kvinnor</th>
+                        <th>Män</th>
+                        <th>Totalt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>@_summaryData.BoardMembers.Women</td>
+                        <td>@_summaryData.BoardMembers.Men</td>
+                        <td>@(_summaryData.BoardMembers.Women + _summaryData.BoardMembers.Men)</td>
+                    </tr>
+                </tbody>
+            </MudSimpleTable>
+        </MudPaper>
+
+        @* Leaders Section *@
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" Class="mb-2">Ledare</MudText>
+            <MudTable Items="@_summaryData.Leaders" Hover="true" Dense="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Ålder</MudTh>
+                    <MudTh>Kvinnor</MudTh>
+                    <MudTh>Män</MudTh>
+                    <MudTh>Totalt</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Ålder">@context.AgeLabel</MudTd>
+                    <MudTd DataLabel="Kvinnor">@context.Women</MudTd>
+                    <MudTd DataLabel="Män">@context.Men</MudTd>
+                    <MudTd DataLabel="Totalt">@(context.Women + context.Men)</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+
+        @* Email Links Section *@
+        @if (_summaryData.MemberEmails.Count > 0)
+        {
+            <MudPaper Elevation="2" Class="pa-4 mb-4">
+                <MudText Typo="Typo.h6" Class="mb-2">E-postlänkar till alla medlemmar</MudText>
+                <MudText Typo="Typo.body2" Class="mb-2">
+                    Välj den länken som passar ditt e-postprogram bäst:
+                </MudText>
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Outlined" 
+                               StartIcon="@Icons.Material.Filled.Email"
+                               Href="@GetEmailLinkComma()">
+                        Kommaseparerad (@_summaryData.MemberEmails.Count st)
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" 
+                               StartIcon="@Icons.Material.Filled.Email"
+                               Href="@GetEmailLinkSemicolon()">
+                        Semikolonseparerad
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+        }
+
+        @* Summary Statistics *@
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-2">Sammanfattning</MudText>
+            <MudGrid>
+                <MudItem xs="6" sm="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Totalt antal kvinnor/flickor</MudText>
+                    <MudText Typo="Typo.h5">@_summaryData.Totals.TotalWomen</MudText>
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Totalt antal män/pojkar</MudText>
+                    <MudText Typo="Typo.h5">@_summaryData.Totals.TotalMen</MudText>
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Bidragsberättigade kvinnor</MudText>
+                    <MudText Typo="Typo.h5">@_summaryData.Totals.TotalWomenWithMinMeetings</MudText>
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Bidragsberättigade män</MudText>
+                    <MudText Typo="Typo.h5">@_summaryData.Totals.TotalMenWithMinMeetings</MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int ScoutGroupId { get; set; }
+
+    [Parameter]
+    public int SemesterId { get; set; }
+
+    private ScoutGroup? _scoutGroup;
+    private Semester? _semester;
+    private GroupSummaryData? _summaryData;
+    private bool _loading = true;
+    private List<BreadcrumbItem> _breadcrumbs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+
+        try
+        {
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+            _semester = await SemesterRepository.GetByIdAsync(SemesterId);
+
+            if (_scoutGroup != null && _semester != null)
+            {
+                _breadcrumbs = new List<BreadcrumbItem>
+                {
+                    new("Scoutkårer", href: "/sk"),
+                    new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
+                    new(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
+                    new("Föreningsredovisning", href: null, disabled: true)
+                };
+
+                // Load summary data for the semester's year
+                _summaryData = await GroupSummaryService.GetGroupSummaryAsync(
+                    ScoutGroupId,
+                    _semester.Year,
+                    _scoutGroup.AttendanceInclHike,
+                    _scoutGroup.AttendanceMinYear);
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string GetEmailLinkComma()
+    {
+        if (_summaryData == null) return "";
+        return $"mailto:{string.Join(",", _summaryData.MemberEmails)}";
+    }
+
+    private string GetEmailLinkSemicolon()
+    {
+        if (_summaryData == null) return "";
+        return $"mailto:{string.Join(";", _summaryData.MemberEmails)}";
+    }
+}

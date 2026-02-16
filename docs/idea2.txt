@@ -1,0 +1,15 @@
+In the #solution continue and implement web pages. These are the items:
+1. A list of scoutgroups, with the url: /sk/. (sk is used as an abbriviation for the swedish word for scout group, "scoutkår")
+2. Each row in the scout group list is a link to the scoutgroup identified by the scout group's id. url /sk/<scout groups id>/. 
+3. The scout group page links to:
+3.1. Lists all semesters for the scout group. Url: /sk/<scout group id>/t/<semester id>/. t is used as abbriviation for the swedish word for semester, "termin".
+Each row in the list of semesters links to the list of troops for the scout group this semester, item 4.
+3.2. A page that list all persons for the given scout group id, url: /sk/<scout group id>/p/. Using the scout group persons table to get all members. Each row links to the person's page item 6.
+3.3. A page with settings for the scout group, like bank account etc, see fields in class ScoutGroup.
+4. A list of troops for the scout group and semester. Each row links to the troop page, item 5.
+5. A grid with meetings as columns, troop persons as rows, meeting attendance as checkmarks in the grid cells. Url: /sk/<scout group id>/t/<semester id>/<troop id>/. This is where attendance is noted with checkmarks.
+6. A page that displays the Person's data, see class Person.
+
+The web pages must be mobile friendly and easy to navigate.
+For reference the old skojjt system is documented here: https://github.com/Scouterna/skojjt/wiki/Hur-man-rapporterar-n%C3%A4rvaro-som-avdelningsledare
+

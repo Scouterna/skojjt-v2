@@ -1,0 +1,48 @@
+@using Microsoft.JSInterop
+@using Skojjt.Web.Services
+@inject ThemeService ThemeService
+@implements IDisposable
+
+<MudTooltip Text="@(_isDarkMode ? "Ljust läge" : "Mörkt läge")">
+    <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                   Color="Color.Inherit"
+                   OnClick="ToggleTheme" />
+</MudTooltip>
+
+@code {
+    private bool _isDarkMode;
+    private bool _disposed;
+
+    protected override void OnInitialized()
+    {
+        _isDarkMode = ThemeService.IsDarkMode;
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    private void ToggleTheme()
+    {
+        ThemeService.ToggleTheme();
+    }
+
+    private async void OnThemeChanged()
+    {
+        if (_disposed) return;
+        
+        _isDarkMode = ThemeService.IsDarkMode;
+        
+        try
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (JSDisconnectedException) { /* Circuit disconnected, ignore */ }
+        catch (ObjectDisposedException) { /* Component disposed, ignore */ }
+        catch (TaskCanceledException) { /* Operation canceled, ignore */ }
+        catch (InvalidOperationException) { /* Circuit may be disposed, ignore */ }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+}

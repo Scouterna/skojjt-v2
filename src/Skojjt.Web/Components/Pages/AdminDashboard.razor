@@ -1,0 +1,43 @@
+@page "/admin"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
+@using Skojjt.Infrastructure.Data
+@attribute [Authorize(Policy = "Admin")]
+@inject ICurrentUserService CurrentUserService
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject IAdminService AdminService
+@inject IDbContextFactory<SkojjtDbContext> DbContextFactory
+@inject ISnackbar Snackbar
+
+<PageTitle>Administration - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Skojjt Administration</MudText>
+
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+        <MudTabPanel Text="Scoutkårer">
+            <ScoutGroupsAdminTab />
+        </MudTabPanel>
+        <MudTabPanel Text="Märkesmallar">
+            <BadgeTemplatesAdminTab />
+        </MudTabPanel>
+        <MudTabPanel Text="Administratörer">
+            <AdminUsersTab />
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (!CurrentUserService.IsAdmin)
+        {
+            // Double-check authorization
+            throw new UnauthorizedAccessException("You are not authorized to access this page.");
+        }
+    }
+}

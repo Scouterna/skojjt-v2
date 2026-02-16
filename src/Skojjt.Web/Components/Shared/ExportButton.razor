@@ -1,0 +1,77 @@
+@using MudBlazor
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+<MudButton Variant="@Variant" 
+           FullWidth="@FullWidth"
+           StartIcon="@Icon"
+           Color="@Color"
+           Disabled="@_loading"
+           OnClick="HandleExport">
+    @if (_loading)
+    {
+        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+    }
+    @ChildContent
+</MudButton>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string ExportUrl { get; set; } = "";
+    [Parameter] public Variant Variant { get; set; } = Variant.Outlined;
+    [Parameter] public bool FullWidth { get; set; } = true;
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.FileDownload;
+    [Parameter] public Color Color { get; set; } = Color.Default;
+    [Parameter] public int ScoutGroupId { get; set; }
+
+    private bool _loading = false;
+
+    private async Task HandleExport()
+    {
+        if (string.IsNullOrEmpty(ExportUrl)) return;
+        
+        _loading = true;
+        StateHasChanged();
+        
+        try
+        {
+            // Use JavaScript to fetch and check for errors
+            var result = await JSRuntime.InvokeAsync<ExportDownloadResult>("skojjtExport.downloadWithErrorHandling", ExportUrl);
+            
+            if (!result.Success)
+            {
+                // Show error in snackbar with link to settings
+                if (!string.IsNullOrEmpty(result.ConfigurationUrl))
+                {
+                    Snackbar.Add(
+                        @<div>
+                            <strong>@result.Error</strong><br/>
+                            @result.Message<br/>
+                            <MudLink Href="@result.ConfigurationUrl" Color="Color.Warning">
+                                Gå till inställningar
+                            </MudLink>
+                        </div>,
+                        Severity.Warning,
+                        config => { config.RequireInteraction = true; config.VisibleStateDuration = 10000; });
+                }
+                else
+                {
+                    Snackbar.Add($"{result.Error}: {result.Message}", Severity.Error);
+                }
+            }
+            // If success, the JS function already triggered the download
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Export misslyckades: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private record ExportDownloadResult(bool Success, string? Error, string? Message, string? ConfigurationUrl);
+}

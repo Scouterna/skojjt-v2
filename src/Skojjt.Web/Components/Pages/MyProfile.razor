@@ -1,0 +1,226 @@
+@page "/me"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Services
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
+@inject IMyProfileService MyProfileService
+@inject IBadgeService BadgeService
+
+<PageTitle>Min sida - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_person == null)
+    {
+        <MudAlert Severity="Severity.Warning">
+            Kunde inte hitta din profil. Kontakta din kåradministratör om du tror att detta är fel.
+        </MudAlert>
+    }
+    else
+    {
+        @* Profile Header *@
+        <div class="d-flex flex-wrap align-center gap-4 mb-6">
+            <MudAvatar Color="Color.Primary" Size="Size.Large">
+                <MudIcon Icon="@Icons.Material.Filled.Person" />
+            </MudAvatar>
+            <div>
+                <MudText Typo="Typo.h4">@_person.FullName</MudText>
+                <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
+                    @(CurrentUserService.Email ?? "")
+                </MudText>
+            </div>
+        </div>
+
+        <MudGrid>
+            @* Group Access *@
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <div class="d-flex align-center mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.Groups" Class="mr-2" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6">Mina kårer</MudText>
+                    </div>
+
+                    @if (_groups.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">
+                            Du tillhör inga kårer.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudList T="MyGroupMembership" Dense="true" Class="py-0">
+                            @foreach (var group in _groups)
+                            {
+                                <MudListItem T="MyGroupMembership"
+                                             Icon="@Icons.Material.Filled.Shield">
+                                    <div class="d-flex justify-space-between align-center" style="width: 100%;">
+                                        <div>
+                                            <MudText>@group.ScoutGroupName</MudText>
+                                            @if (!string.IsNullOrEmpty(group.Roles))
+                                            {
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">@group.Roles</MudText>
+                                            }
+                                        </div>
+                                        @if (CurrentUserService.HasGroupAccess(group.ScoutGroupId))
+                                        {
+                                            <MudButton Variant="Variant.Text" Size="Size.Small"
+                                                       Href="@($"/sk/{group.ScoutGroupId}")"
+                                                       EndIcon="@Icons.Material.Filled.ChevronRight">
+                                                Visa
+                                            </MudButton>
+                                        }
+                                    </div>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            @* Attendance Summary *@
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <div class="d-flex align-center mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Class="mr-2" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6">Närvarosammanfattning</MudText>
+                    </div>
+
+                    @if (_attendance.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">
+                            Ingen närvaro registrerad.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudSimpleTable Dense="true" Hover="true" Bordered="true">
+                            <thead>
+                                <tr>
+                                    <th>Avdelning</th>
+                                    <th>Termin</th>
+                                    <th style="text-align: right;">Möten</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in _attendance)
+                                {
+                                    <tr>
+                                        <td>@row.TroopName</td>
+                                        <td>@row.SemesterDisplayName</td>
+                                        <td style="text-align: right;">@row.AttendedMeetings</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            @* Badge Progress *@
+            <MudItem xs="12">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <div class="d-flex align-center mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Class="mr-2" Color="Color.Secondary" />
+                        <MudText Typo="Typo.h6">Märkesframsteg</MudText>
+                    </div>
+
+                    @if (_badgeProgress.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">
+                            Inga märken påbörjade.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudGrid>
+                            @foreach (var badge in _badgeProgress)
+                            {
+                                <MudItem xs="12" sm="6" md="4">
+                                    <MudCard Outlined="true">
+                                        <MudCardHeader>
+                                            <CardHeaderAvatar>
+                                                @if (!string.IsNullOrEmpty(badge.Badge.ImageUrl))
+                                                {
+                                                    <MudAvatar Src="@badge.Badge.ImageUrl" Size="Size.Medium" />
+                                                }
+                                                else
+                                                {
+                                                    <MudAvatar Color="@(badge.IsCompleted ? Color.Success : Color.Default)" Size="Size.Medium">
+                                                        <MudIcon Icon="@(badge.IsCompleted ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.EmojiEvents)" />
+                                                    </MudAvatar>
+                                                }
+                                            </CardHeaderAvatar>
+                                            <CardHeaderContent>
+                                                <MudText Typo="Typo.subtitle1">@badge.Badge.Name</MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    @badge.CompletedParts / @badge.TotalParts delar klara
+                                                </MudText>
+                                            </CardHeaderContent>
+                                        </MudCardHeader>
+                                        <MudCardContent>
+                                            <MudProgressLinear Color="@(badge.IsCompleted ? Color.Success : Color.Primary)"
+                                                               Value="@(badge.TotalParts > 0 ? (double)badge.CompletedParts / badge.TotalParts * 100 : 0)"
+                                                               Rounded="true"
+                                                               Size="Size.Medium" />
+                                            @if (badge.IsCompleted)
+                                            {
+                                                <MudText Typo="Typo.caption" Color="Color.Success" Class="mt-1">
+                                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" /> Klart!
+                                                </MudText>
+                                            }
+                                        </MudCardContent>
+                                    </MudCard>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private Person? _person;
+    private IReadOnlyList<MyGroupMembership> _groups = [];
+    private IReadOnlyList<MyAttendanceSummary> _attendance = [];
+    private IReadOnlyList<BadgePersonSummary> _badgeProgress = [];
+    private bool _loading = true;
+    private readonly List<BreadcrumbItem> _breadcrumbs = [new("Min sida", null, disabled: true, icon: Icons.Material.Filled.Person)];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            var userId = CurrentUserService.UserId;
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var personId))
+            {
+                return;
+            }
+
+            _person = await MyProfileService.GetPersonAsync(personId);
+            if (_person == null)
+            {
+                return;
+            }
+
+            _groups = await MyProfileService.GetGroupMembershipsAsync(personId);
+            _attendance = await MyProfileService.GetAttendanceSummaryAsync(personId);
+            _badgeProgress = await BadgeService.GetPersonBadgesAsync(personId);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Skojjt.ImportTool": {
+      "commandName": "Project",
+      "commandLineArgs": "./scripts/migration/json_export",
+      "workingDirectory": "C:\\src\\skojjt-v2"
+    }
+  }
+}

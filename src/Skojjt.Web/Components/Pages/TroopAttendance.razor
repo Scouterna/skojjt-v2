@@ -1,0 +1,1365 @@
+@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
+@using MudBlazor
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
+@using Skojjt.Web.Services
+@attribute [Authorize]
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject ISemesterRepository SemesterRepository
+@inject ITroopRepository TroopRepository
+@inject IMeetingRepository MeetingRepository
+@inject IPersonRepository PersonRepository
+@inject IUnitOfWork UnitOfWork
+@inject ICurrentUserService CurrentUserService
+@inject AttendanceNotificationService NotificationService
+@inject AttendanceStateService StateService
+@inject IBadgeService BadgeService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@implements IAsyncDisposable
+
+<PageTitle>Närvaro - @(_troop?.Name ?? "Avdelning") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-8">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">
+            Du har inte behörighet att visa denna avdelning.
+        </MudAlert>
+    }
+    else if (_troop == null)
+    {
+        <MudAlert Severity="Severity.Error">Avdelningen kunde inte hittas.</MudAlert>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap align-center justify-space-between mb-4 gap-2">
+            <div>
+                <MudText Typo="Typo.h4">@_troop.Name</MudText>
+                <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
+                    @_semester?.DisplayName - @_scoutGroup?.Name
+                    @if (_troop.IsLocked)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Color="Color.Warning" Class="ml-2" />
+                        <span class="mud-text-warning">Låst</span>
+                    }
+                    <MudIcon Icon="@Icons.Material.Filled.Wifi" Size="Size.Small" Color="Color.Success" Class="ml-2" 
+                             Title="Realtidssynkronisering aktiv" />
+                </MudText>
+            </div>
+            
+            <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="@(() => _showNewMeetingDialog = true)"
+                           Disabled="@_troop.IsLocked">
+                    Nytt möte
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.Hiking"
+                           OnClick="OpenNewHikeDialog"
+                           Disabled="@_troop.IsLocked">
+                    Läger
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.PersonAdd"
+                           OnClick="@(() => _showAddMemberDialog = true)">
+                    Lägg till
+                </MudButton>
+            </MudButtonGroup>
+        </div>
+
+        @* Attendance Grid *@
+        <MudPaper Elevation="2" Class="pa-2 pa-sm-4">
+            <div class="d-flex flex-wrap justify-space-between align-center mb-4 gap-2">
+                <MudText Typo="Typo.h6">Närvaroregistrering</MudText>
+                <div class="d-flex align-center gap-2">
+                    <MudChip T="string" 
+                             Size="Size.Small" 
+                             Color="@GetSaveStatusColor()" 
+                             Icon="@GetSaveStatusIcon()">
+                        @GetSaveStatusText()
+                    </MudChip>
+                    <MudSwitch @bind-Value="_groupByPatrol" 
+                               Label="Gruppera patrull" 
+                               Color="Color.Secondary"
+                               Size="Size.Small" />
+                    <MudSwitch @bind-Value="_showExtraInfo" 
+                               Label="Visa detaljer" 
+                               Color="Color.Primary"
+                               Size="Size.Small" />
+                </div>
+            </div>
+
+            @if (_troopPersons.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info">
+                    Inga medlemmar i avdelningen. Lägg till medlemmar för att börja registrera närvaro.
+                </MudAlert>
+            }
+            else
+            {
+                @if (_meetings.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Class="mb-4">
+                        Inga möten registrerade. 
+                        <MudLink OnClick="@(() => _showNewMeetingDialog = true)" Class="cursor-pointer">
+                            Skapa ett möte
+                        </MudLink> för att börja registrera närvaro.
+                    </MudAlert>
+                }
+                
+                <div class="attendance-grid-wrapper">
+                    <table class="attendance-grid">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col name-col">Namn</th>
+                                @if (_showExtraInfo)
+                                {
+                                    <th class="age-col d-none d-sm-table-cell">Ålder</th>
+                                    <th class="leader-col d-none d-sm-table-cell">Ledare</th>
+                                    <th class="patrol-col d-none d-md-table-cell">Patrull</th>
+                                    <th class="action-col d-none d-sm-table-cell"></th>
+                                }
+                                @foreach (var meeting in _meetings)
+                                {
+                                    <th class="meeting-col @(meeting.IsHike ? "hike-meeting" : "")">
+                                        <MudTooltip Text="@($"{meeting.Name} - {meeting.MeetingDate:yyyy-MM-dd}")">
+                                            <a href="@($"/meetings/{meeting.Id}")" class="meeting-link">
+                                                @meeting.MeetingDate.Day/@meeting.MeetingDate.Month
+                                                @if (meeting.IsHike)
+                                                {
+                                                    <MudIcon Icon="@Icons.Material.Filled.Hiking" Size="Size.Small" />
+                                                }
+                                            </a>
+                                        </MudTooltip>
+                                    </th>
+                                }
+                                @if (_meetings.Count > 0)
+                                {
+                                    <th class="sum-col">&#931;</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (_groupByPatrol)
+                            {
+                                @foreach (var group in GetGroupedByPatrol())
+                                {
+                                    <tr class="patrol-header-row">
+                                        <td colspan="@GetColspan()" class="patrol-header">
+                                            <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small" Class="mr-2" />
+                                            <strong>@(string.IsNullOrEmpty(group.Key) ? "Ingen patrull" : group.Key)</strong>
+                                            <span class="ml-2">(@group.Count() personer)</span>
+                                        </td>
+                                    </tr>
+                                    @foreach (var tp in group)
+                                    {
+                                        @PersonRow(tp)
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                @foreach (var tp in _troopPersons)
+                                {
+                                    @PersonRow(tp)
+                                }
+                            }
+                        </tbody>
+                        @if (_meetings.Count > 0)
+                        {
+                            <tfoot>
+                                <tr class="footer-row">
+                                    <td class="sticky-col name-col"><strong>Totalt</strong></td>
+                                    @if (_showExtraInfo)
+                                    {
+                                        <td class="d-none d-sm-table-cell"></td>
+                                        <td class="d-none d-sm-table-cell"></td>
+                                        <td class="d-none d-md-table-cell"></td>
+                                        <td class="d-none d-sm-table-cell"></td>
+                                    }
+                                    @foreach (var meeting in _meetings)
+                                    {
+                                        <td class="sum-col">
+                                            <strong>@GetMeetingAttendanceCount(meeting.Id)</strong>
+                                        </td>
+                                    }
+                                    <td class="sum-col"></td>
+                                </tr>
+                            </tfoot>
+                        }
+                    </table>
+                </div>
+                
+                @if (!_troop.IsLocked && _meetings.Any())
+                {
+                    <MudDivider Class="my-4" />
+                    <div class="d-flex flex-wrap gap-2">
+                        <MudText Typo="Typo.caption" Class="align-self-center mr-2">
+                            Senaste mötet (@_meetings.First().MeetingDate.ToString("dd/MM")):
+                        </MudText>
+                        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="SelectAllForLastMeeting">Alla</MudButton>
+                        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="SelectNoneForLastMeeting">Ingen</MudButton>
+                        @if (_meetings.Count >= 2)
+                        {
+                            <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="CopyFromPreviousMeeting">Kopiera föregående</MudButton>
+                        }
+                    </div>
+                }
+            }
+        </MudPaper>
+
+        <MudExpansionPanels Class="mt-4">
+            <MudExpansionPanel Text="Märken" Icon="@Icons.Material.Filled.EmojiEvents">
+                @if (_troopBadges.Count == 0 && _availableBadges.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">
+                        Inga märken definierade för kåren. <MudLink Href="@($"/sk/{ScoutGroupId}/badges")">Skapa märken</MudLink> först.
+                    </MudAlert>
+                }
+                else
+                {
+                    @if (_troopBadges.Count > 0)
+                    {
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Tilldelade märken</MudText>
+                        <div class="d-flex flex-wrap gap-2 mb-4">
+                            @foreach (var badge in _troopBadges)
+                            {
+                                <MudChip T="string" Color="Color.Primary"
+                                         OnClose="@(() => UnassignBadge(badge.Id))"
+                                         Icon="@Icons.Material.Filled.EmojiEvents">
+                                    <MudLink Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}/badges/{badge.Id}")"
+                                             Color="Color.Inherit" Underline="Underline.None">
+                                        @badge.Name
+                                    </MudLink>
+                                </MudChip>
+                            }
+                        </div>
+                    }
+
+                    @if (_availableBadges.Count > 0)
+                    {
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Lägg till märke</MudText>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var badge in _availableBadges)
+                            {
+                                <MudChip T="string" Color="Color.Default"
+                                         OnClick="@(() => AssignBadge(badge.Id))"
+                                         Icon="@Icons.Material.Filled.Add">
+                                    @badge.Name
+                                </MudChip>
+                            }
+                        </div>
+                    }
+                }
+            </MudExpansionPanel>
+            <MudExpansionPanel Text="Inställningar & Export" Icon="@Icons.Material.Filled.Settings">
+                <MudGrid>
+                    <MudItem xs="12" sm="6" md="3">
+                        <ExportButton ExportUrl="@($"/reports/dak?scoutnetId={_troop.ScoutnetId}&semesterId={_troop.SemesterId}")"
+                                      ScoutGroupId="@ScoutGroupId"
+                                      Icon="@Icons.Material.Filled.FileDownload">
+                            DAK-export
+                        </ExportButton>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <ExportButton ExportUrl="@($"/reports/json?scoutnetId={_troop.ScoutnetId}&semesterId={_troop.SemesterId}")"
+                                      ScoutGroupId="@ScoutGroupId"
+                                      Icon="@Icons.Material.Filled.DataObject">
+                            JSON-export
+                        </ExportButton>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <ExportButton ExportUrl="@($"/reports/excel-gbg?scoutnetId={_troop.ScoutnetId}&semesterId={_troop.SemesterId}")"
+                                      ScoutGroupId="@ScoutGroupId"
+                                      Icon="@Icons.Material.Filled.TableChart">
+                            Excel (Göteborg)
+                        </ExportButton>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudButton Variant="Variant.Outlined" FullWidth="true"
+                                   StartIcon="@((_troop.IsLocked ? Icons.Material.Filled.LockOpen : Icons.Material.Filled.Lock))"
+                                   Color="@(_troop.IsLocked ? Color.Success : Color.Warning)"
+                                   OnClick="ToggleLock">
+                            @(_troop.IsLocked ? "Lås upp" : "Lås närvaro")
+                        </MudButton>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudButton Variant="Variant.Outlined" FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.Tune"
+                                   Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}/settings")">
+                            Standardvärden
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    }
+</MudContainer>
+
+<MudDialog @bind-Visible="_showNewMeetingDialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Event" Class="mr-2" />
+            @(_newMeetingIsHike ? "Nytt läger" : "Nytt möte")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_meetingForm">
+            <MudTextField @bind-Value="_newMeetingName" Label="Namn" Variant="Variant.Outlined" Required="true" MaxLength="50" />
+            <MudDatePicker @bind-Date="_newMeetingDate" Label="Datum" Variant="Variant.Outlined" Required="true"
+                           Validation="@((DateOnly? date) => ValidateMeetingDate(date))" />
+            <MudTimePicker @bind-Time="_newMeetingTime" Label="Starttid" Variant="Variant.Outlined" />
+            <MudNumericField @bind-Value="_newMeetingDuration" Label="Längd (minuter)" Variant="Variant.Outlined" Min="1" MaxLength="1440"/>
+            <MudCheckBox @bind-Value="_newMeetingIsHike" Label="Läger/vandring" Color="Color.Primary" />
+            <MudTextField @bind-Value="_newMeetingLocation" Label="Plats" Variant="Variant.Outlined" MaxLength="50" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showNewMeetingDialog = false)">Avbryt</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="CreateMeeting">Skapa</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<MudDialog @bind-Visible="_showAddMemberDialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Class="mr-2" />
+            Lägg till medlem
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudAlert Severity="Severity.Info" Dense="true" Class="mb-4">
+            Sök bland kårens medlemmar för att lägga till i avdelningen.
+        </MudAlert>
+        <MudTextField @bind-Value="_memberSearchText" 
+                      Label="Sök namn" 
+                      Variant="Variant.Outlined"
+                      Immediate="true" 
+                      DebounceInterval="300"
+                      TextChanged="OnMemberSearchTextChanged"
+                      Adornment="Adornment.Start" 
+                      AdornmentIcon="@Icons.Material.Filled.Search" />
+        
+        @if (_searchingMembers)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mt-2" />
+        }
+        else if (_memberSearchResults.Count > 0)
+        {
+            <MudList T="Person" Dense="true" Class="mt-2">
+                @foreach (var person in _memberSearchResults)
+                {
+                    var isAlreadyMember = _troopPersonIds.Contains(person.Id);
+                    <MudListItem T="Person" Class="@(isAlreadyMember ? "mud-text-disabled" : "")">
+                        <div class="d-flex align-center justify-space-between w-100">
+                            <div>
+                                <MudText>@person.FullName</MudText>
+                                @if (person.Age > 0)
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@person.Age år</MudText>
+                                }
+                            </div>
+                            @if (isAlreadyMember)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Default">Redan medlem</MudChip>
+                            }
+                            else
+                            {
+                                <MudButton Variant="Variant.Text" 
+                                           Color="Color.Primary" 
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Add"
+                                           OnClick="@(() => AddMemberToTroop(person))">
+                                    Lägg till
+                                </MudButton>
+                            }
+                        </div>
+                    </MudListItem>
+                }
+            </MudList>
+        }
+        else if (!string.IsNullOrWhiteSpace(_memberSearchText) && _memberSearchText.Length >= 2)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4 text-center">
+                Inga personer hittades med det namnet.
+            </MudText>
+        }
+        else if (!string.IsNullOrWhiteSpace(_memberSearchText))
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4 text-center">
+                Skriv minst 2 tecken för att söka.
+            </MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseAddMemberDialog">Stäng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .attendance-grid-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .attendance-grid { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 600px; }
+    .attendance-grid th, .attendance-grid td { padding: 4px 8px; border: 1px solid var(--mud-palette-lines-default); text-align: center; white-space: nowrap; }
+    .attendance-grid thead th { background: var(--mud-palette-surface); position: sticky; top: 0; z-index: 10; }
+    .sticky-col { position: sticky; left: 0; background: var(--mud-palette-background); z-index: 5; }
+    .attendance-grid thead th.sticky-col { z-index: 15; }
+    .name-col { text-align: left !important; min-width: 150px; max-width: 200px; }
+    .meeting-col { min-width: 60px; }
+    .hike-meeting { background: var(--mud-palette-info-lighten) !important; }
+    .check-col { padding: 0 !important; position: relative; z-index: 1; }
+    .check-col .mud-input-control { margin: 0 auto; }
+    .check-col .mud-checkbox { margin: 0; padding: 4px; }
+    .sum-col { font-weight: bold; min-width: 40px; }
+    .meeting-link { color: inherit; text-decoration: none; }
+    .meeting-link:hover { text-decoration: underline; }
+    .person-link { color: var(--mud-palette-primary); text-decoration: none; }
+    .person-link:hover { text-decoration: underline; }
+    
+    /* Leader column styles */
+    .leader-col { min-width: 60px; }
+    
+    /* Action column styles */
+    .action-col { min-width: 40px; padding: 0 !important; }
+    
+    /* Patrol column styles */
+    .patrol-col { min-width: 120px; text-align: left !important; }
+    .patrol-display { cursor: pointer; display: flex; align-items: center; padding: 2px 4px; border-radius: 4px; }
+    .patrol-display:hover { background: var(--mud-palette-action-default-hover); }
+    .patrol-edit-icon { opacity: 0; transition: opacity 0.2s; }
+    .patrol-display:hover .patrol-edit-icon { opacity: 0.7; }
+    .patrol-placeholder { color: var(--mud-palette-text-disabled); font-style: italic; font-size: 0.85em; }
+    .patrol-input { max-width: 100px; }
+    .patrol-input .mud-input-slot { padding: 2px 4px !important; font-size: 0.875rem; }
+    
+    /* Patrol group header row */
+    .patrol-header-row { background: var(--mud-palette-background-gray) !important; }
+    .patrol-header-row td { background: var(--mud-palette-background-gray) !important; }
+    .patrol-header { text-align: left !important; padding: 8px 12px !important; }
+    :root[data-mud-dark-mode="true"] .patrol-header-row,
+    .mud-theme-dark .patrol-header-row { background: #424242 !important; }
+    :root[data-mud-dark-mode="true"] .patrol-header-row td,
+    .mud-theme-dark .patrol-header-row td { background: #424242 !important; }
+    
+    /* Leader row - Light mode */
+    .leader-row { background: #E3F2FD; color: #0D47A1; }
+    .leader-row .sticky-col { background: #E3F2FD; color: #0D47A1; }
+    .leader-row .person-link { color: #0D47A1; font-weight: 600; }
+    /* Dark mode support for leader rows - deeper blue background with bright text */
+    :root[data-mud-dark-mode="true"] .leader-row,
+    .mud-theme-dark .leader-row { background: #0D47A1; color: #FFFFFF; }
+    :root[data-mud-dark-mode="true"] .leader-row .sticky-col,
+    .mud-theme-dark .leader-row .sticky-col { background: #0D47A1; color: #FFFFFF; }
+    :root[data-mud-dark-mode="true"] .leader-row .person-link,
+    .mud-theme-dark .leader-row .person-link { color: #90CAF9; font-weight: 600; }
+    /* Dark mode - improve regular row contrast */
+    :root[data-mud-dark-mode="true"] .attendance-grid tbody tr:not(.leader-row):not(.patrol-header-row),
+    .mud-theme-dark .attendance-grid tbody tr:not(.leader-row):not(.patrol-header-row) { background: #2D2D2D; color: #E0E0E0; }
+    :root[data-mud-dark-mode="true"] .attendance-grid tbody tr:not(.leader-row):not(.patrol-header-row) .sticky-col,
+    .mud-theme-dark .attendance-grid tbody tr:not(.leader-row):not(.patrol-header-row) .sticky-col { background: #2D2D2D; color: #E0E0E0; }
+    :root[data-mud-dark-mode="true"] .attendance-grid tbody tr:not(.leader-row):not(.patrol-header-row):nth-child(even),
+    .mud-theme-dark .attendance-grid tbody tr:not(.leader-row):not(.patrol-header-row):nth-child(even) { background: #363636; }
+    :root[data-mud-dark-mode="true"] .attendance-grid tbody tr:not(.leader-row):not(.patrol-header-row):nth-child(even) .sticky-col,
+    .mud-theme-dark .attendance-grid tbody tr:not(.leader-row):not(.patrol-header-row):nth-child(even) .sticky-col { background: #363636; }
+    :root[data-mud-dark-mode="true"] .person-link,
+    .mud-theme-dark .person-link { color: #64B5F6; }
+    .footer-row { background: var(--mud-palette-surface); }
+    .footer-row .sticky-col { background: var(--mud-palette-surface); }
+    @@media (max-width: 600px) {
+        .attendance-grid th, .attendance-grid td { padding: 2px 4px; font-size: 0.85rem; }
+        .name-col { min-width: 100px; }
+        .meeting-col { min-width: 45px; }
+    }
+</style>
+
+@code {
+    [Parameter] public int ScoutGroupId { get; set; }
+    [Parameter] public int SemesterId { get; set; }
+    [Parameter] public int TroopId { get; set; }
+
+    private ScoutGroup? _scoutGroup;
+    private Semester? _semester;
+    private Troop? _troop;
+    private List<TroopPerson> _troopPersons = new();
+    private List<Meeting> _meetings = new();
+    private Dictionary<(int PersonId, int MeetingId), bool> _attendance = new();
+    private Dictionary<(int PersonId, int MeetingId), bool> _originalAttendance = new();
+    private HashSet<(int PersonId, int MeetingId)> _pendingChanges = new();
+    private bool _loading = true;
+    private bool _hasAccess = false;
+    private bool _showExtraInfo = false;
+    private bool _groupByPatrol = false;
+    private bool _showNewMeetingDialog = false;
+    private bool _showAddMemberDialog = false;
+    private string _memberSearchText = "";
+    private List<Person> _memberSearchResults = new();
+    private HashSet<int> _troopPersonIds = new();
+    private bool _searchingMembers = false;
+    private MudForm? _meetingForm;
+    private bool _disposed;
+    private bool _initialized;
+    
+    // Patrol editing state
+    private int? _editingPatrolPersonId;
+    private string? _editingPatrolValue;
+    
+    // Remove confirmation state
+    private int? _pendingRemovePersonId;
+
+    private enum SaveStatus { Saved, Saving, Unsaved }
+    private SaveStatus _saveStatus = SaveStatus.Saved;
+    private CancellationTokenSource? _saveDebounceTokenSource;
+    private const int SaveDebounceMs = 1500;
+    
+    private string _newMeetingName = "Möte";
+    private int _newMeetingDuration = 90;
+    private bool _newMeetingIsHike = false;
+    private DateTime? _newMeetingDate = DateTime.Today;
+    private TimeSpan? _newMeetingTime = new TimeSpan(18, 30, 0);
+    private string? _newMeetingLocation;
+    
+    private DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+    private List<BreadcrumbItem> _breadcrumbs = new();
+    
+    // Unique identifier for this component instance to exclude from broadcasts
+    private readonly string _instanceId = Guid.NewGuid().ToString();
+
+    // Handler registration IDs for cleanup
+    private string? _attendanceHandlerId;
+    private string? _patrolHandlerId;
+    private string? _meetingHandlerId;
+    private string? _memberHandlerId;
+
+    // Track the last loaded parameters to avoid reloading on every render
+    private int _lastLoadedScoutGroupId;
+    private int _lastLoadedSemesterId;
+    private int _lastLoadedTroopId;
+
+    // Badge assignment state
+    private List<Badge> _troopBadges = [];
+    private List<Badge> _availableBadges = [];
+
+    // Add field
+    private Dictionary<int, ScoutGroupPerson?> _scoutGroupPersonLookup = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check access immediately using URL parameter
+        _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
+        
+        if (!_hasAccess)
+        {
+            _loading = false;
+            _breadcrumbs = new List<BreadcrumbItem>
+            {
+                new("Scoutkårer", href: "/sk"),
+                new("Ingen behörighet", href: null, disabled: true)
+            };
+            _initialized = true;
+            return;
+        }
+
+        // Register handlers with the state service
+        _attendanceHandlerId = StateService.RegisterAttendanceHandler(HandleAttendanceChangedAsync);
+        _patrolHandlerId = StateService.RegisterPatrolHandler(HandlePatrolChangedAsync);
+        _meetingHandlerId = StateService.RegisterMeetingHandler(HandleMeetingChangedAsync);
+        _memberHandlerId = StateService.RegisterMemberHandler(HandleMemberChangedAsync);
+        
+        // Load data once during initialization
+        await LoadData();
+        
+        _initialized = true;
+    }
+
+    private Task HandleAttendanceChangedAsync(int troopId, int personId, int meetingId, bool attending, string sourceInstanceId)
+    {
+        if (_disposed || sourceInstanceId == _instanceId || troopId != TroopId) return Task.CompletedTask;
+        
+        try
+        {
+            var key = (personId, meetingId);
+            _attendance[key] = attending;
+            _originalAttendance[key] = attending;
+            _ = TryInvokeStateHasChangedAsync();
+        }
+        catch { }
+        
+        return Task.CompletedTask;
+    }
+
+    private Task HandlePatrolChangedAsync(int troopId, int personId, string? patrol, string sourceInstanceId)
+    {
+        if (_disposed || sourceInstanceId == _instanceId || troopId != TroopId) return Task.CompletedTask;
+        
+        try
+        {
+            var troopPerson = _troopPersons.FirstOrDefault(tp => tp.PersonId == personId);
+            if (troopPerson != null)
+            {
+                troopPerson.Patrol = patrol;
+                _ = TryInvokeStateHasChangedAsync();
+            }
+        }
+        catch { }
+        
+        return Task.CompletedTask;
+    }
+
+    private Task HandleMeetingChangedAsync(int troopId, int meetingId, MeetingChangeType changeType, string sourceInstanceId)
+    {
+        if (_disposed || sourceInstanceId == _instanceId || troopId != TroopId) return Task.CompletedTask;
+
+        // Reload data when meetings change - fire and forget
+        _ = ReloadDataAsync();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleMemberChangedAsync(int troopId, int personId, TroopMemberChangeType changeType, string sourceInstanceId)
+    {
+        if (_disposed || sourceInstanceId == _instanceId || troopId != TroopId) return Task.CompletedTask;
+
+        // Reload data when members change - fire and forget
+        _ = ReloadDataAsync();
+        return Task.CompletedTask;
+    }
+
+    private async Task ReloadDataAsync()
+    {
+        try
+        {
+            await LoadData();
+            await TryInvokeStateHasChangedAsync();
+        }
+        catch { }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Skip if not yet initialized (OnInitializedAsync will handle the first load)
+        if (!_initialized) return;
+        
+        // Only reload if parameters actually changed
+        if (_lastLoadedScoutGroupId != ScoutGroupId || 
+            _lastLoadedSemesterId != SemesterId || 
+            _lastLoadedTroopId != TroopId)
+        {
+            await LoadData();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_disposed) return;
+        
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsyncIgnoreErrors("eval", """
+                if (!window._beforeUnloadRegistered) {
+                    window._beforeUnloadRegistered = true;
+                    window.addEventListener('beforeunload', function(e) {
+                        if (window.hasUnsavedChanges) { e.preventDefault(); e.returnValue = 'Du har osparade ändringar.'; return e.returnValue; }
+                    });
+                }
+            """);
+        }
+        await JSRuntime.InvokeVoidAsyncIgnoreErrors("eval", $"window.hasUnsavedChanges = {(_saveStatus == SaveStatus.Unsaved).ToString().ToLower()};");
+    }
+
+    private async Task<bool> TryInvokeJsAsync(string identifier, params object?[] args)
+    {
+        if (_disposed) return false;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync(identifier, args);
+            return true;
+        }
+        catch (JSDisconnectedException) { return false; }
+        catch (ObjectDisposedException) { return false; }
+        catch (TaskCanceledException) { return false; }
+        catch (InvalidOperationException) { return false; } // Can occur when circuit is disposed
+    }
+
+    /// <summary>
+    /// Safely invoke StateHasChanged, handling disconnection scenarios.
+    /// </summary>
+    private async Task TryInvokeStateHasChangedAsync()
+    {
+        if (_disposed) return;
+        try
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (JSDisconnectedException) { /* Circuit disconnected, ignore */ }
+        catch (ObjectDisposedException) { /* Component disposed, ignore */ }
+        catch (TaskCanceledException) { /* Operation canceled, ignore */ }
+        catch (InvalidOperationException) { /* Circuit may be disposed, ignore */ }
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        
+        // Update tracking variables (for navigation/parameter changes)
+        _lastLoadedScoutGroupId = ScoutGroupId;
+        _lastLoadedSemesterId = SemesterId;
+        _lastLoadedTroopId = TroopId;
+        
+        try
+        {
+            // Load data sequentially - DbContext is not thread-safe
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+            _semester = await SemesterRepository.GetByIdAsync(SemesterId);
+            _troop = await TroopRepository.GetWithMembersAsync(TroopId);
+            
+            if (_scoutGroup != null && _semester != null && _troop != null)
+            {
+                _breadcrumbs = new List<BreadcrumbItem>
+                {
+                    new("Scoutkårer", href: "/sk"),
+                    new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
+                    new(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
+                    new(_troop.Name, href: null, disabled: true)
+                };
+
+                _troopPersons = _troop.TroopPersons
+                    .OrderByDescending(tp => tp.IsLeader)
+                    // Order by FirstName then LastName
+                    .ThenBy(tp => tp.Person.FirstName)
+                    .ThenBy(tp => tp.Person.LastName)
+                    .ToList();
+
+                // Build set of current member IDs for quick lookup
+                _troopPersonIds = _troopPersons.Select(tp => tp.PersonId).ToHashSet();
+
+                // Set new-meeting defaults from troop settings
+                _newMeetingDuration = _troop.DefaultDurationMinutes;
+                _newMeetingTime = _troop.DefaultStartTime.ToTimeSpan();
+                _newMeetingLocation = _troop.DefaultMeetingLocation;
+
+                // Load all meetings with attendance in a SINGLE query instead of N+1 queries
+                var meetingsWithAttendance = await MeetingRepository.GetByTroopWithAttendanceAsync(TroopId);
+                _meetings = meetingsWithAttendance.ToList();
+
+                // Build attendance dictionary from the already-loaded data
+                _attendance.Clear();
+                foreach (var meeting in _meetings)
+                {
+                    foreach (var attendance in meeting.Attendances)
+                    {
+                        _attendance[(attendance.PersonId, meeting.Id)] = true;
+                    }
+                }
+                
+                _originalAttendance = new Dictionary<(int, int), bool>(_attendance);
+                _pendingChanges.Clear();
+                _saveStatus = SaveStatus.Saved;
+
+                _scoutGroupPersonLookup = _troop.ScoutGroup.ScoutGroupPersons
+                    .ToDictionary(sgp => sgp.PersonId);
+
+                // Load badge assignments
+                _troopBadges = (await BadgeService.GetTroopBadgesAsync(TroopId)).ToList();
+                var allGroupBadges = await BadgeService.GetBadgesForGroupAsync(ScoutGroupId);
+                var assignedIds = _troopBadges.Select(b => b.Id).ToHashSet();
+                _availableBadges = allGroupBadges.Where(b => !assignedIds.Contains(b.Id)).ToList();
+            }
+        }
+        finally { _loading = false; }
+    }
+
+    // Patrol editing methods
+    private void StartPatrolEdit(TroopPerson tp)
+    {
+        _editingPatrolPersonId = tp.PersonId;
+        _editingPatrolValue = tp.Patrol ?? "";
+    }
+
+    private void CancelPatrolEdit()
+    {
+        _editingPatrolPersonId = null;
+        _editingPatrolValue = null;
+    }
+
+    // Member search and add methods
+    private async Task OnMemberSearchTextChanged(string searchText)
+    {
+        _memberSearchText = searchText;
+        
+        if (string.IsNullOrWhiteSpace(searchText) || searchText.Length < 2)
+        {
+            _memberSearchResults.Clear();
+            return;
+        }
+        
+        _searchingMembers = true;
+        StateHasChanged();
+        
+        try
+        {
+            var results = await PersonRepository.SearchByNameAsync(ScoutGroupId, searchText);
+            _memberSearchResults = results.Take(20).ToList(); // Limit to 20 results
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Sökning misslyckades: {ex.Message}", Severity.Error);
+            _memberSearchResults.Clear();
+        }
+        finally
+        {
+            _searchingMembers = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task AddMemberToTroop(Person person)
+    {
+        try
+        {
+            await TroopRepository.AddMemberAsync(TroopId, person.Id);
+            
+            // Broadcast member added to other components
+            await NotificationService.NotifyMemberChangedAsync(TroopId, person.Id, TroopMemberChangeType.Added, _instanceId);
+            
+            Snackbar.Add($"{person.FullName} har lagts till i avdelningen!", Severity.Success);
+            
+            // Reload data to refresh the list
+            await LoadData();
+            
+            // Clear search results but keep dialog open for adding more
+            _memberSearchResults.Clear();
+            _memberSearchText = "";
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte lägga till medlem: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CloseAddMemberDialog()
+    {
+        _showAddMemberDialog = false;
+        _memberSearchText = "";
+        _memberSearchResults.Clear();
+    }
+
+    private async Task OnPatrolKeyDown(KeyboardEventArgs e, int personId)
+    {
+        if (e.Key == "Enter")
+        {
+            await SavePatrol(personId);
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelPatrolEdit();
+        }
+    }
+
+    private async Task SavePatrol(int personId)
+    {
+        if (_editingPatrolPersonId != personId) return;
+        
+        var troopPerson = _troopPersons.FirstOrDefault(tp => tp.PersonId == personId);
+        if (troopPerson == null) return;
+        
+        var newPatrol = string.IsNullOrWhiteSpace(_editingPatrolValue) ? null : _editingPatrolValue.Trim();
+        
+        try
+        {
+            await TroopRepository.UpdatePatrolAsync(TroopId, personId, newPatrol);
+            troopPerson.Patrol = newPatrol;
+            
+            // Broadcast the change to other components
+            await NotificationService.NotifyPatrolChangedAsync(TroopId, personId, newPatrol, _instanceId);
+            
+            Snackbar.Add("Patrull uppdaterad", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte spara patrull: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            CancelPatrolEdit();
+        }
+    }
+
+    private async Task ToggleLeaderStatus(TroopPerson tp, bool newIsLeader)
+    {
+        try
+        {
+            await TroopRepository.SetLeaderStatusAsync(TroopId, tp.PersonId, newIsLeader);
+            tp.IsLeader = newIsLeader;
+            
+            // Re-sort the list to maintain leader-first ordering
+            _troopPersons = _troopPersons
+                .OrderByDescending(p => p.IsLeader)
+                .ThenBy(p => p.Person.FirstName)
+                .ThenBy(p => p.Person.LastName)
+                .ToList();
+            
+            Snackbar.Add(newIsLeader 
+                ? $"{tp.Person.FullName} är nu ledare" 
+                : $"{tp.Person.FullName} är inte längre ledare", 
+                Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte ändra ledarstatus: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task RemoveMemberFromTroop(TroopPerson tp)
+    {
+        // First click - show confirmation
+        if (_pendingRemovePersonId != tp.PersonId)
+        {
+            _pendingRemovePersonId = tp.PersonId;
+            return;
+        }
+        
+        // Second click - actually remove
+        try
+        {
+            await TroopRepository.RemoveMemberAsync(TroopId, tp.PersonId);
+            
+            // Broadcast member removed to other components
+            await NotificationService.NotifyMemberChangedAsync(TroopId, tp.PersonId, TroopMemberChangeType.Removed, _instanceId);
+            
+            // Remove from local list
+            _troopPersons.Remove(tp);
+            _troopPersonIds.Remove(tp.PersonId);
+            
+            Snackbar.Add($"{tp.Person.FullName} har tagits bort från avdelningen", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte ta bort medlem: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _pendingRemovePersonId = null;
+        }
+    }
+
+    private void CancelRemove()
+    {
+        _pendingRemovePersonId = null;
+    }
+
+    private async Task AssignBadge(int badgeId)
+    {
+        try
+        {
+            await BadgeService.AssignBadgeToTroopAsync(badgeId, TroopId);
+            Snackbar.Add("M\u00e4rke tilldelat!", Severity.Success);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte tilldela m\u00e4rke: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task UnassignBadge(int badgeId)
+    {
+        try
+        {
+            await BadgeService.UnassignBadgeFromTroopAsync(badgeId, TroopId);
+            Snackbar.Add("M\u00e4rke borttaget fr\u00e5n avdelningen", Severity.Info);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte ta bort m\u00e4rke: {ex.Message}", Severity.Error);
+        }
+    }
+    // Grouping methods
+    private IEnumerable<IGrouping<string?, TroopPerson>> GetGroupedByPatrol()
+    {
+        return _troopPersons
+            .GroupBy(tp => tp.Patrol)
+            .OrderBy(g => string.IsNullOrEmpty(g.Key) ? 1 : 0) // Non-empty patrols first
+            .ThenBy(g => g.Key);
+    }
+
+    private int GetColspan()
+    {
+        var cols = 1; // Name
+        if (_showExtraInfo) cols += 4; // Age + Leader + Patrol + Action
+        cols += _meetings.Count; // Meeting columns
+        if (_meetings.Count > 0) cols += 1; // Sum column only if there are meetings
+        return cols;
+    }
+
+    private bool IsAttending(int personId, int meetingId) =>
+        _attendance.TryGetValue((personId, meetingId), out var attending) && attending;
+
+    private void OnAttendanceChanged(int personId, int meetingId, bool attending)
+    {
+        if (_troop?.IsLocked == true) return;
+        var key = (personId, meetingId);
+        _attendance[key] = attending;
+        var originalValue = _originalAttendance.TryGetValue(key, out var orig) && orig;
+        if (attending != originalValue) _pendingChanges.Add(key);
+        else _pendingChanges.Remove(key);
+        _saveStatus = _pendingChanges.Count > 0 ? SaveStatus.Unsaved : SaveStatus.Saved;
+        _ = DebouncedSaveAsync();
+        StateHasChanged();
+    }
+
+    private async Task DebouncedSaveAsync()
+    {
+        _saveDebounceTokenSource?.Cancel();
+        _saveDebounceTokenSource = new CancellationTokenSource();
+        var token = _saveDebounceTokenSource.Token;
+        try
+        {
+            await Task.Delay(SaveDebounceMs, token);
+            if (!token.IsCancellationRequested && _pendingChanges.Count > 0)
+                await SaveAttendanceChangesAsync();
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private async Task SaveAttendanceChangesAsync()
+    {
+        if (_pendingChanges.Count == 0) return;
+        _saveStatus = SaveStatus.Saving;
+        StateHasChanged();
+        try
+        {
+            var changesToSave = _pendingChanges.ToList();
+            var attendanceChanges = changesToSave
+                .Select(key => (key.MeetingId, key.PersonId, _attendance.TryGetValue(key, out var a) && a))
+                .ToList();
+            
+            await MeetingRepository.SetAttendanceBatchAsync(attendanceChanges);
+            
+            // Broadcast changes to other components
+            var notifyChanges = attendanceChanges.Select(c => (c.PersonId, c.MeetingId, c.Item3)).ToList();
+            await NotificationService.NotifyAttendanceChangedBatchAsync(TroopId, notifyChanges, _instanceId);
+            
+            foreach (var key in changesToSave)
+            {
+                if (_attendance.TryGetValue(key, out var value)) _originalAttendance[key] = value;
+                else _originalAttendance.Remove(key);
+                _pendingChanges.Remove(key);
+            }
+            _saveStatus = _pendingChanges.Count > 0 ? SaveStatus.Unsaved : SaveStatus.Saved;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte spara: {ex.Message}", Severity.Error);
+            _saveStatus = SaveStatus.Unsaved;
+        }
+        StateHasChanged();
+    }
+
+    private Color GetSaveStatusColor()
+    {
+        return _saveStatus switch
+        {
+            SaveStatus.Saved => Color.Success,
+            SaveStatus.Saving => Color.Warning,
+            SaveStatus.Unsaved => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private string GetSaveStatusText()
+    {
+        return _saveStatus switch
+        {
+            SaveStatus.Saved => "Sparad",
+            SaveStatus.Saving => "Sparar...",
+            SaveStatus.Unsaved => "Ändringar osparade",
+            _ => ""
+        };
+    }
+
+    private string GetSaveStatusIcon() => _saveStatus switch
+    {
+        SaveStatus.Saved => Icons.Material.Filled.CloudDone,
+        SaveStatus.Saving => Icons.Material.Filled.CloudSync,
+        SaveStatus.Unsaved => Icons.Material.Filled.CloudOff,
+        _ => Icons.Material.Filled.Cloud
+    };
+
+    private int GetAttendanceCount(int personId) => _meetings.Count(m => IsAttending(personId, m.Id));
+    private int GetMeetingAttendanceCount(int meetingId) => _troopPersons.Count(tp => IsAttending(tp.PersonId, meetingId));
+
+    private bool IsBirthdayToday(Person person)
+    {
+        if (person.BirthDate == null) return false;
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        return person.BirthDate.Value.Month == today.Month && person.BirthDate.Value.Day == today.Day;
+    }
+
+    private void OpenNewHikeDialog()
+    {
+        _newMeetingName = "Läger";
+        _newMeetingIsHike = true;
+        _showNewMeetingDialog = true;
+    }
+
+    private async Task CreateMeeting()
+    {
+        if (_meetingForm != null && _newMeetingDate.HasValue)
+        {
+            await _meetingForm.Validate();
+            if (_meetingForm.IsValid)
+            {
+                try
+                {
+                    var meeting = new Meeting
+                    {
+                        TroopId = TroopId,
+                        Name = _newMeetingName,
+                        MeetingDate = DateOnly.FromDateTime(_newMeetingDate.Value),
+                        StartTime = _newMeetingTime.HasValue ? TimeOnly.FromTimeSpan(_newMeetingTime.Value) : new TimeOnly(18, 30),
+                        DurationMinutes = _newMeetingDuration,
+                        Location = _newMeetingLocation,
+                        IsHike = _newMeetingIsHike
+                    };
+                    
+                    await MeetingRepository.AddAsync(meeting);
+                    await UnitOfWork.SaveChangesAsync();
+                    
+                    // Broadcast meeting added to other components
+                    await NotificationService.NotifyMeetingChangedAsync(TroopId, meeting.Id, MeetingChangeType.Added, _instanceId);
+                    
+                    Snackbar.Add($"Möte '{_newMeetingName}' skapat!", Severity.Success);
+                    _showNewMeetingDialog = false;
+                    _newMeetingName = "Möte";
+                    _newMeetingDuration = _troop?.DefaultDurationMinutes ?? 90;
+                    _newMeetingIsHike = false;
+                    _newMeetingDate = DateTime.Today;
+                    _newMeetingTime = _troop?.DefaultStartTime.ToTimeSpan() ?? new TimeSpan(18, 30, 0);
+                    _newMeetingLocation = _troop?.DefaultMeetingLocation;
+                    await LoadData();
+                }
+                catch (Exception ex)
+                {
+                    Snackbar.Add($"Kunde inte skapa möte: {ex.Message}", Severity.Error);
+                }
+            }
+        }
+    }
+
+    private void SelectAllForLastMeeting()
+    {
+        var latestMeeting = _meetings.FirstOrDefault();
+        if (latestMeeting != null)
+            foreach (var tp in _troopPersons)
+                OnAttendanceChanged(tp.PersonId, latestMeeting.Id, true);
+    }
+
+    private void SelectNoneForLastMeeting()
+    {
+        var latestMeeting = _meetings.FirstOrDefault();
+        if (latestMeeting != null)
+            foreach (var tp in _troopPersons)
+                OnAttendanceChanged(tp.PersonId, latestMeeting.Id, false);
+    }
+
+    private void CopyFromPreviousMeeting()
+    {
+        if (_meetings.Count >= 2)
+        {
+            var latestMeeting = _meetings[0];
+            var previousMeeting = _meetings[1];
+            foreach (var tp in _troopPersons)
+            {
+                var wasPresent = IsAttending(tp.PersonId, previousMeeting.Id);
+                OnAttendanceChanged(tp.PersonId, latestMeeting.Id, wasPresent);
+            }
+        }
+    }
+
+    private async Task ToggleLock()
+    {
+        if (_troop != null)
+        {
+            try
+            {
+                _troop.IsLocked = !_troop.IsLocked;
+                await TroopRepository.UpdateAsync(_troop);
+                await UnitOfWork.SaveChangesAsync();
+                Snackbar.Add(_troop.IsLocked ? "Närvarolistan är nu låst" : "Närvarolistan är nu upplåst", Severity.Info);
+            }
+            catch (Exception ex)
+            {
+                _troop.IsLocked = !_troop.IsLocked;
+                Snackbar.Add($"Kunde inte ändra låsstatus: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        
+        // Unregister all handlers from state service
+        if (_attendanceHandlerId != null)
+            StateService.UnregisterAttendanceHandler(_attendanceHandlerId);
+        if (_patrolHandlerId != null)
+            StateService.UnregisterPatrolHandler(_patrolHandlerId);
+        if (_meetingHandlerId != null)
+            StateService.UnregisterMeetingHandler(_meetingHandlerId);
+        if (_memberHandlerId != null)
+            StateService.UnregisterMemberHandler(_memberHandlerId);
+        
+        _saveDebounceTokenSource?.Cancel();
+        _saveDebounceTokenSource?.Dispose();
+        
+        if (_pendingChanges.Count > 0)
+        {
+            try { await SaveAttendanceChangesAsync(); } catch { }
+        }
+    }
+
+    private string ValidateMeetingDate(DateOnly? date)
+    {
+        if (date == null)
+            return "Datum krävs";
+
+        if (_troop == null)
+            return "Avdelningsdata saknas";
+
+        if (!_troop.Semester.IsValidDate(date.Value))
+        {
+            return $"Datumet ligger utanför avdelningens termin ({_troop.Semester.DisplayName})";
+        }
+
+        return "";
+    }
+
+    private RenderFragment PersonRow(TroopPerson tp) => __builder =>
+    {
+        var sgp = _scoutGroupPersonLookup.GetValueOrDefault(tp.PersonId);
+        bool removed = (sgp == null || sgp.NotInScoutnet);
+        <tr class="@(tp.IsLeader ? "leader-row" : "")">
+            <td class="sticky-col name-col">
+                <a href="@($"/sk/{ScoutGroupId}/p/{tp.PersonId}")" class="person-link">
+                    @tp.Person.FullName
+                </a>
+                @if (IsBirthdayToday(tp.Person))
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Cake" Size="Size.Small" Color="Color.Warning" Class="ml-1" Title="Fyller år idag!" />
+                }
+                @if (tp.IsLeader)
+                {
+                    // person is leader, mark with a chip 'L'
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Class="ml-1 d-none d-sm-inline-flex">L</MudChip>
+                }
+                @if (removed)
+                {
+                    // person is marked as removed in Scoutnet, mark with a chip 'B' for borttagen
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Class="ml-1 d-none d-sm-inline-flex">B</MudChip>
+                }
+            </td>
+            @if (_showExtraInfo)
+            {
+                <td class="age-col d-none d-sm-table-cell">@(tp.Person.Age > 0 ? $"{tp.Person.Age}" : "")</td>
+                <td class="leader-col d-none d-sm-table-cell">
+                    <MudCheckBox T="bool" 
+                                 Value="@tp.IsLeader"
+                                 ValueChanged="@((bool val) => ToggleLeaderStatus(tp, val))"
+                                 Color="Color.Primary"
+                                 Dense="true" />
+                </td>
+                <td class="patrol-col d-none d-md-table-cell">
+                    @if (_editingPatrolPersonId == tp.PersonId)
+                    {
+                        <div class="d-flex align-center gap-1">
+                            <MudTextField @bind-Value="_editingPatrolValue" 
+                                          Variant="Variant.Text" 
+                                          Margin="Margin.Dense"
+                                          Class="patrol-input"
+                                          Placeholder="Patrull..."
+                                          Immediate="true"
+                                          OnKeyDown="@(async (e) => await OnPatrolKeyDown(e, tp.PersonId))"
+                                          AutoFocus="true" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Check" 
+                                           Size="Size.Small" 
+                                           Color="Color.Success"
+                                           OnClick="@(() => SavePatrol(tp.PersonId))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                                           Size="Size.Small" 
+                                           Color="Color.Error"
+                                           OnClick="CancelPatrolEdit" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="patrol-display" @onclick="@(() => StartPatrolEdit(tp))">
+                            @if (string.IsNullOrEmpty(tp.Patrol))
+                            {
+                                <span class="patrol-placeholder">Klicka för att ange...</span>
+                            }
+                            else
+                            {
+                                @tp.Patrol
+                            }
+                            <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Class="patrol-edit-icon ml-1" />
+                        </div>
+                    }
+                </td>
+                <td class="action-col d-none d-sm-table-cell">
+                    @if (_pendingRemovePersonId == tp.PersonId)
+                    {
+                        <div class="d-flex align-center gap-1">
+                            <MudTooltip Text="Bekräfta borttagning">
+                                <MudIconButton Icon="@Icons.Material.Filled.Check" 
+                                               Size="Size.Small" 
+                                               Color="Color.Error"
+                                               OnClick="@(() => RemoveMemberFromTroop(tp))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Avbryt">
+                                <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                                               Size="Size.Small" 
+                                               Color="Color.Default"
+                                               OnClick="CancelRemove" />
+                            </MudTooltip>
+                        </div>
+                    }
+                    else
+                    {
+                        <MudTooltip Text="Ta bort från avdelningen">
+                            <MudIconButton Icon="@Icons.Material.Filled.PersonRemove" 
+                                           Size="Size.Small" 
+                                           Color="Color.Error"
+                                           OnClick="@(() => RemoveMemberFromTroop(tp))" />
+                        </MudTooltip>
+                    }
+                </td>
+            }
+            @foreach (var meeting in _meetings)
+            {
+                <td class="check-col">
+                    <MudCheckBox T="bool" 
+                                 Value="@IsAttending(tp.PersonId, meeting.Id)"
+                                 ValueChanged="@((bool val) => OnAttendanceChanged(tp.PersonId, meeting.Id, val))"
+                                 Color="Color.Success"
+                                 Dense="true"
+                                 Disabled="@(_troop?.IsLocked ?? false)" />
+                </td>
+            }
+            @if (_meetings.Count > 0)
+            {
+                <td class="sum-col">
+                    <strong>@GetAttendanceCount(tp.PersonId)</strong>
+                </td>
+            }
+        </tr>
+    };
+}

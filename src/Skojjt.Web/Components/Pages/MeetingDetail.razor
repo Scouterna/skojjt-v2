@@ -1,0 +1,309 @@
+@page "/meetings/{MeetingId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Web.Services
+@attribute [Authorize]
+@inject ICurrentUserService CurrentUserService
+@inject IMeetingRepository MeetingRepository
+@inject ITroopRepository TroopRepository
+@inject AttendanceNotificationService NotificationService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>@(_meeting?.Name ?? "Möte") - Skojjt</PageTitle>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (!_hasAccess)
+{
+    <MudAlert Severity="Severity.Error">Du har inte behörighet att visa detta möte.</MudAlert>
+}
+else if (_meeting == null)
+{
+    <MudAlert Severity="Severity.Error">Mötet kunde inte hittas.</MudAlert>
+}
+else
+{
+    <MudText Typo="Typo.h4" Class="mb-2">Redigera möte</MudText>
+    <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-4">
+        @_troop?.Name
+        @if (_troop?.IsLocked == true)
+        {
+            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Color="Color.Warning" Class="ml-2" />
+            <span class="mud-text-warning">Låst</span>
+        }
+    </MudText>
+
+    <MudPaper Elevation="2" Class="pa-6">
+        <MudForm @ref="_form" @bind-IsValid="_formIsValid">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_meeting.Name"
+                                  Label="Namn"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="Ange ett namn"
+                                  Disabled="@IsLocked" />
+                </MudItem>
+                
+                <MudItem xs="12" md="6">
+                    <MudCheckBox @bind-Value="_meeting.IsHike"
+                                 Label="Läger/vandring"
+                                 Color="Color.Primary"
+                                 Disabled="@IsLocked" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_meeting.Location"
+                                  Label="Plats"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="Ange en plats"
+                                  Disabled="@IsLocked" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="4">
+                    <MudDatePicker @bind-Date="_meetingDate"
+                                   Label="Datum"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   RequiredError="Välj ett datum"
+                                   Disabled="@IsLocked" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="4">
+                    <MudTimePicker @bind-Time="_startTime"
+                                   Label="Starttid"
+                                   Variant="Variant.Outlined"
+                                   Disabled="@IsLocked" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="4">
+                    <MudNumericField @bind-Value="_meeting.DurationMinutes"
+                                     Label="Längd (minuter)"
+                                     Variant="Variant.Outlined"
+                                     Min="1"
+                                     Disabled="@IsLocked" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="4">
+                    <MudTimePicker @bind-Time="_endTime"
+                                   Label="Sluttid (för att räkna ut längd)"
+                                   Variant="Variant.Outlined"
+                                   Disabled="@IsLocked" />
+                </MudItem>
+            </MudGrid>
+
+            @if (IsLocked)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mt-4">
+                    @if (_troop?.IsLocked == true)
+                    {
+                        <text>Avdelningen är låst. Ändringar kan inte göras.</text>
+                    }
+                    else
+                    {
+                        <text>Terminen är låst. Ändringar kan inte göras.</text>
+                    }
+                </MudAlert>
+            }
+
+            <MudDivider Class="my-6" />
+
+            <div class="d-flex justify-space-between">
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Default"
+                           OnClick="GoBack"
+                           StartIcon="@Icons.Material.Filled.ArrowBack">
+                    Tillbaka
+                </MudButton>
+                
+                <div>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Error"
+                               OnClick="DeleteMeeting"
+                               Disabled="@IsLocked"
+                               StartIcon="@Icons.Material.Filled.Delete"
+                               Class="mr-2">
+                        Ta bort
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="SaveMeeting"
+                               Disabled="@(!_formIsValid || IsLocked)"
+                               StartIcon="@Icons.Material.Filled.Save">
+                        Spara
+                    </MudButton>
+                </div>
+            </div>
+        </MudForm>
+    </MudPaper>
+
+    <MudDivider Class="my-6" />
+    
+    <MudPaper Elevation="2" Class="pa-6">
+        <MudText Typo="Typo.h6" Class="mb-4">Närvarande (@_attendees.Count personer)</MudText>
+        
+        @if (_attendees.Count == 0)
+        {
+            <MudText Color="Color.Secondary">Ingen närvaro registrerad för detta möte.</MudText>
+        }
+        else
+        {
+            <MudList T="Person" Dense="true">
+                @foreach (var person in _attendees)
+                {
+                    <MudListItem T="Person">
+                        <MudLink Href="@($"/persons/{person.Id}")">@person.FullName</MudLink>
+                    </MudListItem>
+                }
+            </MudList>
+        }
+    </MudPaper>
+}
+
+@code {
+    [Parameter]
+    public int MeetingId { get; set; }
+
+    private Meeting? _meeting;
+    private Troop? _troop;
+    private List<Person> _attendees = new();
+    private bool _loading = true;
+    private bool _hasAccess;
+    private bool _formIsValid = false;
+    private MudForm? _form;
+    
+    private DateTime? _meetingDate;
+    private TimeSpan? _startTime;
+    private TimeSpan? _endTime;
+
+    // Unique identifier for this component instance
+    private readonly string _instanceId = Guid.NewGuid().ToString();
+
+    /// <summary>
+    /// Returns true if either the troop is locked.
+    /// </summary>
+    private bool IsLocked => _troop?.IsLocked == true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMeeting();
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Recalculate end time when start time or duration changes
+        if (_startTime.HasValue && _meeting != null)
+        {
+            _endTime = _startTime.Value.Add(TimeSpan.FromMinutes(_meeting.DurationMinutes));
+        }
+    }
+
+    private async Task LoadMeeting()
+    {
+        _loading = true;
+        try
+        {
+            var meeting = await MeetingRepository.GetWithAttendanceAsync(MeetingId);
+            if (meeting != null)
+            {
+                _meeting = meeting;
+                _meetingDate = meeting.MeetingDate.ToDateTime(TimeOnly.MinValue);
+                _startTime = meeting.StartTime.ToTimeSpan();
+                _endTime = _startTime?.Add(TimeSpan.FromMinutes(meeting.DurationMinutes));
+                
+                _attendees = meeting.Attendances
+                    .Select(a => a.Person)
+                    .OrderBy(p => p.LastName)
+                    .ThenBy(p => p.FirstName)
+                    .ToList();
+
+                // Load troop
+                _troop = await TroopRepository.GetByIdAsync(meeting.TroopId);
+
+                // Verify the user has access to the troop's scout group
+                _hasAccess = _troop != null && CurrentUserService.HasGroupAccess(_troop.ScoutGroupId);
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveMeeting()
+    {
+        if (!_hasAccess || _form == null || _meeting == null || !_meetingDate.HasValue) return;
+        {
+            await _form.Validate();
+            if (_formIsValid)
+            {
+                try
+                {
+                    _meeting.MeetingDate = DateOnly.FromDateTime(_meetingDate.Value);
+                    _meeting.StartTime = _startTime.HasValue 
+                        ? TimeOnly.FromTimeSpan(_startTime.Value) 
+                        : new TimeOnly(18, 30);
+
+                    await MeetingRepository.UpdateAsync(_meeting);
+                    Snackbar.Add("Mötet har sparats!", Severity.Success);
+                }
+                catch (Exception ex)
+                {
+                    Snackbar.Add($"Kunde inte spara mötet: {ex.Message}", Severity.Error);
+                }
+            }
+        }
+    }
+
+    private async Task DeleteMeeting()
+    {
+        if (!_hasAccess || _meeting == null) return;
+
+        var result = await DialogService.ShowMessageBox(
+            "Ta bort möte",
+            $"Är du säker på att du vill ta bort mötet '{_meeting.Name}'? Detta går inte att ångra.",
+            yesText: "Ta bort",
+            cancelText: "Avbryt");
+
+        if (result == true)
+        {
+            try
+            {
+                var troopId = _meeting.TroopId;
+                var meetingId = _meeting.Id;
+                
+                await MeetingRepository.DeleteAsync(_meeting);
+                
+                // Broadcast meeting deleted to other components
+                await NotificationService.NotifyMeetingChangedAsync(troopId, meetingId, MeetingChangeType.Deleted, _instanceId);
+                
+                Snackbar.Add("Mötet har tagits bort!", Severity.Success);
+                GoBack();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Kunde inte ta bort mötet: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private void GoBack()
+    {
+        if (_troop != null)
+        {
+            // Navigate back to the troop attendance page
+            NavigationManager.NavigateTo($"/sk/{_troop.ScoutGroupId}/t/{_troop.SemesterId}/{_troop.Id}");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+}

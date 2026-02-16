@@ -1,0 +1,16 @@
+2026-01-06 21:39:36.869 +01:00 [INF] [ThreadId:2] NBomber 6.1.2 started a new session: 2026-01-06_20.39.80_session_32ffa1df
+2026-01-06 21:39:36.938 +01:00 [INF] [ThreadId:2] NBomber started as single node
+2026-01-06 21:39:36.947 +01:00 [INF] [ThreadId:2] License validation....
+2026-01-06 21:39:36.952 +01:00 [WRN] [ThreadId:2] THIS VERSION IS FREE ONLY FOR PERSONAL USE. You can't use it for an organization.
+2026-01-06 21:39:36.971 +01:00 [INF] [ThreadId:2] Reports folder: C:\src\skojjt-v2\StressTest\bin\Debug\net10.0\reports\2026-01-06_20.39.80_session_32ffa1df
+2026-01-06 21:39:36.972 +01:00 [INF] [ThreadId:2] Plugins: no plugins were loaded
+2026-01-06 21:39:36.972 +01:00 [INF] [ThreadId:2] Reporting sinks: no reporting sinks were loaded
+2026-01-06 21:39:36.973 +01:00 [INF] [ThreadId:2] Starting init...
+2026-01-06 21:39:36.982 +01:00 [INF] [ThreadId:2] Target scenarios: http_load, signalr_load
+2026-01-06 21:39:36.985 +01:00 [INF] [ThreadId:2] Init finished
+2026-01-06 21:39:37.005 +01:00 [INF] [ThreadId:2] Starting bombing...
+2026-01-06 21:39:45.095 +01:00 [INF] [ThreadId:43] Waiting on scenarios completion...
+2026-01-06 21:39:46.106 +01:00 [WRN] [ThreadId:212] Stopping test early: Stopping test because of too many fails. Scenario 'signalr_load' contains '7927' fails.
+2026-01-06 21:39:48.105 +01:00 [INF] [ThreadId:219] Calculating final statistics...
+2026-01-06 21:39:48.453 +01:00 [INF] [ThreadId:212] Reports saved in folder: C:\src\skojjt-v2\StressTest\reports\2026-01-06_20.39.80_session_32ffa1df
+2026-01-06 21:39:48.454 +01:00 [WRN] [ThreadId:212] THIS VERSION IS FREE ONLY FOR PERSONAL USE. You can't use it for an organization.

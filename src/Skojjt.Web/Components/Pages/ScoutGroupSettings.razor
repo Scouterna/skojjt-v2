@@ -1,0 +1,334 @@
+﻿@page "/sk/{ScoutGroupId:int}/settings"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Data
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject ISnackbar Snackbar
+
+<PageTitle>Inställningar - @(_scoutGroup?.Name ?? "Scoutkår") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_scoutGroup == null)
+    {
+        <MudAlert Severity="Severity.Error">Scoutkåren kunde inte hittas.</MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Class="mb-4">Kårinställningar</MudText>
+        <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">@_scoutGroup.Name</MudText>
+
+        <MudForm @ref="_form" @bind-IsValid="_formIsValid">
+            <MudGrid>
+                @* Basic Information *@
+                <MudItem xs="12">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <div class="d-flex align-center mb-4">
+                            <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">Grundinformation</MudText>
+                        </div>
+                        
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_scoutGroup.Name" 
+                                              Label="Kårnamn" 
+                                              Variant="Variant.Outlined"
+                                              Required="true"
+                                              RequiredError="Kårnamn krävs" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_scoutGroup.OrganisationNumber" 
+                                              Label="Organisationsnummer" 
+                                              Variant="Variant.Outlined"
+                                              Placeholder="XXXXXX-XXXX" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_scoutGroup.AssociationId" 
+                                              Label="Förenings-ID" 
+                                              Variant="Variant.Outlined"
+                                              HelperText="Förenings-ID för DAK-export (hämtas från din kommun)" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudAutocomplete T="MunicipalityCodes.Municipality"
+                                                 Label="Kommun"
+                                                 @bind-Value="_selectedMunicipality"
+                                                 SearchFunc="SearchMunicipalities"
+                                                 ToStringFunc="@(m => m != null ? $"{m.Name} ({m.Code})" : "")"
+                                                 Variant="Variant.Outlined"
+                                                 ShowProgressIndicator="true"
+                                                 Dense="true"
+                                                 HelperText="Välj kommun för DAK-export och bidragsrapporter"
+                                                 ResetValueOnEmptyText="true"
+                                                 CoerceText="false"
+                                                 CoerceValue="false">
+                                    <ItemTemplate Context="municipality">
+                                        <div class="d-flex justify-space-between align-center" style="width: 100%;">
+                                            <MudText>@municipality.Name</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@municipality.Code</MudText>
+                                        </div>
+                                    </ItemTemplate>
+                                    <NoItemsTemplate>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-2">
+                                            Ingen kommun hittades. Sök på kommunnamn eller kod.
+                                        </MudText>
+                                    </NoItemsTemplate>
+                                </MudAutocomplete>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+                @* Contact Information *@
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="2" Class="pa-4" Style="height: 100%;">
+                        <div class="d-flex align-center mb-4">
+                            <MudIcon Icon="@Icons.Material.Filled.ContactMail" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">Kontaktuppgifter</MudText>
+                        </div>
+                        
+                        <MudStack Spacing="3">
+                            <MudTextField @bind-Value="_scoutGroup.Email" 
+                                          Label="E-post" 
+                                          Variant="Variant.Outlined"
+                                          InputType="InputType.Email" />
+                            <MudTextField @bind-Value="_scoutGroup.Phone" 
+                                          Label="Telefon" 
+                                          Variant="Variant.Outlined"
+                                          InputType="InputType.Telephone" />
+                            <MudTextField @bind-Value="_scoutGroup.Address" 
+                                          Label="Gatuadress" 
+                                          Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="_scoutGroup.PostalAddress" 
+                                          Label="Postadress" 
+                                          Variant="Variant.Outlined"
+                                          Placeholder="123 45 Stad" />
+                            <MudTextField @bind-Value="_scoutGroup.DefaultCampLocation" 
+                                          Label="Standardplats för läger" 
+                                          Variant="Variant.Outlined"
+                                          HelperText="Används som förval vid läger (rapporter)" />
+                            <MudTextField @bind-Value="_scoutGroup.DefaultMeetingLocation"
+                                          Label="Standardplats för möten"
+                                          Variant="Variant.Outlined"
+                                          HelperText="Används som förval vid möten (närvaro)" />
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+
+                @* Financial Information *@
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="2" Class="pa-4" Style="height: 100%;">
+                        <div class="d-flex align-center mb-4">
+                            <MudIcon Icon="@Icons.Material.Filled.AccountBalance" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">Ekonomi</MudText>
+                        </div>
+                        
+                        <MudStack Spacing="3">
+                            <MudTextField @bind-Value="_scoutGroup.BankAccount" 
+                                          Label="Bankkontonummer" 
+                                          Variant="Variant.Outlined"
+                                          HelperText="IBAN eller clearingnummer + kontonummer" />
+                            <MudTextField @bind-Value="_scoutGroup.Signatory" 
+                                          Label="Firmatecknare" 
+                                          Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="_scoutGroup.SignatoryPhone" 
+                                          Label="Firmatecknare telefon" 
+                                          Variant="Variant.Outlined"
+                                          InputType="InputType.Telephone" />
+                            <MudTextField @bind-Value="_scoutGroup.SignatoryEmail" 
+                                          Label="Firmatecknare e-post" 
+                                          Variant="Variant.Outlined"
+                                          InputType="InputType.Email" />
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+
+                @* Scoutnet API Keys *@
+                <MudItem xs="12">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <div class="d-flex align-center mb-4">
+                            <MudIcon Icon="@Icons.Material.Filled.Key" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">Scoutnet API-nycklar</MudText>
+                        </div>
+                        
+                        <MudAlert Severity="Severity.Info" Class="mb-4" Dense="true">
+                            API-nycklar hämtas från Scoutnet under "Kåradmin" → "Webbkopplingar". 
+                            Dessa används för att synkronisera medlemsdata.
+                        </MudAlert>
+                        
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_scoutGroup.ApiKeyAllMembers" 
+                                              Label="API-nyckel (Alla medlemmar)" 
+                                              Variant="Variant.Outlined"
+                                              InputType="InputType.Password"
+                                              Adornment="Adornment.End"
+                                              AdornmentIcon="@(_showApiKey1 ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                              OnAdornmentClick="@(() => _showApiKey1 = !_showApiKey1)"
+                                              HelperText="Nyckeln 'Medlemmar i Kår (alla)'" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_scoutGroup.ApiKeyWaitinglist" 
+                                              Label="API-nyckel (Väntelista)" 
+                                              Variant="Variant.Outlined"
+                                              InputType="InputType.Password"
+                                              Adornment="Adornment.End"
+                                              AdornmentIcon="@(_showApiKey2 ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                              OnAdornmentClick="@(() => _showApiKey2 = !_showApiKey2)"
+                                              HelperText="Nyckeln 'Väntelista (alla)'" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+                @* Attendance Settings *@
+                <MudItem xs="12">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <div class="d-flex align-center mb-4">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">Närvaroinställningar</MudText>
+                        </div>
+                        
+                        <MudGrid>
+                            <MudItem xs="12" md="4">
+                                <MudNumericField @bind-Value="_scoutGroup.AttendanceMinYear" 
+                                                 Label="Minsta antal möten per år" 
+                                                 Variant="Variant.Outlined"
+                                                 Min="0"
+                                                 Max="99"
+                                                 HelperText="För aktivitetsbidrag (årsvis)" />
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudNumericField @bind-Value="_scoutGroup.AttendanceMinSemester" 
+                                                 Label="Minsta antal möten per termin" 
+                                                 Variant="Variant.Outlined"
+                                                 Min="0"
+                                                 Max="99"
+                                                 HelperText="För aktivitetsbidrag (terminsvis)" />
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudSwitch @bind-Value="_scoutGroup.AttendanceInclHike" 
+                                           Label="Inkludera läger i närvarostatistik"
+                                           Color="Color.Primary" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+                @* Save Button *@
+                <MudItem xs="12">
+                    <div class="d-flex justify-end gap-4">
+                        <MudButton Variant="Variant.Outlined" 
+                                   Color="Color.Default"
+                                   Href="@($"/sk/{ScoutGroupId}")">
+                            Avbryt
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   OnClick="SaveSettings"
+                                   Disabled="@(!_formIsValid || _saving)">
+                            Spara inställningar
+                        </MudButton>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int ScoutGroupId { get; set; }
+
+    private ScoutGroup? _scoutGroup;
+    private bool _loading = true;
+    private bool _formIsValid = false;
+    private bool _showApiKey1 = false;
+    private bool _showApiKey2 = false;
+    private bool _saving = false;
+    private MudForm? _form;
+    private List<BreadcrumbItem> _breadcrumbs = new();
+    private MunicipalityCodes.Municipality? _selectedMunicipality;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+            
+            if (_scoutGroup != null)
+            {
+                _breadcrumbs = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
+                    new BreadcrumbItem("Inställningar", href: null, disabled: true)
+                };
+
+                // Load municipality from saved code
+                if (!string.IsNullOrWhiteSpace(_scoutGroup.MunicipalityId))
+                {
+                    _selectedMunicipality = MunicipalityCodes.GetByCode(_scoutGroup.MunicipalityId);
+                }
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task<IEnumerable<MunicipalityCodes.Municipality>> SearchMunicipalities(string searchText, CancellationToken cancellationToken)
+    {
+        var results = MunicipalityCodes.Search(searchText ?? "").Take(20);
+        return Task.FromResult(results);
+    }
+
+    private async Task SaveSettings()
+    {
+        if (_form != null && _scoutGroup != null)
+        {
+            await _form.Validate();
+            if (_formIsValid)
+            {
+                _saving = true;
+                try
+                {
+                    // Update municipality ID from selected municipality
+                    _scoutGroup.MunicipalityId = _selectedMunicipality?.Code;
+                    
+                    _scoutGroup.UpdatedAt = DateTime.UtcNow;
+                    await ScoutGroupRepository.UpdateAsync(_scoutGroup);
+                    Snackbar.Add("Inställningarna har sparats!", Severity.Success);
+                }
+                catch (Exception ex)
+                {
+                    Snackbar.Add($"Kunde inte spara: {ex.Message}", Severity.Error);
+                }
+                finally
+                {
+                    _saving = false;
+                }
+            }
+        }
+    }
+}

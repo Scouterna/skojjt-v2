@@ -1,0 +1,55 @@
+﻿@rendermode InteractiveServer
+@using Microsoft.JSInterop
+@using Skojjt.Web.Services
+@using Skojjt.Web.Theme
+@inject ThemeService ThemeService
+@implements IDisposable
+
+<MudThemeProvider Theme="SkojjtTheme.Theme" @bind-IsDarkMode="_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <NotAuthorized>
+                <RedirectToLogin />
+            </NotAuthorized>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>
+
+@code {
+    private bool _isDarkMode;
+    private bool _disposed;
+
+    protected override void OnInitialized()
+    {
+        _isDarkMode = ThemeService.IsDarkMode;
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    private async void OnThemeChanged()
+    {
+        if (_disposed) return;
+
+        _isDarkMode = ThemeService.IsDarkMode;
+
+        try
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (JSDisconnectedException) { /* Circuit disconnected */ }
+        catch (ObjectDisposedException) { /* Component disposed */ }
+        catch (TaskCanceledException) { /* Operation canceled */ }
+        catch (InvalidOperationException) { /* Circuit may be disposed */ }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+}

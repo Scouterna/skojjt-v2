@@ -1,0 +1,229 @@
+@page "/attendance"
+@page "/troops"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@attribute [Authorize]
+@inject ISemesterRepository SemesterRepository
+@inject ITroopRepository TroopRepository
+@inject ISnackbar Snackbar
+
+<PageTitle>Avdelningar - Skojjt</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Avdelningar</MudText>
+
+<MudGrid>
+    <MudItem xs="12" md="6">
+        <MudSelect T="int?" 
+                   Label="Termin" 
+                   Value="_selectedSemesterId" 
+                   ValueChanged="OnSemesterChanged"
+                   Variant="Variant.Outlined">
+            @foreach (var semester in _semesters)
+            {
+                <MudSelectItem Value="@((int?)semester.Id)">@semester.DisplayName</MudSelectItem>
+            }
+        </MudSelect>
+    </MudItem>
+</MudGrid>
+
+<MudDivider Class="my-4" />
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (_troops.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">
+        Inga avdelningar hittades för den valda terminen.
+    </MudAlert>
+}
+else
+{
+    <MudTable Items="@_troops" 
+              Hover="true" 
+              Striped="true" 
+              Dense="true"
+              Loading="@_loading"
+              LoadingProgressColor="Color.Primary">
+        <HeaderContent>
+            <MudTh>Namn</MudTh>
+            <MudTh>Märken</MudTh>
+            <MudTh Style="width: 100px;"></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Namn">
+                <MudLink Href="@($"/troops/{context.Id}")">
+                    @context.Name
+                </MudLink>
+            </MudTd>
+            <MudTd DataLabel="Märken">
+                @* TODO: Show badges assigned to troop *@
+                <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                    <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Size="Size.Small" />
+                </MudChip>
+            </MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                               Size="Size.Small" 
+                               Href="@($"/troops/{context.Id}")" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+<MudDivider Class="my-6" />
+
+@* Report buttons section *@
+<MudExpansionPanels MultiExpansion="true">
+    <MudExpansionPanel Text="Närvarorapport" Icon="@Icons.Material.Filled.Assessment">
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="4">
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Info" 
+                           FullWidth="true"
+                           Href="/reports/dak"
+                           StartIcon="@Icons.Material.Filled.FileDownload">
+                    Digitalt aktivitetskort
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Info" 
+                           FullWidth="true"
+                           Href="/reports/sensus"
+                           StartIcon="@Icons.Material.Filled.School">
+                    Sensus lista
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Info" 
+                           FullWidth="true"
+                           Href="/reports/excel"
+                           StartIcon="@Icons.Material.Filled.TableChart">
+                    Excelrapport
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Info" 
+                           FullWidth="true"
+                           Href="/reports/lagerbidrag"
+                           StartIcon="@Icons.Material.Filled.Payments">
+                    Lägerbidrag
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudExpansionPanel>
+    
+    <MudExpansionPanel Text="Kårinställningar" Icon="@Icons.Material.Filled.Settings">
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudButton Variant="Variant.Outlined" 
+                           Color="Color.Default" 
+                           FullWidth="true"
+                           Href="/admin/scoutgroup"
+                           StartIcon="@Icons.Material.Filled.Business">
+                    Kårinformation
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudButton Variant="Variant.Outlined" 
+                           Color="Color.Default" 
+                           FullWidth="true"
+                           Href="/reports/summary"
+                           StartIcon="@Icons.Material.Filled.Summarize">
+                    Föreningsredovisning
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudExpansionPanel>
+    
+    <MudExpansionPanel Text="Lägg till avdelning" Icon="@Icons.Material.Filled.Add">
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            OBS! Avdelningen läggs inte till i Scoutnet, bara i Skojjt. 
+            Du kan använda en Skojjt-avdelning för att dela upp närvaron i flera grupper.
+        </MudAlert>
+        <MudForm @ref="_newTroopForm">
+            <MudTextField @bind-Value="_newTroopName" 
+                          Label="Avdelningsnamn" 
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Ange ett namn för avdelningen" />
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       Class="mt-4"
+                       OnClick="CreateTroop"
+                       StartIcon="@Icons.Material.Filled.Add">
+                Lägg till
+            </MudButton>
+        </MudForm>
+    </MudExpansionPanel>
+</MudExpansionPanels>
+
+@code {
+    private List<Semester> _semesters = new();
+    private List<Troop> _troops = new();
+    private int? _selectedSemesterId;
+    private int _scoutGroupId = 0; // TODO: Get from user's active scout group
+    private bool _loading = true;
+    private string _newTroopName = "";
+    private MudForm? _newTroopForm;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSemesters();
+        await LoadTroops();
+    }
+
+    private async Task LoadSemesters()
+    {
+        var semesters = await SemesterRepository.GetAllOrderedAsync();
+        _semesters = semesters.ToList();
+        
+        // Set current semester as default
+        var current = await SemesterRepository.GetCurrentSemesterAsync();
+        _selectedSemesterId = current?.Id ?? _semesters.FirstOrDefault()?.Id;
+    }
+
+    private async Task LoadTroops()
+    {
+        _loading = true;
+        try
+        {
+            if (_selectedSemesterId.HasValue && _scoutGroupId > 0)
+            {
+                var troops = await TroopRepository.GetByScoutGroupAndSemesterAsync(_scoutGroupId, _selectedSemesterId.Value);
+                _troops = troops.ToList();
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnSemesterChanged(int? semesterId)
+    {
+        _selectedSemesterId = semesterId;
+        await LoadTroops();
+        // TODO: Save active semester to user preferences
+    }
+
+    private async Task CreateTroop()
+    {
+        if (_newTroopForm != null)
+        {
+            await _newTroopForm.Validate();
+            if (_newTroopForm.IsValid && !string.IsNullOrWhiteSpace(_newTroopName))
+            {
+                // TODO: Create troop via repository
+                Snackbar.Add($"Avdelning '{_newTroopName}' skapad!", Severity.Success);
+                _newTroopName = "";
+                await LoadTroops();
+            }
+        }
+    }
+}

@@ -1,0 +1,193 @@
+@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopId:int}/settings"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject ISemesterRepository SemesterRepository
+@inject ITroopRepository TroopRepository
+@inject IUnitOfWork UnitOfWork
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+<PageTitle>Inställningar - @(_troop?.Name ?? "Avdelning") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">Du har inte behörighet att visa denna avdelning.</MudAlert>
+    }
+    else if (_troop == null)
+    {
+        <MudAlert Severity="Severity.Error">Avdelningen kunde inte hittas.</MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Class="mb-4">Avdelningsinställningar</MudText>
+        <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">@_troop.Name</MudText>
+
+        <MudForm @ref="_form" @bind-IsValid="_formIsValid">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <div class="d-flex align-center mb-4">
+                            <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">Standardvärden för möten</MudText>
+                        </div>
+
+                        <MudGrid>
+                            <MudItem xs="12" md="4">
+                                <MudTimePicker @bind-Time="_defaultStartTime"
+                                               Label="Starttid"
+                                               Variant="Variant.Outlined"
+                                               HelperText="Standardstarttid för nya möten" />
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudNumericField @bind-Value="_troop.DefaultDurationMinutes"
+                                                 Label="Längd (minuter)"
+                                                 Variant="Variant.Outlined"
+                                                 Min="15"
+                                                 Max="480"
+                                                 HelperText="Standardlängd för nya möten" />
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudTextField @bind-Value="_troop.DefaultMeetingLocation"
+                                              Label="Mötesplats"
+                                              Variant="Variant.Outlined"
+                                              HelperText="Standardplats för nya möten" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+                @* Save Button *@
+                <MudItem xs="12">
+                    <div class="d-flex justify-end gap-4">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Default"
+                                   Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}")">
+                            Avbryt
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   OnClick="SaveSettings"
+                                   Disabled="@(!_formIsValid || _saving)">
+                            Spara inställningar
+                        </MudButton>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int ScoutGroupId { get; set; }
+
+    [Parameter]
+    public int SemesterId { get; set; }
+
+    [Parameter]
+    public int TroopId { get; set; }
+
+    private Troop? _troop;
+    private ScoutGroup? _scoutGroup;
+    private Semester? _semester;
+    private bool _loading = true;
+    private bool _hasAccess;
+    private bool _formIsValid = false;
+    private bool _saving = false;
+    private MudForm? _form;
+    private List<BreadcrumbItem> _breadcrumbs = new();
+    private TimeSpan? _defaultStartTime;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
+            if (!_hasAccess) return;
+
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+            _semester = await SemesterRepository.GetByIdAsync(SemesterId);
+            _troop = await TroopRepository.GetByIdAsync(TroopId);
+
+            // Verify the troop actually belongs to the requested group and semester
+            if (_troop != null && (_troop.ScoutGroupId != ScoutGroupId || _troop.SemesterId != SemesterId))
+            {
+                _troop = null;
+            }
+
+            if (_troop != null && _scoutGroup != null && _semester != null)
+            {
+                _defaultStartTime = _troop.DefaultStartTime.ToTimeSpan();
+
+                _breadcrumbs = new List<BreadcrumbItem>
+                {
+                    new("Scoutkårer", href: "/sk"),
+                    new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
+                    new(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
+                    new(_troop.Name, href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}"),
+                    new("Inställningar", href: null, disabled: true)
+                };
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        if (_form != null && _troop != null)
+        {
+            await _form.Validate();
+            if (_formIsValid)
+            {
+                _saving = true;
+                try
+                {
+                    if (_defaultStartTime.HasValue)
+                    {
+                        _troop.DefaultStartTime = TimeOnly.FromTimeSpan(_defaultStartTime.Value);
+                    }
+
+                    await TroopRepository.UpdateAsync(_troop);
+                    await UnitOfWork.SaveChangesAsync();
+                    Snackbar.Add("Inställningarna har sparats!", Severity.Success);
+                }
+                catch (Exception ex)
+                {
+                    Snackbar.Add($"Kunde inte spara: {ex.Message}", Severity.Error);
+                }
+                finally
+                {
+                    _saving = false;
+                }
+            }
+        }
+    }
+}

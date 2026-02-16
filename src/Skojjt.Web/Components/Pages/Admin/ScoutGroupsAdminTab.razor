@@ -1,0 +1,188 @@
+@using Microsoft.EntityFrameworkCore
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
+@using Skojjt.Infrastructure.Data
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject IAdminService AdminService
+@inject IDbContextFactory<SkojjtDbContext> DbContextFactory
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudText Typo="Typo.h6" Class="mb-4">Hantera Scoutkårer</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (_scoutGroups.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">
+        Inga scoutkårer finns i systemet.
+    </MudAlert>
+}
+else
+{
+    <MudTable Items="@_scoutGroups" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Namn</MudTh>
+            <MudTh>Org.nr</MudTh>
+            <MudTh>Personer</MudTh>
+            <MudTh>Avdelningar</MudTh>
+            <MudTh>Skapad</MudTh>
+            <MudTh>Åtgärder</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.Id</MudTd>
+            <MudTd DataLabel="Namn">@context.Name</MudTd>
+            <MudTd DataLabel="Org.nr">@context.OrganisationNumber</MudTd>
+            <MudTd DataLabel="Personer">@context.ScoutGroupPersons.Count</MudTd>
+            <MudTd DataLabel="Avdelningar">@context.Troops.Count</MudTd>
+            <MudTd DataLabel="Skapad">@context.CreatedAt.ToString("yyyy-MM-dd")</MudTd>
+            <MudTd DataLabel="Åtgärder">
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                               Color="Color.Error" 
+                               Size="Size.Small"
+                               OnClick="@(() => ConfirmDeleteScoutGroup(context))"
+                               Title="Ta bort scoutkår" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+<MudDialog @bind-Visible="_showDeleteDialog">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Class="mr-2" />
+            Ta bort scoutkår
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_deletionPreview != null)
+        {
+            <MudAlert Severity="Severity.Warning" Class="mb-4">
+                <strong>Varning!</strong> Detta kommer permanent ta bort scoutkåren och all relaterad data.
+            </MudAlert>
+            
+            <MudText Typo="Typo.body1" Class="mb-2">
+                <strong>Scoutkår:</strong> @_deletionPreview.ScoutGroupName (ID: @_deletionPreview.ScoutGroupId)
+            </MudText>
+            
+            <MudText Typo="Typo.subtitle2" Class="mt-4 mb-2">Följande data kommer att tas bort:</MudText>
+            
+            <MudList T="string" Dense="true">
+                <MudListItem Icon="@Icons.Material.Filled.Person">
+                    <strong>@_deletionPreview.PersonsToDelete</strong> personer (endast i denna kår)
+                </MudListItem>
+                <MudListItem Icon="@Icons.Material.Filled.PersonRemove">
+                    <strong>@_deletionPreview.PersonMembershipsToRemove</strong> medlemskap tas bort (personer finns i andra kårer)
+                </MudListItem>
+                <MudListItem Icon="@Icons.Material.Filled.Groups">
+                    <strong>@_deletionPreview.TroopsToDelete</strong> avdelningar
+                </MudListItem>
+                <MudListItem Icon="@Icons.Material.Filled.Event">
+                    <strong>@_deletionPreview.MeetingsToDelete</strong> möten
+                </MudListItem>
+                <MudListItem Icon="@Icons.Material.Filled.EmojiEvents">
+                    <strong>@_deletionPreview.BadgesToDelete</strong> märken
+                </MudListItem>
+            </MudList>
+
+            <MudTextField @bind-Value="_confirmationText" 
+                          Label="Skriv kårens namn för att bekräfta"
+                          HelperText="@($"Skriv '{_deletionPreview.ScoutGroupName}' för att bekräfta borttagning")"
+                          Class="mt-4"
+                          Variant="Variant.Outlined" />
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showDeleteDialog = false)">Avbryt</MudButton>
+        <MudButton Color="Color.Error" 
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsConfirmationValid())"
+                   OnClick="@DeleteScoutGroup">
+            @if (_deleting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Ta bort permanent
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<ScoutGroup> _scoutGroups = new();
+    private bool _loading = true;
+    private bool _showDeleteDialog;
+    private bool _deleting;
+    private ScoutGroupDeletionPreview? _deletionPreview;
+    private string _confirmationText = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadScoutGroups();
+    }
+
+    private async Task LoadScoutGroups()
+    {
+        _loading = true;
+        try
+        {
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+            _scoutGroups = await context.ScoutGroups
+                .Include(sg => sg.ScoutGroupPersons)
+                .Include(sg => sg.Troops)
+                .OrderBy(sg => sg.Name)
+                .ToListAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ConfirmDeleteScoutGroup(ScoutGroup scoutGroup)
+    {
+        _confirmationText = "";
+        _deletionPreview = await AdminService.PreviewScoutGroupDeletionAsync(scoutGroup.Id);
+        _showDeleteDialog = true;
+    }
+
+    private bool IsConfirmationValid()
+    {
+        return _deletionPreview != null && 
+               string.Equals(_confirmationText.Trim(), _deletionPreview.ScoutGroupName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task DeleteScoutGroup()
+    {
+        if (_deletionPreview == null || !IsConfirmationValid())
+            return;
+
+        _deleting = true;
+        try
+        {
+            var result = await AdminService.DeleteScoutGroupAsync(_deletionPreview.ScoutGroupId);
+            
+            if (result.Success)
+            {
+                Snackbar.Add($"Scoutkåren '{_deletionPreview.ScoutGroupName}' har tagits bort. " +
+                            $"{result.PersonsDeleted} personer, {result.TroopsDeleted} avdelningar, " +
+                            $"{result.MeetingsDeleted} möten och {result.BadgesDeleted} märken borttagna.",
+                    Severity.Success);
+                
+                _showDeleteDialog = false;
+                await LoadScoutGroups();
+            }
+            else
+            {
+                Snackbar.Add($"Kunde inte ta bort scoutkåren: {result.ErrorMessage}", Severity.Error);
+            }
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+}

@@ -1,0 +1,79 @@
+I want to integrate ScoutID login for this service.
+ScoutID is a service that allows you to get a login token that is connected to a Person in scoutnet. 
+You login using your Person email or Id. Password is stored in scoutnet. 
+The ScoutID service seem to provice SimpleSAML or JWT what should we choose?
+See source repo: https://github.com/Scouterna/scoutid
+See documentaion links: https://etjanster.scout.se/programkatalog/scoutid/
+
+In the response a successful login in scoutnet there is a claims that can be parsed. 
+This claim data should be used to determine what scout groups you have access to.
+
+Here is an implementation of scoutid for the old system: https://raw.githubusercontent.com/Scouterna/skojjt/refs/heads/feature/scoutid/scoutid.py
+This is an example implementation of a python decorator to handle scoutid access.
+```python
+def checkAccess(func):
+    '''
+    Decorator for access check.
+    Parameters:
+        func: is the function to be decorator it needs to take a ScoutnetUser as first argument, func(user, *args, **kwargs)
+    '''
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # Verify Firebase auth.
+        id_token = request.cookies.get("token")
+        error_message = None
+        claims = None
+        times = None
+        user_data = None
+        user_cache = {} # TODO: memcache the users to avoid parsing the session cookie every request
+        if id_token:
+            try:
+                # Verify the token against the Firebase Auth API. This example
+                # verifies the token on each page load. For improved performance,
+                # some applications may wish to cache results in an encrypted
+                # session store (see for instance
+                # http://flask.pocoo.org/docs/1.0/quickstart/#sessions).
+                if id_token not in user_cache:
+                    firebase_request_adapter = requests.Request()
+                    claims = google.oauth2.id_token.verify_firebase_token(id_token, firebase_request_adapter)
+
+                    user_data = claims['firebase']['sign_in_attributes']
+                    # print(user_data)
+                    email = user_data['email']
+                    group_no = user_data['group_no']
+                    group_id = user_data['group_id']
+                    uid = user_data['uid']
+                    displayName = user_data['displayName']
+                    member_registrar = False
+                    if 'roles' in user_data:
+                        roles = user_data['roles']
+                        if 'group' in roles:
+                            group = roles['group']
+                            if str(group_id) in group:
+                                group_id_roles = group[str(group_id)]
+                                member_registrar = '9' in group_id_roles # member_registrar
+                    user = ScoutnetUser(displayName, email, uid, group_no, group_id, member_registrar) #parse_access(email) # TODO:
+                    user_cache[id_token] = user
+                else:
+                    user = user_cache[id_token]
+                
+                logging.info(f"{request.method} {request.url} {func.__name__} {user.getname()}")
+                return func(user, *args, **kwargs)
+
+            except ValueError as exc:
+                # This will be raised if the token is expired or any other
+                # verification checks fail.
+                error_message = str(exc)
+                logging.error(f"ERROR: {error_message} {request.method} {request.url} {func.__name__}")
+        else:
+            logging.info(f"{request.method} {request.url} {func.__name__} <no-user>->/login/")
+            return redirect('/login/')
+
+    return wrapper
+```
+
+We should have a simulated scoutid serivice for local development testing.
+This simulated scoutid service should be used in unit testing.
+
+Create a plan for this implementation.

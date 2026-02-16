@@ -1,0 +1,450 @@
+@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject IBadgeService BadgeService
+@inject ISemesterRepository SemesterRepository
+@inject ITroopRepository TroopRepository
+@inject ICurrentUserService CurrentUserService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Avdelningar - @(_semester?.DisplayName ?? "Termin") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">
+            Du har inte behörighet att visa denna scoutkår.
+        </MudAlert>
+    }
+    else if (_scoutGroup == null || _semester == null)
+    {
+        <MudAlert Severity="Severity.Error">Scoutkåren eller terminen kunde inte hittas.</MudAlert>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap align-center justify-space-between mb-4">
+            <div>
+                <MudText Typo="Typo.h4">@_scoutGroup.Name</MudText>
+                <MudText Typo="Typo.h6" Color="Color.Secondary">@_semester.DisplayName</MudText>
+            </div>
+            
+            @* Semester navigation *@
+            <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
+                @if (_previousSemester != null)
+                {
+                    <MudButton StartIcon="@Icons.Material.Filled.ChevronLeft"
+                               Href="@($"/sk/{ScoutGroupId}/t/{_previousSemester.Id}")">
+                        @_previousSemester.DisplayName
+                    </MudButton>
+                }
+                @if (_nextSemester != null)
+                {
+                    <MudButton EndIcon="@Icons.Material.Filled.ChevronRight"
+                               Href="@($"/sk/{ScoutGroupId}/t/{_nextSemester.Id}")">
+                        @_nextSemester.DisplayName
+                    </MudButton>
+                }
+            </MudButtonGroup>
+        </div>
+
+        @if (_troops.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">
+                Inga avdelningar för denna termin.
+            </MudAlert>
+        }
+        else
+        {
+            <MudGrid>
+                @foreach (var troop in _troops)
+                {
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudLink Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{troop.Id}")" Underline="Underline.None" Class="d-block">
+                            <MudCard Elevation="2" Class="hover-card">
+                                <MudCardHeader>
+                                    <CardHeaderContent>
+                                        <div class="d-flex align-center gap-2">
+                                            <MudText Typo="Typo.h6">@troop.Name</MudText>
+                                            @if (troop.IsLocked)
+                                            {
+                                                <MudTooltip Text="Avdelningen är låst för redigering">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Lock" 
+                                                             Size="Size.Small"
+                                                             Style="color: #b5a642;" />
+                                                </MudTooltip>
+                                            }
+                                        </div>
+                                    </CardHeaderContent>
+                                    <CardHeaderActions>
+                                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Default" />
+                                    </CardHeaderActions>
+                                </MudCardHeader>
+                                <MudCardContent>
+                                    <div class="d-flex gap-4">
+                                        <div>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Medlemmar</MudText>
+                                            <MudText Typo="Typo.h6">@troop.TroopPersons.Count</MudText>
+                                        </div>
+                                        <div>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Möten</MudText>
+                                            <MudText Typo="Typo.h6">@troop.Meetings.Count</MudText>
+                                        </div>
+                                    </div>
+
+                                    @if (_troopBadges.TryGetValue(troop.Id, out var badges) && badges.Count > 0)
+                                    {
+                                        <MudDivider Class="my-2" />
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach (var badge in badges)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary"
+                                                         Icon="@Icons.Material.Filled.EmojiEvents">
+                                                    @badge.Name
+                                                </MudChip>
+                                            }
+                                        </div>
+                                    }
+
+                                    @if (troop.TroopPersons.Count > 0)
+                                    {
+                                        <MudDivider Class="my-2" />
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @{
+                                                var leaders = troop.TroopPersons.Where(tp => tp.IsLeader).Take(4).ToList();
+                                            }
+                                            @foreach (var leader in leaders)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Primary">
+                                                    @leader.Person?.FirstName
+                                                </MudChip>
+                                            }
+                                            @if (troop.TroopPersons.Count(tp => tp.IsLeader) > 4)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Default">
+                                                    +@(troop.TroopPersons.Count(tp => tp.IsLeader) - 4)
+                                                </MudChip>
+                                            }
+                                        </div>
+                                    }
+                                </MudCardContent>
+                            </MudCard>
+                        </MudLink>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+
+        @* Quick actions *@
+        <MudDivider Class="my-6" />
+        <MudExpansionPanels>
+            <MudExpansionPanel Text="Rapporter & Export" Icon="@Icons.Material.Filled.Assessment">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Närvarorapporter per avdelning finns i respektive avdelnings vy.</MudText>
+                <MudGrid>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudButton Variant="Variant.Outlined" 
+                                   FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.Description"
+                                   OnClick="@(() => OpenGothenburgCsvDialog())">
+                            Aktivitetsbidrag CSV (Göteborg)
+                        </MudButton>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudButton Variant="Variant.Outlined" 
+                                   FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.Payments"
+                                   OnClick="@(() => OpenLagerbidragDialog("gbg"))">
+                            Lägerbidrag (Göteborg)
+                        </MudButton>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudButton Variant="Variant.Outlined" 
+                                   FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.Payments"
+                                   OnClick="@(() => OpenLagerbidragDialog("sthlm"))">
+                            Lägerbidrag (Stockholm)
+                        </MudButton>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudButton Variant="Variant.Outlined" 
+                                   FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.Summarize"
+                                   Href="@($"/sk/{ScoutGroupId}/summary/{SemesterId}")">
+                            Föreningsredovisning
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    }
+</MudContainer>
+
+@* Lagerbidrag Dialog *@
+<MudDialog @bind-Visible="_showLagerbidragDialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Payments" Class="mr-2" />
+            Lägerbidrag @(_lagerbidragRegion == "gbg" ? "Göteborg" : "Stockholm")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_lagerbidragForm">
+            <MudSelect T="int?" @bind-Value="_selectedTroopId" Label="Avdelning" Variant="Variant.Outlined" Required="true">
+                <MudSelectItem T="int?" Value="null">Alla avdelningar</MudSelectItem>
+                @foreach (var troop in _troops)
+                {
+                    <MudSelectItem T="int?" Value="@troop.Id">@troop.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudTextField @bind-Value="_lagerbidragContact" Label="Kontaktperson" Variant="Variant.Outlined" Required="true" />
+            <MudTextField @bind-Value="_lagerbidragContactEmail" Label="E-post" Variant="Variant.Outlined" />
+            <MudTextField @bind-Value="_lagerbidragContactPhone" Label="Telefon" Variant="Variant.Outlined" />
+            <MudTextField @bind-Value="_lagerbidragSite" Label="Lägerplats" Variant="Variant.Outlined" Required="true" />
+            <MudDatePicker @bind-Date="_lagerbidragFromDate" Label="Från datum" Variant="Variant.Outlined" Required="true" />
+            <MudDatePicker @bind-Date="_lagerbidragToDate" Label="Till datum" Variant="Variant.Outlined" Required="true" />
+            <MudCheckBox @bind-Value="_lagerbidragDuringBreak" Label="Läger under lov" Color="Color.Primary" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showLagerbidragDialog = false)">Avbryt</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="GenerateLagerbidrag">Generera rapport</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@* Gothenburg CSV Dialog *@
+<MudDialog @bind-Visible="_showGbgCsvDialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Description" Class="mr-2" />
+            Aktivitetsbidrag CSV (Göteborg)
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudAlert Severity="Severity.Info" Class="mb-4" Dense="true">
+            Exporterar en CSV-fil med alla medlemmar som uppfyller närvarokravet för aktivitetsbidrag.
+            Filen kan laddas upp till Göteborgs kommuns portal.
+        </MudAlert>
+        <MudRadioGroup @bind-Value="_gbgCsvUseSemesterMin">
+            <MudRadio Value="false" Color="Color.Primary">
+                <div>
+                    <MudText>Årsvis (@_semester?.Year)</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Minst @(_scoutGroup?.AttendanceMinYear ?? 10) möten under hela året
+                    </MudText>
+                </div>
+            </MudRadio>
+            <MudRadio Value="true" Color="Color.Primary">
+                <div>
+                    <MudText>Terminsvis (@_semester?.DisplayName)</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Minst @(_scoutGroup?.AttendanceMinSemester ?? 5) möten under terminen
+                    </MudText>
+                </div>
+            </MudRadio>
+        </MudRadioGroup>
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-4">
+            Närvarogränser kan ändras i <MudLink Href="@($"/sk/{ScoutGroupId}/settings")">kårinställningar</MudLink>.
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showGbgCsvDialog = false)">Avbryt</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DownloadGothenburgCsv">Ladda ner CSV</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .hover-card {
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .hover-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int ScoutGroupId { get; set; }
+    
+    [Parameter]
+    public int SemesterId { get; set; }
+
+    private ScoutGroup? _scoutGroup;
+    private Semester? _semester;
+    private Semester? _previousSemester;
+    private Semester? _nextSemester;
+    private List<Troop> _troops = new();
+    private Dictionary<int, IReadOnlyList<Badge>> _troopBadges = new();
+    private bool _loading = true;
+    private bool _hasAccess = false;
+    private bool _initialized;
+    private int _lastLoadedScoutGroupId;
+    private int _lastLoadedSemesterId;
+    private List<BreadcrumbItem> _breadcrumbs = new();
+
+    // Lagerbidrag dialog state
+    private bool _showLagerbidragDialog;
+    private string _lagerbidragRegion = "gbg";
+    private int? _selectedTroopId;
+    private string _lagerbidragContact = "";
+    private string _lagerbidragContactEmail = "";
+    private string _lagerbidragContactPhone = "";
+    private string _lagerbidragSite = "";
+    private DateTime? _lagerbidragFromDate;
+    private DateTime? _lagerbidragToDate;
+    private bool _lagerbidragDuringBreak;
+    private MudForm? _lagerbidragForm;
+    private DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    // Gothenburg CSV dialog state
+    private bool _showGbgCsvDialog;
+    private bool _gbgCsvUseSemesterMin = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _lastLoadedScoutGroupId = ScoutGroupId;
+        _lastLoadedSemesterId = SemesterId;
+        
+        await LoadData();
+        
+        _initialized = true;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Skip if not initialized yet (OnInitializedAsync handles first load)
+        if (!_initialized) return;
+        
+        // Only reload if parameters actually changed
+        if (_lastLoadedScoutGroupId != ScoutGroupId || _lastLoadedSemesterId != SemesterId)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        
+        // Track what we're loading
+        _lastLoadedScoutGroupId = ScoutGroupId;
+        _lastLoadedSemesterId = SemesterId;
+        
+        try
+        {
+            // Check if user has access to this scout group
+            _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
+            
+            if (!_hasAccess)
+            {
+                _breadcrumbs = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem("Ingen behörighet", href: null, disabled: true)
+                };
+                return;
+            }
+
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+            _semester = await SemesterRepository.GetByIdAsync(SemesterId);
+            
+            if (_scoutGroup != null && _semester != null)
+            {
+                _breadcrumbs = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
+                    new BreadcrumbItem(_semester.DisplayName, href: null, disabled: true)
+                };
+
+                // Load troops with members - use a method that loads all data in one query
+                _troops = (await TroopRepository.GetByScoutGroupAndSemesterWithMembersAsync(ScoutGroupId, SemesterId))
+                    .OrderBy(t => t.Name)
+                    .ToList();
+
+                // Load badges for each troop
+                _troopBadges.Clear();
+                foreach (var troop in _troops)
+                {
+                    _troopBadges[troop.Id] = await BadgeService.GetTroopBadgesAsync(troop.Id);
+                }
+
+                // Load available semesters for navigation
+                var allSemesters = await SemesterRepository.GetByScoutGroupAsync(ScoutGroupId);
+                var semesterList = allSemesters.OrderBy(s => s.Id).ToList();
+                var currentIndex = semesterList.FindIndex(s => s.Id == SemesterId);
+                
+                _previousSemester = currentIndex > 0 ? semesterList[currentIndex - 1] : null;
+                _nextSemester = currentIndex >= 0 && currentIndex < semesterList.Count - 1 
+                    ? semesterList[currentIndex + 1] 
+                    : null;
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OpenLagerbidragDialog(string region)
+    {
+        _lagerbidragRegion = region;
+        _selectedTroopId = null;
+        _lagerbidragContact = _scoutGroup?.Signatory ?? "";
+        _lagerbidragContactEmail = _scoutGroup?.SignatoryEmail ?? "";
+        _lagerbidragContactPhone = _scoutGroup?.SignatoryPhone ?? "";
+        _lagerbidragSite = _scoutGroup?.DefaultCampLocation ?? "";
+        _lagerbidragFromDate = null;
+        _lagerbidragToDate = null;
+        _lagerbidragDuringBreak = false;
+        _showLagerbidragDialog = true;
+    }
+
+    private void GenerateLagerbidrag()
+    {
+        if (_lagerbidragForm != null && _lagerbidragFromDate.HasValue && _lagerbidragToDate.HasValue)
+        {
+            // Build the URL with all required parameters
+            var url = $"/reports/lagerbidrag-{_lagerbidragRegion}?" +
+                      $"scoutGroupId={ScoutGroupId}" +
+                      $"&semesterId={SemesterId}" +
+                      (_selectedTroopId.HasValue ? $"&troopId={_selectedTroopId.Value}" : "") +
+                      $"&contact={Uri.EscapeDataString(_lagerbidragContact)}" +
+                      $"&contactEmail={Uri.EscapeDataString(_lagerbidragContactEmail)}" +
+                      $"&contactPhone={Uri.EscapeDataString(_lagerbidragContactPhone)}" +
+                      $"&site={Uri.EscapeDataString(_lagerbidragSite)}" +
+                      $"&fromDate={_lagerbidragFromDate.Value:yyyy-MM-dd}" +
+                      $"&toDate={_lagerbidragToDate.Value:yyyy-MM-dd}" +
+                      $"&duringBreak={_lagerbidragDuringBreak}";
+            
+            // Navigate to the report URL (will trigger download)
+            NavigationManager.NavigateTo(url, forceLoad: true);
+            _showLagerbidragDialog = false;
+        }
+    }
+
+    private void OpenGothenburgCsvDialog()
+    {
+        _gbgCsvUseSemesterMin = false;
+        _showGbgCsvDialog = true;
+    }
+
+    private void DownloadGothenburgCsv()
+    {
+        var url = $"/reports/gbg-csv?scoutGroupId={ScoutGroupId}&semesterId={SemesterId}&useSemesterMin={_gbgCsvUseSemesterMin}";
+        NavigationManager.NavigateTo(url, forceLoad: true);
+        _showGbgCsvDialog = false;
+    }
+}

@@ -1,0 +1,79 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageTitle>Skojjt - Hem</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudPaper Elevation="3" Class="pa-8">
+        <div class="d-flex justify-center mb-6">
+            <MudImage Src="/img/logo.png" Alt="Skojjt Logo" Width="200" />
+        </div>
+        
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6">
+            Välkommen till Skojjt
+        </MudText>
+        
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Primary" Class="mb-6">
+                    @context.User.Identity?.Name
+                </MudText>
+                
+                <MudGrid Justify="Justify.Center" Class="mb-4">
+                    <MudItem xs="12" sm="4">
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="Color.Primary" 
+                                   Size="Size.Large" 
+                                   FullWidth="true"
+                                   Href="/sk"
+                                   StartIcon="@Icons.Material.Filled.Groups2">
+                            Scoutkårer
+                        </MudButton>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudButton Variant="Variant.Outlined" 
+                                   Color="Color.Primary" 
+                                   Size="Size.Large" 
+                                   FullWidth="true"
+                                   Href="/persons"
+                                   StartIcon="@Icons.Material.Filled.People">
+                            Personer
+                        </MudButton>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudButton Variant="Variant.Outlined" 
+                                   Color="Color.Primary" 
+                                   Size="Size.Large" 
+                                   FullWidth="true"
+                                   Href="/troops"
+                                   StartIcon="@Icons.Material.Filled.Groups">
+                            Avdelningar
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+                
+                <MudDivider Class="my-4" />
+                
+                <MudButton Variant="Variant.Text" 
+                           Color="Color.Default" 
+                           Size="Size.Large" 
+                           FullWidth="true"
+                           Href="/auth/signout"
+                           StartIcon="@Icons.Material.Filled.Logout">
+                    Logga ut
+                </MudButton>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           Size="Size.Large" 
+                           FullWidth="true"
+                           Href="/login"
+                           StartIcon="@Icons.Material.Filled.Login">
+                    Logga in med ScoutID
+                </MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
+    </MudPaper>
+</MudContainer>

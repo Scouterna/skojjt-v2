@@ -1,0 +1,319 @@
+@page "/sk/{ScoutGroupId:int}/p/{PersonId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@attribute [Authorize]
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject IPersonRepository PersonRepository
+
+<PageTitle>@(_person?.FullName ?? "Person") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_person == null)
+    {
+        <MudAlert Severity="Severity.Error">Personen kunde inte hittas.</MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            @* Header with name and status *@
+            <MudItem xs="12">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <div class="d-flex flex-wrap align-center gap-2">
+                        <MudAvatar Color="Color.Primary" Size="Size.Large">
+                            @_person.FirstName[0]@_person.LastName[0]
+                        </MudAvatar>
+                        <div class="flex-grow-1">
+                            <MudText Typo="Typo.h4">@_person.FullName</MudText>
+                            @if (_person.BirthDate.HasValue)
+                            {
+                                <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
+                                    @_person.Age år (@_person.BirthDate.Value.ToString("yyyy-MM-dd"))
+                                </MudText>
+                            }
+                        </div>
+                        @if (_person.Removed)
+                        {
+                            <MudChip T="string" Color="Color.Error" Size="Size.Large">Borttagen</MudChip>
+                        }
+                    </div>
+                </MudPaper>
+            </MudItem>
+
+            @* Contact Information *@
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4" Style="height: 100%;">
+                    <div class="d-flex align-center mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.ContactMail" Class="mr-2" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6">Kontaktuppgifter</MudText>
+                    </div>
+                    
+                    <MudStack Spacing="2">
+                        @if (!string.IsNullOrEmpty(_person.Email))
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">E-post</MudText>
+                                <div class="d-flex align-center gap-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" />
+                                    <MudLink Href="@($"mailto:{_person.Email}")">@_person.Email</MudLink>
+                                </div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_person.AltEmail))
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Alternativ e-post</MudText>
+                                <div class="d-flex align-center gap-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.AlternateEmail" Size="Size.Small" />
+                                    <MudLink Href="@($"mailto:{_person.AltEmail}")">@_person.AltEmail</MudLink>
+                                </div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_person.Mobile))
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Mobil</MudText>
+                                <div class="d-flex align-center gap-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.PhoneAndroid" Size="Size.Small" />
+                                    <MudLink Href="@($"tel:{_person.Mobile}")">@_person.Mobile</MudLink>
+                                </div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_person.Phone))
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Telefon</MudText>
+                                <div class="d-flex align-center gap-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" />
+                                    <MudLink Href="@($"tel:{_person.Phone}")">@_person.Phone</MudLink>
+                                </div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_person.Street))
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Adress</MudText>
+                                <div class="d-flex align-center gap-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Small" />
+                                    <div>
+                                        <MudText>@_person.Street</MudText>
+                                        @if (!string.IsNullOrEmpty(_person.ZipCode))
+                                        {
+                                            <MudText>@_person.ZipCode @_person.ZipName</MudText>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            @* Parent/Guardian Information *@
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4" Style="height: 100%;">
+                    <div class="d-flex align-center mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.FamilyRestroom" Class="mr-2" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6">Vårdnadshavare</MudText>
+                    </div>
+                    
+                    <MudStack Spacing="3">
+                        @if (!string.IsNullOrEmpty(_person.MumName) || !string.IsNullOrEmpty(_person.MumEmail) || !string.IsNullOrEmpty(_person.MumMobile))
+                        {
+                            <div>
+                                <MudText Typo="Typo.subtitle2">@(_person.MumName ?? "Vårdnadshavare 1")</MudText>
+                                @if (!string.IsNullOrEmpty(_person.MumEmail))
+                                {
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" />
+                                        <MudLink Href="@($"mailto:{_person.MumEmail}")">@_person.MumEmail</MudLink>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(_person.MumMobile))
+                                {
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.PhoneAndroid" Size="Size.Small" />
+                                        <MudLink Href="@($"tel:{_person.MumMobile}")">@_person.MumMobile</MudLink>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(_person.DadName) || !string.IsNullOrEmpty(_person.DadEmail) || !string.IsNullOrEmpty(_person.DadMobile))
+                        {
+                            <div>
+                                <MudText Typo="Typo.subtitle2">@(_person.DadName ?? "Vårdnadshavare 2")</MudText>
+                                @if (!string.IsNullOrEmpty(_person.DadEmail))
+                                {
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" />
+                                        <MudLink Href="@($"mailto:{_person.DadEmail}")">@_person.DadEmail</MudLink>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(_person.DadMobile))
+                                {
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.PhoneAndroid" Size="Size.Small" />
+                                        <MudLink Href="@($"tel:{_person.DadMobile}")">@_person.DadMobile</MudLink>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        
+                        @if (string.IsNullOrEmpty(_person.MumName) && string.IsNullOrEmpty(_person.MumEmail) && 
+                             string.IsNullOrEmpty(_person.DadName) && string.IsNullOrEmpty(_person.DadEmail))
+                        {
+                            <MudText Color="Color.Secondary">Ingen vårdnadshavareinformation registrerad.</MudText>
+                        }
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            @* Membership Information *@
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <div class="d-flex align-center mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.CardMembership" Class="mr-2" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6">Medlemskap</MudText>
+                    </div>
+                    
+                    <MudStack Spacing="2">
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Medlemsnummer</MudText>
+                            <MudText>@_person.Id</MudText>
+                        </div>
+                        
+                        @if (_person.PersonalNumber is not null)
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Personnummer</MudText>
+                                <MudText>@_person.PersonalNumber</MudText>
+                            </div>
+                        }
+                        
+                        @if (_person.MemberYears.Length > 0)
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Medlemsår</MudText>
+                                <MudText>@string.Join(", ", _person.MemberYears)</MudText>
+                            </div>
+                        }
+
+                        @* TODO: fetch this for each ScoutGroupPerson *@
+@*                         @if (!string.IsNullOrEmpty(_person.GroupRoles))
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Roller i kåren</MudText>
+                                <MudText>@_person.GroupRoles</MudText>
+                            </div>
+                        }
+ *@                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            @* Troop Memberships *@
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <div class="d-flex align-center mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.Groups" Class="mr-2" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6">Avdelningar</MudText>
+                    </div>
+                    
+                    @if (_troopMemberships.Count == 0)
+                    {
+                        <MudText Color="Color.Secondary">Inte medlem i någon avdelning.</MudText>
+                    }
+                    else
+                    {
+                        <MudList T="TroopPerson" Dense="true" Class="py-0">
+                            @foreach (var tp in _troopMemberships)
+                            {
+                                <MudListItem T="TroopPerson" Href="@($"/sk/{ScoutGroupId}/t/{tp.Troop.SemesterId}/{tp.TroopId}")">
+                                    <div class="d-flex justify-space-between align-center" style="width: 100%;">
+                                        <div>
+                                            <MudText>@tp.Troop.Name</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                @tp.Troop.Semester?.DisplayName
+                                            </MudText>
+                                        </div>
+                                        <div class="d-flex align-center gap-2">
+                                            @if (!string.IsNullOrEmpty(tp.Patrol))
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Default">@tp.Patrol</MudChip>
+                                            }
+                                            @if (tp.IsLeader)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Primary">Ledare</MudChip>
+                                            }
+                                        </div>
+                                    </div>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int ScoutGroupId { get; set; }
+    
+    [Parameter]
+    public int PersonId { get; set; }
+
+    private ScoutGroup? _scoutGroup;
+    private Person? _person;
+    private List<TroopPerson> _troopMemberships = new();
+    private bool _loading = true;
+    private List<BreadcrumbItem> _breadcrumbs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+            _person = await PersonRepository.GetWithTroopsAsync(PersonId);
+            
+            if (_scoutGroup != null && _person != null)
+            {
+                _breadcrumbs = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
+                    new BreadcrumbItem("Medlemmar", href: $"/sk/{ScoutGroupId}/p"),
+                    new BreadcrumbItem(_person.FullName, href: null, disabled: true)
+                };
+
+                // Get troop memberships for this scout group
+                _troopMemberships = _person.TroopPersons
+                    .Where(tp => tp.Troop?.ScoutGroupId == ScoutGroupId)
+                    .OrderByDescending(tp => tp.Troop?.SemesterId ?? 0)
+                    .ToList();
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

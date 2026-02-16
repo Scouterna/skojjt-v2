@@ -1,0 +1,278 @@
+@page "/login"
+@page "/dev-login"
+@using System.Reflection
+@using Skojjt.Core.Authentication
+@using Skojjt.Infrastructure.Authentication
+@using Skojjt.Infrastructure.Scoutnet
+@using Microsoft.Extensions.Options
+@inject NavigationManager NavigationManager
+@inject IConfiguration Configuration
+@inject IWebHostEnvironment Environment
+@inject IServiceProvider ServiceProvider
+@inject IOptions<ScoutnetOptions> ScoutnetOptions
+
+<PageTitle>Logga in - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8 mb-8">
+    <MudPaper Elevation="3" Class="pa-6 pa-sm-8">
+        @* Header with logo *@
+        <div class="d-flex flex-column align-center mb-4">
+            <MudImage Src="/img/scoutid_small.png" Alt="ScoutID" Width="180" Class="mb-3" />
+            <MudText Typo="Typo.h4" Align="Align.Center">Logga in på Skojjt</MudText>
+        </div>
+
+        @* Error messages *@
+        @if (!string.IsNullOrEmpty(Error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4" Dense="true">
+                @GetErrorMessage(Error)
+            </MudAlert>
+        }
+
+        @* Environment banner for development *@
+        @if (IsDevMode)
+        {
+            <MudAlert Severity="Severity.Warning" Class="mb-4" Dense="true">
+                <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+                    <div>
+                        <strong>Utvecklingsläge</strong>
+                        @if (UseSimulatedAuth)
+                        {
+                            <span> – Simulerad inloggning</span>
+                        }
+                    </div>
+                    <MudChip T="string" Size="Size.Small" Color="Color.Default">v@AppVersion</MudChip>
+                </div>
+            </MudAlert>
+        }
+
+        @* Main login section *@
+        @if (UseSimulatedAuth)
+        {
+            @* Simulated ScoutID login for development *@
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-4">
+                Välj en testanvändare för att logga in
+            </MudText>
+
+            @if (ScoutIdSimulator != null)
+            {
+                <MudStack Spacing="2" Class="mb-4">
+                    @foreach (var user in ScoutIdSimulator.GetAvailableUsers())
+                    {
+                        <MudCard Outlined="true" Class="pa-3">
+                            <div class="d-flex justify-space-between align-center flex-wrap gap-2">
+                                <div>
+                                    <MudText Typo="Typo.subtitle1">@user.DisplayName</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@user.Email</MudText>
+                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                        @if (user.IsMemberRegistrar)
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Success">Medlemsregistrerare</MudChip>
+                                        }
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Info">Grupp @user.GroupId</MudChip>
+                                        @if (user.AccessibleGroupIds.Count > 1)
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Warning">@user.AccessibleGroupIds.Count grupper</MudChip>
+                                        }
+                                    </div>
+                                </div>
+                                <form method="post" action="/dev-auth/login-simulated">
+                                    <input type="hidden" name="uid" value="@user.Uid" />
+                                    <input type="hidden" name="returnUrl" value="@(ReturnUrl ?? "/")" />
+                                    <MudButton ButtonType="ButtonType.Submit"
+                                               Variant="Variant.Filled"
+                                               Color="Color.Primary"
+                                               Size="Size.Small">
+                                        Logga in
+                                    </MudButton>
+                                </form>
+                            </div>
+                        </MudCard>
+                    }
+                </MudStack>
+
+                <MudExpansionPanels Class="mb-4">
+                    <MudExpansionPanel Text="Anpassad inloggning" Dense="true">
+                        <form method="post" action="/dev-auth/login">
+                            <input type="hidden" name="returnUrl" value="@(ReturnUrl ?? "/")" />
+
+                            <MudTextField T="string"
+                                          Label="Namn"
+                                          name="name"
+                                          Required="true"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Class="mb-2" />
+
+                            <MudTextField T="string"
+                                          Label="E-post"
+                                          name="email"
+                                          InputType="InputType.Email"
+                                          Required="true"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Class="mb-2" />
+
+                            <MudNumericField T="int"
+                                             Label="Grupp-ID"
+                                             name="groupId"
+                                             Value="1137"
+                                             Variant="Variant.Outlined"
+                                             Margin="Margin.Dense"
+                                             Class="mb-2" />
+
+                            <MudTextField T="string"
+                                          Label="Tillgång till grupper"
+                                          name="accessibleGroups"
+                                          HelperText="Kommaseparerat, t.ex: 1137,1138"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Class="mb-2" />
+
+                            <div class="d-flex flex-wrap gap-4 mb-3">
+                                <MudCheckBox T="bool" name="isMemberRegistrar" Label="Medlemsregistrerare" Dense="true" />
+                                <MudCheckBox T="bool" name="isAdmin" Label="Administratör" Dense="true" />
+                            </div>
+
+                            <MudButton ButtonType="ButtonType.Submit"
+                                       Variant="Variant.Filled"
+                                       Color="Color.Secondary"
+                                       FullWidth="true"
+                                       Size="Size.Small">
+                                Logga in med anpassad användare
+                            </MudButton>
+                        </form>
+                    </MudExpansionPanel>
+                </MudExpansionPanels>
+            }
+        }
+        else
+        {
+            @* Real ScoutID login *@
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-4">
+                Använd ditt ScoutID för att logga in
+            </MudText>
+
+            <MudAlert Severity="Severity.Info" Class="mb-4" Dense="true">
+                <MudText Typo="Typo.body2">
+                    ScoutID är Scouternas inloggningslösning. Du loggar in med samma uppgifter som på Scoutnet.
+                </MudText>
+            </MudAlert>
+
+            <form method="get" action="/auth/challenge">
+                <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+                <MudButton ButtonType="ButtonType.Submit"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           FullWidth="true"
+                           Size="Size.Large"
+                           StartIcon="@Icons.Material.Filled.Login"
+                           Class="mb-4">
+                    Logga in med ScoutID
+                </MudButton>
+            </form>
+        }
+
+        <MudDivider Class="my-4" />
+
+        @* Footer with version and service info *@
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Center" Class="mb-2">
+            Skojjt är ett närvarosystem för scoutkårer.
+            <MudLink Href="https://www.scouterna.se" Target="_blank">Läs mer om Scouterna</MudLink>
+        </MudText>
+
+        @if (!IsDevMode)
+        {
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Center">
+                Version @AppVersion
+            </MudText>
+        }
+
+        @* Service status panel for development *@
+        @if (IsDevMode)
+        {
+            <MudExpansionPanels Class="mt-4">
+                <MudExpansionPanel Text="Tjänstekonfiguration" Dense="true">
+                    <MudSimpleTable Dense="true" Hover="true" Bordered="true">
+                        <thead>
+                            <tr>
+                                <th>Tjänst</th>
+                                <th>Status</th>
+                                <th>URL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>ScoutID</td>
+                                <td>
+                                    @if (UseSimulatedAuth)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">Simulerad</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success">Konfigurerad</MudChip>
+                                    }
+                                </td>
+                                <td><code>@ScoutIdAuthority</code></td>
+                            </tr>
+                            <tr>
+                                <td>Scoutnet</td>
+                                <td>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Success">Konfigurerad</MudChip>
+                                </td>
+                                <td><code>@ScoutnetBaseUrl</code></td>
+                            </tr>
+                            <tr>
+                                <td>Miljö</td>
+                                <td>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Info">@Environment.EnvironmentName</MudChip>
+                                </td>
+                                <td>—</td>
+                            </tr>
+                        </tbody>
+                    </MudSimpleTable>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Error { get; set; }
+
+    private IScoutIdSimulator? ScoutIdSimulator => ServiceProvider.GetService<IScoutIdSimulator>();
+
+    private bool IsDevMode => Environment.IsDevelopment();
+
+    private bool UseSimulatedAuth =>
+        string.IsNullOrEmpty(Configuration["ScoutId:ClientId"]);
+
+    private string ScoutIdAuthority =>
+        UseSimulatedAuth ? "(simulerad)" : (Configuration["ScoutId:Authority"] ?? "—");
+
+    private string ScoutnetBaseUrl =>
+        ScoutnetOptions.Value.BaseUrl;
+
+    private string AppVersion
+    {
+        get
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var version = assembly.GetName().Version;
+            return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "0.0.0";
+        }
+    }
+
+    private string GetErrorMessage(string error) => error switch
+    {
+        "fallback_disabled" => "Nödinloggning är inte aktiverad.",
+        "invalid_credentials" => "Felaktig e-postadress eller lösenord. Endast administratörer kan använda nödinloggning.",
+        "scoutid_unavailable" => "ScoutID är för tillfället otillgängligt. Prova nödinloggningen nedan om du är administratör.",
+        _ => $"Ett fel uppstod: {error}"
+    };
+}

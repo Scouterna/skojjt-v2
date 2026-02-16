@@ -1,0 +1,17 @@
+#codebase 
+This project is called skojjt and is made to track attencance of scouts at scout meetings.
+skojjt takes input in from the central member register for all scouts in sweden called scoutnet.
+The persons using the system are leaders that use checkmarks  to register attendance for each person at a meeting.
+The persons using need to log in since this is personal information in the system.
+The output is reports of the attendance that can be sent to different institutions that can give the scout group money for each attendance mark.
+The current system is running in Google App Engine with Python 3.11.
+
+Refactor this project:
+* The code language should be changed from python to C# using dotnet 10.
+* The database should be Postgresql.
+* The web interface should be using a modern style C# razor pages.
+* The login needs to change from Google's auth to ScoutID (see https://www.scouterna.se/scout-ledare-kar/leda-kar/etjanster/scoutid/).
+* The current data in google needs to be imported from the current system.
+* The app needs to be deployable on kubernetes or an equal system.
+* Add unit tests to cover more code.
+

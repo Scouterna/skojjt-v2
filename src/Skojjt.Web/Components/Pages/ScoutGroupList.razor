@@ -1,0 +1,172 @@
+@page "/sk"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@attribute [Authorize]
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject ICurrentUserService CurrentUserService
+@inject IAdminModeService AdminModeService
+@inject IWebHostEnvironment Environment
+
+<PageTitle>Scoutkårer - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">Scoutkårer</MudText>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Href="/sk/new">
+            Lägg till scoutkår
+        </MudButton>
+    </div>
+
+    @if (_isAdmin)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4" Dense="true">
+            <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Class="mr-2" />
+            Du ser alla scoutkårer som administratör.
+        </MudAlert>
+    }
+
+    @* Debug info in development *@
+    @if (Environment.IsDevelopment())
+    {
+        <MudExpansionPanels Class="mb-4">
+            <MudExpansionPanel Text="Debug Info" Dense="true">
+                <MudText Typo="Typo.body2"><strong>IsAdmin:</strong> @_isAdmin</MudText>
+                <MudText Typo="Typo.body2"><strong>AccessibleGroupIds:</strong> [@string.Join(", ", _accessibleGroupIds)]</MudText>
+                <MudText Typo="Typo.body2"><strong>ScoutGroups in DB:</strong> @_allGroupsCount</MudText>
+                <MudText Typo="Typo.body2"><strong>ScoutGroups IDs in DB:</strong> [@_allGroupIds]</MudText>
+                <MudText Typo="Typo.body2"><strong>Filtered ScoutGroups:</strong> @_scoutGroups.Count</MudText>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_scoutGroups.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4">
+            @if (_accessibleGroupIds.Count == 0 && !_isAdmin)
+            {
+                <span>Du har inte tillgång till några scoutkårer. Kontakta en administratör för att få tillgång.</span>
+            }
+            else
+            {
+                <span>Inga scoutkårer hittades. Klicka på "Lägg till scoutkår" för att importera en kår från Scoutnet.</span>
+            }
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var scoutGroup in _scoutGroups)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudLink Href="@($"/sk/{scoutGroup.Id}")" Underline="Underline.None" Class="d-block">
+                        <MudCard Elevation="2" Class="hover-card">
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">@scoutGroup.Name</MudText>
+                                </CardHeaderContent>
+                                <CardHeaderActions>
+                                    <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Default" />
+                                </CardHeaderActions>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                @if (!string.IsNullOrEmpty(scoutGroup.OrganisationNumber))
+                                {
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        Org.nr: @scoutGroup.OrganisationNumber
+                                    </MudText>
+                                }
+                                @if (!string.IsNullOrEmpty(scoutGroup.Email))
+                                {
+                                    <MudText Typo="Typo.body2">
+                                        <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Class="mr-1" />
+                                        @scoutGroup.Email
+                                    </MudText>
+                                }
+                                @if (_isAdmin && !_accessibleGroupIds.Contains(scoutGroup.Id))
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Class="mt-2">
+                                        Endast admin
+                                    </MudChip>
+                                }
+                            </MudCardContent>
+                        </MudCard>
+                    </MudLink>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+<style>
+    .hover-card {
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .hover-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    }
+</style>
+
+@code {
+    private List<ScoutGroup> _scoutGroups = new();
+    private IReadOnlyList<int> _accessibleGroupIds = [];
+    private bool _loading = true;
+    private bool _isAdmin;
+    private int _allGroupsCount;
+    private string _allGroupIds = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadScoutGroups();
+    }
+
+    private async Task LoadScoutGroups()
+    {
+        _loading = true;
+        try
+        {
+            _isAdmin = CurrentUserService.IsAdmin && AdminModeService.IsAdminModeActive;
+            _accessibleGroupIds = CurrentUserService.GetAccessibleGroupIds();
+
+            var allScoutGroups = await ScoutGroupRepository.GetAllAsync();
+            _allGroupsCount = allScoutGroups.Count;
+            _allGroupIds = string.Join(", ", allScoutGroups.Select(sg => sg.Id));
+
+            if (_isAdmin)
+            {
+                // Admins see all scout groups
+                _scoutGroups = allScoutGroups
+                    .OrderBy(sg => sg.Name)
+                    .ToList();
+            }
+            else
+            {
+                // Regular users only see groups they have access to
+                if (_accessibleGroupIds.Count == 0)
+                {
+                    _scoutGroups = [];
+                    return;
+                }
+
+                _scoutGroups = allScoutGroups
+                    .Where(sg => _accessibleGroupIds.Contains(sg.Id))
+                    .OrderBy(sg => sg.Name)
+                    .ToList();
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

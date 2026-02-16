@@ -1,0 +1,295 @@
+@page "/sk/{ScoutGroupId:int}/badges/{BadgeId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject IBadgeService BadgeService
+@inject IBadgeRepository BadgeRepository
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(_badge?.Name ?? "Märke") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">Du har inte behörighet att visa detta märke.</MudAlert>
+    }
+    else if (_badge == null)
+    {
+        <MudAlert Severity="Severity.Error">Märket kunde inte hittas.</MudAlert>
+    }
+    else
+    {
+        @* Header *@
+        <div class="d-flex flex-wrap align-center gap-4 mb-4">
+            @if (!string.IsNullOrEmpty(_badge.ImageUrl))
+            {
+                <MudAvatar Src="@_badge.ImageUrl" Size="Size.Large" />
+            }
+            else
+            {
+                <MudAvatar Color="Color.Primary" Size="Size.Large">
+                    <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" />
+                </MudAvatar>
+            }
+            <div class="flex-grow-1">
+                <MudText Typo="Typo.h4">@_badge.Name</MudText>
+                @if (!string.IsNullOrEmpty(_badge.Description))
+                {
+                    <MudText Typo="Typo.subtitle1" Color="Color.Secondary">@_badge.Description</MudText>
+                }
+            </div>
+            @if (_badge.IsArchived)
+            {
+                <MudChip T="string" Color="Color.Warning">Arkiverad</MudChip>
+            }
+        </div>
+
+        @* Parts Tables *@
+        <MudGrid>
+            @* Scout parts *@
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <div class="d-flex align-center justify-space-between mb-3">
+                        <div class="d-flex align-center gap-2">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+                            <MudText Typo="Typo.h6">Scoutdelar</MudText>
+                        </div>
+                        <MudTooltip Text="Lägg till scoutdel">
+                            <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small"
+                                           OnClick="@(() => OpenAddPartDialog(false))" />
+                        </MudTooltip>
+                    </div>
+                    @{
+                        var scoutParts = _badge.Parts.Where(p => !p.IsAdminPart).OrderBy(p => p.SortOrder).ToList();
+                    }
+                    @if (scoutParts.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Inga scoutdelar definierade.</MudText>
+                    }
+                    else
+                    {
+                        <MudSimpleTable Dense="true" Hover="true" Striped="true">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px">#</th>
+                                    <th>Kort</th>
+                                    <th>Beskrivning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var (part, idx) in scoutParts.Select((p, i) => (p, i)))
+                                {
+                                    <tr>
+                                        <td>@(idx + 1)</td>
+                                        <td><strong>@part.ShortDescription</strong></td>
+                                        <td>@(part.LongDescription ?? "—")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            @* Admin parts *@
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <div class="d-flex align-center justify-space-between mb-3">
+                        <div class="d-flex align-center gap-2">
+                            <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Color="Color.Info" />
+                            <MudText Typo="Typo.h6">Admindelar</MudText>
+                        </div>
+                        <MudTooltip Text="Lägg till admindel">
+                            <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small"
+                                           OnClick="@(() => OpenAddPartDialog(true))" />
+                        </MudTooltip>
+                    </div>
+                    @{
+                        var adminParts = _badge.Parts.Where(p => p.IsAdminPart).OrderBy(p => p.SortOrder).ToList();
+                    }
+                    @if (adminParts.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Inga admindelar definierade.</MudText>
+                    }
+                    else
+                    {
+                        <MudSimpleTable Dense="true" Hover="true" Striped="true">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px">#</th>
+                                    <th>Kort</th>
+                                    <th>Beskrivning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var (part, idx) in adminParts.Select((p, i) => (p, i)))
+                                {
+                                    <tr>
+                                        <td>@(idx + 1)</td>
+                                        <td><strong>@part.ShortDescription</strong></td>
+                                        <td>@(part.LongDescription ?? "—")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            @* Troops using this badge *@
+            <MudItem xs="12">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <div class="d-flex align-center mb-3 gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Groups" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6">Avdelningar som använder märket</MudText>
+                    </div>
+                    @if (_troopBadges.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Märket är inte kopplat till någon avdelning.
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudList T="TroopBadge" Dense="true">
+                            @foreach (var tb in _troopBadges)
+                            {
+                                <MudListItem T="TroopBadge"
+                                             Icon="@Icons.Material.Filled.Group"
+                                             Href="@($"/sk/{ScoutGroupId}/t/{tb.Troop.SemesterId}/{tb.TroopId}/badges/{BadgeId}")">
+                                    @tb.Troop.Name (@tb.Troop.Semester.DisplayName)
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        @* Add Part Dialog *@
+        <MudDialog @bind-Visible="_showAddPartDialog" Options="_dialogOptions">
+            <TitleContent>
+                <MudText Typo="Typo.h6">Ny @(_addPartIsAdmin ? "admindel" : "scoutdel")</MudText>
+            </TitleContent>
+            <DialogContent>
+                <MudTextField @bind-Value="_addPartShort" Label="Kort beskrivning" Required="true" Class="mb-2" />
+                <MudTextField @bind-Value="_addPartLong" Label="Lång beskrivning" Lines="3" />
+            </DialogContent>
+            <DialogActions>
+                <MudButton OnClick="@(() => _showAddPartDialog = false)">Avbryt</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                           OnClick="AddPart" Disabled="@string.IsNullOrWhiteSpace(_addPartShort)">
+                    Lägg till
+                </MudButton>
+            </DialogActions>
+        </MudDialog>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public int ScoutGroupId { get; set; }
+    [Parameter] public int BadgeId { get; set; }
+
+    private ScoutGroup? _scoutGroup;
+    private Badge? _badge;
+    private List<TroopBadge> _troopBadges = [];
+    private bool _loading = true;
+    private bool _hasAccess;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    // Add part dialog state
+    private bool _showAddPartDialog;
+    private bool _addPartIsAdmin;
+    private string _addPartShort = "";
+    private string? _addPartLong;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
+            if (!_hasAccess) return;
+
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+            _badge = await BadgeService.GetBadgeWithPartsAsync(BadgeId);
+
+            if (_badge != null)
+            {
+                _troopBadges = (await BadgeRepository.GetWithProgressAsync(BadgeId)) is Badge fullBadge
+                    ? fullBadge.TroopBadges.ToList()
+                    : [];
+            }
+
+            _breadcrumbs =
+            [
+                new("Scoutkårer", href: "/sk"),
+                new(_scoutGroup?.Name ?? "Kår", href: $"/sk/{ScoutGroupId}"),
+                new("Märken", href: $"/sk/{ScoutGroupId}/badges"),
+                new(_badge?.Name ?? "Märke", href: null, disabled: true)
+            ];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OpenAddPartDialog(bool isAdmin)
+    {
+        _addPartIsAdmin = isAdmin;
+        _addPartShort = "";
+        _addPartLong = null;
+        _showAddPartDialog = true;
+    }
+
+    private async Task AddPart()
+    {
+        if (_badge == null || string.IsNullOrWhiteSpace(_addPartShort)) return;
+
+        try
+        {
+            var existingParts = _badge.Parts
+                .Where(p => p.IsAdminPart == _addPartIsAdmin)
+                .ToList();
+            var nextSortOrder = existingParts.Count > 0 ? existingParts.Max(p => p.SortOrder) + 1 : (_addPartIsAdmin ? 100 : 0);
+
+            var part = new BadgePart
+            {
+                BadgeId = _badge.Id,
+                SortOrder = nextSortOrder,
+                IsAdminPart = _addPartIsAdmin,
+                ShortDescription = _addPartShort,
+                LongDescription = _addPartLong
+            };
+
+            await BadgeRepository.AddPartAsync(part);
+            _showAddPartDialog = false;
+            Snackbar.Add("Del tillagd", Severity.Success);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+        }
+    }
+}

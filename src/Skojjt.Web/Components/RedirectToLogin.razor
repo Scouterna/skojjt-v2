@@ -1,0 +1,14 @@
+@inject NavigationManager NavigationManager
+@inject IConfiguration Configuration
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Check if using development login
+        var loginPath = string.IsNullOrEmpty(Configuration["ScoutId:ClientId"]) 
+            ? "/login" 
+            : "/auth/challenge";
+            
+        NavigationManager.NavigateTo($"{loginPath}?returnUrl={Uri.EscapeDataString(NavigationManager.Uri)}", forceLoad: true);
+    }
+}

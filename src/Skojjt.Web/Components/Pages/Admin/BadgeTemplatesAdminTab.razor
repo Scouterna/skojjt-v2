@@ -1,0 +1,410 @@
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@rendermode InteractiveServer
+@inject IBadgeTemplateRepository TemplateRepository
+@inject IBadgeRepository BadgeRepository
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h6" Class="mb-4">Hantera märkesmallar</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <div class="d-flex justify-end mb-4">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenCreateDialog">
+            Ny mall
+        </MudButton>
+    </div>
+
+    @if (_templates.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">Inga märkesmallar finns i systemet.</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="@_templates" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true">
+            <HeaderContent>
+                <MudTh>ID</MudTh>
+                <MudTh>Namn</MudTh>
+                <MudTh>Beskrivning</MudTh>
+                <MudTh>Scoutdelar</MudTh>
+                <MudTh>Admindelar</MudTh>
+                <MudTh>Skapad</MudTh>
+                <MudTh>Åtgärder</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="ID">@context.Id</MudTd>
+                <MudTd DataLabel="Namn">
+                    <div class="d-flex align-center gap-2">
+                        @if (!string.IsNullOrEmpty(context.ImageUrl))
+                        {
+                            <MudAvatar Src="@context.ImageUrl" Size="Size.Small" />
+                        }
+                        <strong>@context.Name</strong>
+                    </div>
+                </MudTd>
+                <MudTd DataLabel="Beskrivning">@(context.Description ?? "—")</MudTd>
+                <MudTd DataLabel="Scoutdelar">@context.Parts.Count(p => !p.IsAdminPart)</MudTd>
+                <MudTd DataLabel="Admindelar">@context.Parts.Count(p => p.IsAdminPart)</MudTd>
+                <MudTd DataLabel="Skapad">@context.CreatedAt.ToString("yyyy-MM-dd")</MudTd>
+                <MudTd DataLabel="Åtgärder">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   OnClick="@(() => OpenEditDialog(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error"
+                                   Size="Size.Small"
+                                   OnClick="@(() => ConfirmDelete(context))" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+
+@* Create / Edit Dialog *@
+<MudDialog @bind-Visible="_showEditDialog" Options="@_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(_editingTemplate == null ? "Ny märkesmall" : $"Redigera {_editingTemplate.Name}")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_editName"
+                      Label="Namn"
+                      Required="true"
+                      RequiredError="Namn krävs"
+                      MaxLength="255"
+                      Counter="255"
+                      Immediate="true"
+                      Validation="@(new Func<string, string?>(ValidateName))"
+                      Class="mb-2" />
+        <MudTextField @bind-Value="_editDescription" Label="Beskrivning" Lines="2" Class="mb-2" />
+        <MudTextField @bind-Value="_editImageUrl"
+                      Label="Bild-URL"
+                      MaxLength="500"
+                      Validation="@(new Func<string?, string?>(ValidateUrl))"
+                      Class="mb-4" />
+
+        @* Parts editor *@
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Delar</MudText>
+
+        @if (_editParts.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">Inga delar definierade.</MudText>
+        }
+        else
+        {
+            <MudSimpleTable Dense="true" Hover="true" Class="mb-2">
+                <thead>
+                    <tr>
+                        <th style="width:40px">#</th>
+                        <th>Typ</th>
+                        <th>Kort beskrivning</th>
+                        <th>Lång beskrivning</th>
+                        <th style="width:48px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var (part, idx) in _editParts.Select((p, i) => (p, i)))
+                    {
+                        <tr>
+                            <td>@(idx + 1)</td>
+                            <td>
+                                <MudChip T="string" Size="Size.Small"
+                                         Color="@(part.IsAdminPart ? Color.Info : Color.Success)">
+                                    @(part.IsAdminPart ? "Admin" : "Scout")
+                                </MudChip>
+                            </td>
+                            <td>@part.ShortDescription</td>
+                            <td>@(part.LongDescription ?? "—")</td>
+                            <td>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Size="Size.Small"
+                                               Color="Color.Error"
+                                               OnClick="@(() => _editParts.RemoveAt(idx))" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        }
+
+        <MudDivider Class="my-2" />
+        <MudText Typo="Typo.caption" Class="mb-2">Lägg till ny del</MudText>
+        <div class="d-flex gap-2 align-end">
+            <MudSelect @bind-Value="_newPartIsAdmin" Label="Typ" Dense="true" Style="max-width:120px">
+                <MudSelectItem T="bool" Value="false">Scout</MudSelectItem>
+                <MudSelectItem T="bool" Value="true">Admin</MudSelectItem>
+            </MudSelect>
+            <MudTextField @bind-Value="_newPartShort" Label="Kort" Dense="true" MaxLength="255" Style="flex:1" />
+            <MudTextField @bind-Value="_newPartLong" Label="Lång" Dense="true" Style="flex:1" />
+            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
+                           Disabled="@string.IsNullOrWhiteSpace(_newPartShort)"
+                           OnClick="AddPartToEdit" />
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showEditDialog = false)">Avbryt</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                   Disabled="@(!CanSave())"
+                   OnClick="SaveTemplate">
+            Spara
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@* Delete Confirmation Dialog *@
+<MudDialog @bind-Visible="_showDeleteDialog" Options="@_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Class="mr-2" />
+            Ta bort mall
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            Detta tar permanent bort mallen <strong>@_deletingTemplate?.Name</strong>.
+            Märken som redan skapats från mallen påverkas inte.
+        </MudAlert>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showDeleteDialog = false)">Avbryt</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="DeleteTemplate">
+            Ta bort
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<BadgeTemplate> _templates = [];
+    private bool _loading = true;
+
+    // Edit dialog state
+    private bool _showEditDialog;
+    private BadgeTemplate? _editingTemplate;
+    private string _editName = "";
+    private string? _editDescription;
+    private string? _editImageUrl;
+    private List<EditablePart> _editParts = [];
+    private bool _newPartIsAdmin;
+    private string _newPartShort = "";
+    private string? _newPartLong;
+
+    // Delete dialog state
+    private bool _showDeleteDialog;
+    private BadgeTemplate? _deletingTemplate;
+
+    private DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _templates = (await TemplateRepository.GetAllWithPartsAsync()).ToList();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    // --- Validation ---
+
+    private string? ValidateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "Namn krävs";
+        if (name.Length > 255)
+            return "Max 255 tecken";
+        var duplicate = _templates.Any(t =>
+            t.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)
+            && t.Id != (_editingTemplate?.Id ?? 0));
+        return duplicate ? "En mall med detta namn finns redan" : null;
+    }
+
+    private string? ValidateUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return null;
+        if (url.Length > 500)
+            return "Max 500 tecken";
+        if (!Uri.TryCreate(url, UriKind.Absolute, out _))
+            return "Ogiltig URL";
+        return null;
+    }
+
+    private bool CanSave() =>
+        !string.IsNullOrWhiteSpace(_editName)
+        && ValidateName(_editName) == null
+        && ValidateUrl(_editImageUrl) == null
+        && _editParts.Count > 0;
+
+    // --- Create / Edit ---
+
+    private void OpenCreateDialog()
+    {
+        _editingTemplate = null;
+        _editName = "";
+        _editDescription = null;
+        _editImageUrl = null;
+        _editParts = [];
+        ResetNewPart();
+        _showEditDialog = true;
+    }
+
+    private void OpenEditDialog(BadgeTemplate template)
+    {
+        _editingTemplate = template;
+        _editName = template.Name;
+        _editDescription = template.Description;
+        _editImageUrl = template.ImageUrl;
+        _editParts = template.Parts
+            .OrderBy(p => p.SortOrder)
+            .Select(p => new EditablePart
+            {
+                Id = p.Id,
+                IsAdminPart = p.IsAdminPart,
+                ShortDescription = p.ShortDescription,
+                LongDescription = p.LongDescription
+            })
+            .ToList();
+        ResetNewPart();
+        _showEditDialog = true;
+    }
+
+    private void AddPartToEdit()
+    {
+        if (string.IsNullOrWhiteSpace(_newPartShort)) return;
+        _editParts.Add(new EditablePart
+        {
+            IsAdminPart = _newPartIsAdmin,
+            ShortDescription = _newPartShort.Trim(),
+            LongDescription = string.IsNullOrWhiteSpace(_newPartLong) ? null : _newPartLong.Trim()
+        });
+        ResetNewPart();
+    }
+
+    private void ResetNewPart()
+    {
+        _newPartIsAdmin = false;
+        _newPartShort = "";
+        _newPartLong = null;
+    }
+
+    private async Task SaveTemplate()
+    {
+        if (!CanSave()) return;
+
+        try
+        {
+            if (_editingTemplate == null)
+            {
+                // Create new template
+                var template = new BadgeTemplate
+                {
+                    Name = _editName.Trim(),
+                    Description = _editDescription?.Trim(),
+                    ImageUrl = _editImageUrl?.Trim()
+                };
+                await TemplateRepository.AddAsync(template);
+
+                for (int i = 0; i < _editParts.Count; i++)
+                {
+                    var ep = _editParts[i];
+                    await BadgeRepository.AddPartAsync(new BadgePart
+                    {
+                        BadgeTemplateId = template.Id,
+                        SortOrder = i,
+                        IsAdminPart = ep.IsAdminPart,
+                        ShortDescription = ep.ShortDescription,
+                        LongDescription = ep.LongDescription
+                    });
+                }
+
+                Snackbar.Add($"Mall '{template.Name}' skapad", Severity.Success);
+            }
+            else
+            {
+                // Update existing template
+                _editingTemplate.Name = _editName.Trim();
+                _editingTemplate.Description = _editDescription?.Trim();
+                _editingTemplate.ImageUrl = _editImageUrl?.Trim();
+                _editingTemplate.UpdatedAt = DateTime.UtcNow;
+                await TemplateRepository.UpdateAsync(_editingTemplate);
+
+                // Replace parts: delete existing, recreate with correct order
+                var existingParts = _editingTemplate.Parts.ToList();
+                foreach (var part in existingParts)
+                {
+                    await BadgeRepository.DeletePartAsync(part);
+                }
+
+                for (int i = 0; i < _editParts.Count; i++)
+                {
+                    var ep = _editParts[i];
+                    await BadgeRepository.AddPartAsync(new BadgePart
+                    {
+                        BadgeTemplateId = _editingTemplate.Id,
+                        SortOrder = i,
+                        IsAdminPart = ep.IsAdminPart,
+                        ShortDescription = ep.ShortDescription,
+                        LongDescription = ep.LongDescription
+                    });
+                }
+
+                Snackbar.Add($"Mall '{_editingTemplate.Name}' uppdaterad", Severity.Success);
+            }
+
+            _showEditDialog = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+        }
+    }
+
+    // --- Delete ---
+
+    private void ConfirmDelete(BadgeTemplate template)
+    {
+        _deletingTemplate = template;
+        _showDeleteDialog = true;
+    }
+
+    private async Task DeleteTemplate()
+    {
+        if (_deletingTemplate == null) return;
+
+        try
+        {
+            await TemplateRepository.DeleteAsync(_deletingTemplate);
+            _showDeleteDialog = false;
+            Snackbar.Add($"Mall '{_deletingTemplate.Name}' borttagen", Severity.Success);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private sealed class EditablePart
+    {
+        public int? Id { get; set; }
+        public bool IsAdminPart { get; set; }
+        public string ShortDescription { get; set; } = "";
+        public string? LongDescription { get; set; }
+    }
+}

@@ -1,0 +1,210 @@
+@page "/sk/{ScoutGroupId:int}/p"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@attribute [Authorize]
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject IPersonRepository PersonRepository
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Medlemmar - @(_scoutGroup?.Name ?? "Scoutkår") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_scoutGroup == null)
+    {
+        <MudAlert Severity="Severity.Error">Scoutkåren kunde inte hittas.</MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Class="mb-4">Medlemmar i @_scoutGroup.Name</MudText>
+
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudTable Items="@_filteredPersons" 
+                      Hover="true" 
+                      Striped="true"
+                      Dense="true"
+                      Loading="@_tableLoading"
+                      LoadingProgressColor="Color.Primary"
+                      Filter="FilterFunc"
+                      FixedHeader="true"
+                      Height="calc(100vh - 350px)"
+                      RowClassFunc="@((person, _) => person.Removed ? "mud-text-disabled" : "")">
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString" 
+                                  Placeholder="Sök namn, e-post, telefon..." 
+                                  Adornment="Adornment.Start" 
+                                  AdornmentIcon="@Icons.Material.Filled.Search" 
+                                  IconSize="Size.Medium" 
+                                  Class="mt-0"
+                                  Immediate="true" 
+                                  DebounceInterval="300" />
+                    <MudSpacer />
+                    <MudSwitch @bind-Value="_showRemoved" 
+                               Label="Visa borttagna" 
+                               Color="Color.Warning" 
+                               Class="mr-4"
+                               @bind-Value:after="ApplyFilters" />
+                    <MudButton Variant="Variant.Outlined" 
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Download"
+                               OnClick="ExportToCsv">
+                        Exportera
+                    </MudButton>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Person, object>(x => x.LastName)">Namn</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Person, object?>(x => x.BirthDate)">Ålder</MudTableSortLabel></MudTh>
+                    <MudTh>E-post</MudTh>
+                    <MudTh Class="d-none d-md-table-cell">Mobil</MudTh>
+                    <MudTh Class="d-none d-lg-table-cell">Adress</MudTh>
+                    <MudTh>Status</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Namn">
+                        <MudLink Href="@($"/sk/{ScoutGroupId}/p/{context.Id}")">
+                            @context.FullName
+                        </MudLink>
+                    </MudTd>
+                    <MudTd DataLabel="Ålder">
+                        @if (context.BirthDate.HasValue)
+                        {
+                            <MudTooltip Text="@context.BirthDate.Value.ToString("yyyy-MM-dd")">
+                                <MudText>@context.Age år</MudText>
+                            </MudTooltip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="E-post">
+                        @if (!string.IsNullOrEmpty(context.Email))
+                        {
+                            <MudLink Href="@($"mailto:{context.Email}")" Target="_blank">
+                                <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Class="d-md-none" />
+                                <span class="d-none d-md-inline">@context.Email</span>
+                            </MudLink>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Mobil" Class="d-none d-md-table-cell">
+                        @if (!string.IsNullOrEmpty(context.Mobile))
+                        {
+                            <MudLink Href="@($"tel:{context.Mobile}")">@context.Mobile</MudLink>
+                        }
+                        else if (!string.IsNullOrEmpty(context.Phone))
+                        {
+                            <MudLink Href="@($"tel:{context.Phone}")">@context.Phone</MudLink>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Adress" Class="d-none d-lg-table-cell">
+                        @if (!string.IsNullOrEmpty(context.Street))
+                        {
+                            <MudText Typo="Typo.body2">@context.Street</MudText>
+                            @if (!string.IsNullOrEmpty(context.ZipCode))
+                            {
+                                <MudText Typo="Typo.caption">@context.ZipCode @context.ZipName</MudText>
+                            }
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Status">
+                        @if (context.Removed)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Error">Borttagen</MudChip>
+                        }
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 25, 50, 100, 250 }" />
+                </PagerContent>
+                <NoRecordsContent>
+                    <MudText>Inga medlemmar hittades</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudPaper>
+
+        <MudText Typo="Typo.caption" Class="mt-2" Color="Color.Secondary">
+            Visar @_filteredPersons.Count av @_allPersons.Count medlemmar
+        </MudText>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int ScoutGroupId { get; set; }
+
+    private ScoutGroup? _scoutGroup;
+    private List<Person> _allPersons = new();
+    private List<Person> _filteredPersons = new();
+    private string _searchString = "";
+    private bool _showRemoved = false;
+    private bool _loading = true;
+    private bool _tableLoading = false;
+    private List<BreadcrumbItem> _breadcrumbs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+            
+            if (_scoutGroup != null)
+            {
+                _breadcrumbs = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
+                    new BreadcrumbItem("Medlemmar", href: null, disabled: true)
+                };
+
+                var persons = await PersonRepository.GetByScoutGroupAsync(ScoutGroupId);
+                _allPersons = persons.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ToList();
+                ApplyFilters();
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredPersons = _allPersons
+            .Where(p => _showRemoved || !p.Removed)
+            .ToList();
+    }
+
+    private bool FilterFunc(Person person)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        var search = _searchString.ToLower();
+        return person.FirstName.ToLower().Contains(search) ||
+               person.LastName.ToLower().Contains(search) ||
+               (person.Email?.ToLower().Contains(search) ?? false) ||
+               (person.Phone?.Contains(search) ?? false) ||
+               (person.Mobile?.Contains(search) ?? false);
+    }
+
+    private void ExportToCsv()
+    {
+        // TODO: Implement CSV export
+        Snackbar.Add("CSV-export kommer snart!", Severity.Info);
+    }
+}

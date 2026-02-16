@@ -1,0 +1,22 @@
+﻿@using Skojjt.Core.Authentication
+@inject ICurrentUserService CurrentUserService
+
+<MudNavMenu>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Hem</MudNavLink>
+    
+    <AuthorizeView>
+        <Authorized>
+            <MudNavLink Href="/sk" Icon="@Icons.Material.Filled.Groups2">Scoutkårer</MudNavLink>
+            <MudNavLink Href="/persons" Icon="@Icons.Material.Filled.People">Personer</MudNavLink>
+            <MudNavLink Href="/troops" Icon="@Icons.Material.Filled.Groups">Avdelningar</MudNavLink>
+            <MudNavLink Href="/dak-analys" Icon="@Icons.Material.Filled.FactCheck">DAK-analys</MudNavLink>
+            
+            @if (CurrentUserService.IsAdmin)
+            {
+                <MudDivider Class="my-2" />
+                <MudNavLink Href="/admin" Icon="@Icons.Material.Filled.AdminPanelSettings">Administration</MudNavLink>
+            }
+        </Authorized>
+    </AuthorizeView>
+</MudNavMenu>
+

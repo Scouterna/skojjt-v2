@@ -1,0 +1,482 @@
+@page "/dak-analys"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Exports
+@using Skojjt.Core.Exports.Validation
+@using Skojjt.Core.Services
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject IDakAnalysisService DakAnalysisService
+@inject ISnackbar Snackbar
+
+<PageTitle>DAK-analys - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
+    <MudText Typo="Typo.h4" Class="mb-2">DAK XML-analys</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        Läs in, validera och jämför DAK-filer. Beräkna förväntat aktivitetsbidrag.
+    </MudText>
+
+    @* File upload section *@
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Fil 1 (primär)</MudText>
+                <MudFileUpload T="IBrowserFile" Accept=".xml" FilesChanged="OnFile1Changed" MaximumFileCount="1">
+                    <ActivatorContent>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.UploadFile" FullWidth="true">
+                            @(_file1Name ?? "Välj DAK XML-fil")
+                        </MudButton>
+                    </ActivatorContent>
+                </MudFileUpload>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Fil 2 (jämför mot)</MudText>
+                <MudFileUpload T="IBrowserFile" Accept=".xml" FilesChanged="OnFile2Changed" MaximumFileCount="1">
+                    <ActivatorContent>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary"
+                                   StartIcon="@Icons.Material.Filled.UploadFile" FullWidth="true">
+                            @(_file2Name ?? "Välj DAK XML-fil (valfri)")
+                        </MudButton>
+                    </ActivatorContent>
+                </MudFileUpload>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    @* Settings *@
+    @if (_parseResult1 is { Success: true })
+    {
+        <MudPaper Elevation="2" Class="pa-4 mt-4">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="string" Label="Bidragsinställningar" @bind-Value="_selectedSettingsKey"
+                               Variant="Variant.Outlined" Dense="true">
+                        @foreach (var s in AktivitetsbidragKnownSettings.All)
+                        {
+                            <MudSelectItem Value="@s.Namn">@s.Namn</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudNumericField T="int" Label="Terminsår" @bind-Value="_terminsAr"
+                                     Variant="Variant.Outlined" Min="2020" Max="2040" />
+                </MudItem>
+                <MudItem xs="12" md="3" Class="d-flex align-end">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.Calculate"
+                               OnClick="RunValidation" Disabled="@(_parseResult1?.Data is null)">
+                        Beräkna bidrag
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+
+    @* Parse issues for file 1 *@
+    @if (_parseResult1 is not null)
+    {
+        <MudPaper Elevation="2" Class="pa-4 mt-4">
+            <MudText Typo="Typo.h6" Class="mb-2">
+                Inläsningsresultat — @_parseResult1.FileName
+                @if (_parseResult1.Success)
+                {
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small" Class="ml-2">OK</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Error" Size="Size.Small" Class="ml-2">Fel</MudChip>
+                }
+            </MudText>
+
+            @if (_parseResult1.Data is not null)
+            {
+                <MudText Typo="Typo.body2" Class="mb-2">
+                    <strong>@_parseResult1.Data.ForeningsNamn</strong> (ID: @_parseResult1.Data.ForeningsId) —
+                    Kommun: @_parseResult1.Data.KommunId —
+                    Kort: @_parseResult1.Data.Kort.NamnPaKort —
+                    @_parseResult1.Data.Kort.Sammankomster.Count sammankomster,
+                    @_parseResult1.Data.Kort.Deltagare.Count deltagare,
+                    @_parseResult1.Data.Kort.Ledare.Count ledare
+                </MudText>
+            }
+
+            @if (_parseResult1.Issues.Count > 0)
+            {
+                @RenderIssueList(_parseResult1.Issues)
+            }
+        </MudPaper>
+    }
+
+    @if (_parseResult2 is not null)
+    {
+        <MudPaper Elevation="2" Class="pa-4 mt-4">
+            <MudText Typo="Typo.h6" Class="mb-2">
+                Inläsningsresultat — @_parseResult2.FileName
+                @if (_parseResult2.Success)
+                {
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small" Class="ml-2">OK</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Error" Size="Size.Small" Class="ml-2">Fel</MudChip>
+                }
+            </MudText>
+
+            @if (_parseResult2.Issues.Count > 0)
+            {
+                @RenderIssueList(_parseResult2.Issues)
+            }
+        </MudPaper>
+    }
+
+    @* Comparison results *@
+    @if (_comparisonResult is not null)
+    {
+        <MudPaper Elevation="2" Class="pa-4 mt-4">
+            <MudText Typo="Typo.h6" Class="mb-2">
+                Jämförelse
+                @if (_comparisonResult.AreEqual)
+                {
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small" Class="ml-2">Identiska</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Warning" Size="Size.Small" Class="ml-2">Skillnader</MudChip>
+                }
+            </MudText>
+
+            @if (_comparisonResult.MetadataChanges.Count > 0)
+            {
+                <MudText Typo="Typo.subtitle2" Class="mt-2">Metadataändringar</MudText>
+                <MudSimpleTable Dense="true" Hover="true" Elevation="0">
+                    <thead>
+                        <tr><th>Fält</th><th>Gammalt</th><th>Nytt</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in _comparisonResult.MetadataChanges)
+                        {
+                            <tr>
+                                <td>@c.FieldName</td>
+                                <td><MudText Color="Color.Error">@c.OldValue</MudText></td>
+                                <td><MudText Color="Color.Success">@c.NewValue</MudText></td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+
+            @if (_comparisonResult.AddedSammankomster.Count > 0)
+            {
+                <MudText Typo="Typo.subtitle2" Class="mt-2" Color="Color.Success">
+                    + @_comparisonResult.AddedSammankomster.Count nya sammankomster
+                </MudText>
+            }
+            @if (_comparisonResult.RemovedSammankomster.Count > 0)
+            {
+                <MudText Typo="Typo.subtitle2" Class="mt-2" Color="Color.Error">
+                    − @_comparisonResult.RemovedSammankomster.Count borttagna sammankomster
+                </MudText>
+            }
+            @if (_comparisonResult.ModifiedSammankomster.Count > 0)
+            {
+                <MudText Typo="Typo.subtitle2" Class="mt-2" Color="Color.Warning">
+                    ~ @_comparisonResult.ModifiedSammankomster.Count ändrade sammankomster
+                </MudText>
+                @foreach (var diff in _comparisonResult.ModifiedSammankomster)
+                {
+                    <MudText Typo="Typo.body2" Class="ml-4 mt-1">
+                        <strong>Kod @diff.Kod:</strong>
+                        @if (diff.FieldChanges.Count > 0) { <span>@string.Join(", ", diff.FieldChanges.Select(f => f.FieldName))</span> }
+                        @if (diff.AddedDeltagare.Count > 0) { <span class="mud-success-text"> +@diff.AddedDeltagare.Count deltagare</span> }
+                        @if (diff.RemovedDeltagare.Count > 0) { <span class="mud-error-text"> −@diff.RemovedDeltagare.Count deltagare</span> }
+                        @if (diff.AddedLedare.Count > 0) { <span class="mud-success-text"> +@diff.AddedLedare.Count ledare</span> }
+                        @if (diff.RemovedLedare.Count > 0) { <span class="mud-error-text"> −@diff.RemovedLedare.Count ledare</span> }
+                    </MudText>
+                }
+            }
+
+            @if (_comparisonResult.AddedDeltagare.Count > 0 || _comparisonResult.RemovedDeltagare.Count > 0)
+            {
+                <MudText Typo="Typo.subtitle2" Class="mt-2">Registerändringar (deltagare)</MudText>
+                @if (_comparisonResult.AddedDeltagare.Count > 0)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Success">+ @string.Join(", ", _comparisonResult.AddedDeltagare.Select(d => $"{d.Fornamn} {d.Efternamn} ({d.Uid})"))</MudText>
+                }
+                @if (_comparisonResult.RemovedDeltagare.Count > 0)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Error">− @string.Join(", ", _comparisonResult.RemovedDeltagare.Select(d => $"{d.Fornamn} {d.Efternamn} ({d.Uid})"))</MudText>
+                }
+            }
+        </MudPaper>
+    }
+
+    @* Bidragsberäkning *@
+    @if (_bidragResult is not null)
+    {
+        <MudPaper Elevation="2" Class="pa-4 mt-4">
+            <MudText Typo="Typo.h6" Class="mb-2">
+                Aktivitetsbidrag — @_bidragResult.Summering.Settings.Namn
+            </MudText>
+
+            @* Summary cards *@
+            <MudGrid Class="mb-4">
+                <MudItem xs="6" md="3">
+                    <MudPaper Elevation="0" Class="pa-3 mud-theme-primary" Style="text-align:center">
+                        <MudText Typo="Typo.h5">@_bidragResult.Summering.TotaltBelopp.ToString("N2") kr</MudText>
+                        <MudText Typo="Typo.caption">Totalt belopp</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudPaper Elevation="0" Class="pa-3" Style="text-align:center">
+                        <MudText Typo="Typo.h5">@_bidragResult.Summering.AntalBidragsberattigadeSammankomster / @_bidragResult.Summering.SammankomstBerakningar.Count</MudText>
+                        <MudText Typo="Typo.caption">Godkända sammankomster</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudPaper Elevation="0" Class="pa-3" Style="text-align:center">
+                        <MudText Typo="Typo.h6">@_bidragResult.Summering.TotaltAntalFlickor st × @_bidragResult.Summering.Settings.BeloppPerFlicka kr</MudText>
+                        <MudText Typo="Typo.caption">Flickor = @_bidragResult.Summering.TotaltBeloppFlickor.ToString("N2") kr</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudPaper Elevation="0" Class="pa-3" Style="text-align:center">
+                        <MudText Typo="Typo.h6">@_bidragResult.Summering.TotaltAntalPojkar st × @_bidragResult.Summering.Settings.BeloppPerPojke kr</MudText>
+                        <MudText Typo="Typo.caption">Pojkar = @_bidragResult.Summering.TotaltBeloppPojkar.ToString("N2") kr</MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            @* Per-meeting table *@
+            <MudSimpleTable Dense="true" Hover="true" Striped="true">
+                <thead>
+                    <tr>
+                        <th>Kod</th>
+                        <th>Datum</th>
+                        <th>Flickor</th>
+                        <th>Pojkar</th>
+                        <th style="text-align:right">Belopp</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in _bidragResult.Summering.SammankomstBerakningar)
+                    {
+                        <tr>
+                            <td>@s.Kod</td>
+                            <td>@s.Datum.ToString("yyyy-MM-dd")</td>
+                            <td>@s.AntalFlickor</td>
+                            <td>@s.AntalPojkar</td>
+                            <td style="text-align:right">@s.Belopp.ToString("N2") kr</td>
+                            <td>
+                                @if (s.ArBidragsberattigad)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                }
+                                else
+                                {
+                                    <MudTooltip Text="@s.AvslagsOrsak">
+                                        <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Small" />
+                                    </MudTooltip>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr style="font-weight:bold">
+                        <td colspan="2">Totalt</td>
+                        <td>@_bidragResult.Summering.TotaltAntalFlickor</td>
+                        <td>@_bidragResult.Summering.TotaltAntalPojkar</td>
+                        <td style="text-align:right">@_bidragResult.Summering.TotaltBelopp.ToString("N2") kr</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </MudSimpleTable>
+
+            @* Validation issues *@
+            @if (_bidragResult.Issues.Count > 0)
+            {
+                <MudExpansionPanels Class="mt-4">
+                    <MudExpansionPanel Text="@($"Valideringsdetaljer ({_bidragResult.Issues.Count})")">
+                        @RenderIssueTable(_bidragResult.Issues)
+                    </MudExpansionPanel>
+                </MudExpansionPanels>
+            }
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    private string? _file1Name;
+    private string? _file2Name;
+    private DakParseResult? _parseResult1;
+    private DakParseResult? _parseResult2;
+    private DakComparisonResult? _comparisonResult;
+    private AktivitetsbidragResult? _bidragResult;
+    private string _selectedSettingsKey = AktivitetsbidragKnownSettings.Goteborg2026.Namn;
+    private int _terminsAr = DateTime.Now.Year;
+
+    private async Task OnFile1Changed(IBrowserFile? file)
+    {
+        if (file is null) return;
+        _file1Name = file.Name;
+        _parseResult1 = null;
+        _comparisonResult = null;
+        _bidragResult = null;
+
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            ms.Position = 0;
+
+            _parseResult1 = DakAnalysisService.Parse(ms, file.Name);
+
+            if (_parseResult1.Success)
+                Snackbar.Add($"Fil inläst: {_parseResult1.Data!.Kort.Sammankomster.Count} sammankomster", Severity.Success);
+            else
+                Snackbar.Add("Filen innehåller fel — se detaljer nedan", Severity.Warning);
+
+            TryCompare();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte läsa filen: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OnFile2Changed(IBrowserFile? file)
+    {
+        if (file is null) return;
+        _file2Name = file.Name;
+        _parseResult2 = null;
+        _comparisonResult = null;
+
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            ms.Position = 0;
+
+            _parseResult2 = DakAnalysisService.Parse(ms, file.Name);
+            TryCompare();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte läsa filen: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void TryCompare()
+    {
+        _comparisonResult = null;
+        if (_parseResult1?.Data is not null && _parseResult2?.Data is not null)
+        {
+            _comparisonResult = DakAnalysisService.Compare(_parseResult1.Data, _parseResult2.Data);
+        }
+    }
+
+    private void RunValidation()
+    {
+        if (_parseResult1?.Data is null) return;
+
+        var settings = AktivitetsbidragKnownSettings.All.FirstOrDefault(s => s.Namn == _selectedSettingsKey);
+        _bidragResult = DakAnalysisService.Validate(_parseResult1.Data, settings, _terminsAr);
+    }
+
+    private RenderFragment RenderIssueList(IReadOnlyList<DakParseIssue> issues) => __builder =>
+    {
+        <MudList T="DakParseIssue" Dense="true" Class="mt-2">
+            @foreach (var issue in issues)
+            {
+                var (icon, color) = issue.Severity switch
+                {
+                    DakIssueSeverity.Error => (Icons.Material.Filled.Error, Color.Error),
+                    DakIssueSeverity.Warning => (Icons.Material.Filled.Warning, Color.Warning),
+                    _ => (Icons.Material.Filled.Info, Color.Info),
+                };
+                <MudListItem T="DakParseIssue" Icon="@icon" IconColor="@color">
+                    <div>
+                        @if (issue.LineNumber > 0)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Class="mr-1"
+                                     Style="font-size:0.75em">Rad @issue.LineNumber</MudChip>
+                        }
+                        @issue.Message
+                    </div>
+                    @if (!string.IsNullOrEmpty(issue.XmlPath))
+                    {
+                        <div>
+                            <code style="font-size:0.8em; color:gray">@issue.XmlPath</code>
+                        </div>
+                    }
+                    @if (issue.ActualValue is not null)
+                    {
+                        <div style="font-size:0.8em; color:gray">
+                            fick: <strong>@issue.ActualValue</strong>
+                            @if (issue.ExpectedValue is not null)
+                            {
+                                <text> — förväntade: <strong>@issue.ExpectedValue</strong></text>
+                            }
+                        </div>
+                    }
+                </MudListItem>
+            }
+        </MudList>
+    };
+
+    private RenderFragment RenderIssueTable(IReadOnlyList<DakParseIssue> issues) => __builder =>
+    {
+        <MudSimpleTable Dense="true" Hover="true" Striped="true" Style="font-size:0.85em">
+            <thead>
+                <tr>
+                    <th style="width:30px"></th>
+                    <th style="width:70px">Rad</th>
+                    <th>Meddelande</th>
+                    <th>Sökväg</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var issue in issues)
+                {
+                    <tr>
+                        <td>
+                            @switch (issue.Severity)
+                            {
+                                case DakIssueSeverity.Error:
+                                    <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Small" />
+                                    break;
+                                case DakIssueSeverity.Warning:
+                                    <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Small" />
+                                    break;
+                                default:
+                                    <MudIcon Icon="@Icons.Material.Filled.Info" Color="Color.Info" Size="Size.Small" />
+                                    break;
+                            }
+                        </td>
+                        <td>@(issue.LineNumber > 0 ? issue.LineNumber.ToString() : "—")</td>
+                        <td>
+                            @issue.Message
+                            @if (issue.ActualValue is not null)
+                            {
+                                <br /><code style="font-size:0.8em">
+                                    fick: @issue.ActualValue
+                                    @if (issue.ExpectedValue is not null)
+                                    {
+                                        <text>, förväntade: @issue.ExpectedValue</text>
+                                    }
+                                </code>
+                            }
+                        </td>
+                        <td><code style="font-size:0.8em">@issue.XmlPath</code></td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    };
+}

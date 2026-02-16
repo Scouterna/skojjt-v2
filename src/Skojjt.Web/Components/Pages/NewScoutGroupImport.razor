@@ -1,0 +1,429 @@
+@page "/sk/new"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Infrastructure.Scoutnet
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject ISemesterRepository SemesterRepository
+@inject IScoutnetApiClient ApiClient
+@inject IScoutnetImportService ImportService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Lägg till ny scoutkår - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 mb-8">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    <MudText Typo="Typo.h4" Class="mb-2">Lägg till ny scoutkår</MudText>
+    <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">
+        Importera en scoutkår från Scoutnet
+    </MudText>
+
+    <MudStepper @bind-ActiveIndex="_activeStep">
+        @* Step 1: Enter credentials *@
+        <MudStep Title="Ange uppgifter">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Scoutnet-uppgifter</MudText>
+
+                <MudAlert Severity="Severity.Info" Class="mb-4">
+                    <MudText Typo="Typo.body2">
+                        Du hittar Scoutnet-ID och API-nyckel i Scoutnet under <strong>Kårinställningar ? Webbkopplingar</strong>.
+                        Välj API-nyckeln för <strong>"Alla medlemmar (utökad)"</strong>.
+                    </MudText>
+                </MudAlert>
+
+                <MudStack Spacing="3">
+                    <MudNumericField @bind-Value="_scoutGroupId"
+                                     Label="Scoutnet Grupp-ID"
+                                     Variant="Variant.Outlined"
+                                     HelperText="Kårens ID i Scoutnet (t.ex. 1137)"
+                                     Min="1"
+                                     Disabled="_isVerifying" />
+
+                    <MudTextField @bind-Value="_apiKey"
+                                  Label="API-nyckel (Alla medlemmar)"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Password"
+                                  HelperText="API-nyckeln för 'Alla medlemmar (utökad)'"
+                                  Disabled="_isVerifying" />
+
+                    @if (!string.IsNullOrEmpty(_verifyError))
+                    {
+                        <MudAlert Severity="Severity.Error" Dense="true">
+                            @_verifyError
+                        </MudAlert>
+                    }
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.CloudSync"
+                               OnClick="VerifyCredentials"
+                               Disabled="@(_isVerifying || !_scoutGroupId.HasValue || _scoutGroupId.Value <= 0 || string.IsNullOrWhiteSpace(_apiKey))"
+                               FullWidth="true"
+                               Size="Size.Large">
+                        @if (_isVerifying)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            <span>Verifierar...</span>
+                        }
+                        else
+                        {
+                            <span>Verifiera och fortsätt</span>
+                        }
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+        </MudStep>
+
+        @* Step 2: Confirm and import *@
+        <MudStep Title="Bekräfta och importera">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Bekräfta import</MudText>
+
+                @if (_verifiedScoutGroup != null)
+                {
+                    <MudAlert Severity="Severity.Success" Class="mb-4">
+                        <MudText Typo="Typo.body1"><strong>Anslutning lyckades!</strong></MudText>
+                    </MudAlert>
+
+                    <MudSimpleTable Dense="true" Striped="true" Class="mb-4">
+                        <tbody>
+                            <tr>
+                                <td><strong>Kårnamn</strong></td>
+                                <td>@_verifiedScoutGroup.Name</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Scoutnet-ID</strong></td>
+                                <td>@_verifiedScoutGroup.Id</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Antal medlemmar</strong></td>
+                                <td>@_memberCount</td>
+                            </tr>
+                        </tbody>
+                    </MudSimpleTable>
+
+                    <MudSelect T="int"
+                               @bind-Value="_selectedSemesterId"
+                               Label="Termin"
+                               Variant="Variant.Outlined"
+                               HelperText="Välj vilken termin som ska importeras till"
+                               Disabled="_isImporting"
+                               Class="mb-4">
+                        @foreach (var semester in _availableSemesters)
+                        {
+                            <MudSelectItem Value="@semester.Id">@semester.DisplayName</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    @if (_existingScoutGroup != null)
+                    {
+                        <MudAlert Severity="Severity.Warning" Class="mb-4">
+                            <MudText Typo="Typo.body2">
+                                Scoutkåren <strong>@_existingScoutGroup.Name</strong> finns redan i databasen. 
+                                API-nyckeln kommer att uppdateras och en ny import kommer att köras.
+                            </MudText>
+                        </MudAlert>
+                    }
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.CloudDownload"
+                               OnClick="StartImport"
+                               Disabled="_isImporting"
+                               FullWidth="true"
+                               Size="Size.Large">
+                        @if (_isImporting)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            <span>Importerar...</span>
+                        }
+                        else
+                        {
+                            <span>Starta import</span>
+                        }
+                    </MudButton>
+                }
+            </MudPaper>
+        </MudStep>
+
+        @* Step 3: Results *@
+        <MudStep Title="Resultat">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Importresultat</MudText>
+
+                @if (_importResult != null)
+                {
+                    @if (_importResult.Success)
+                    {
+                        <MudAlert Severity="Severity.Success" Class="mb-4">
+                            Import slutförd på @_importResult.Duration.TotalSeconds.ToString("F1") sekunder
+                        </MudAlert>
+
+                        <MudSimpleTable Dense="true" Striped="true" Class="mb-4">
+                            <tbody>
+                                <tr>
+                                    <td><MudIcon Icon="@Icons.Material.Filled.PersonAdd" Size="Size.Small" Class="mr-2" /> Nya personer</td>
+                                    <td class="text-right"><strong>@_importResult.PersonsCreated</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Class="mr-2" /> Uppdaterade personer</td>
+                                    <td class="text-right"><strong>@_importResult.PersonsUpdated</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small" Class="mr-2" /> Avdelningar</td>
+                                    <td class="text-right"><strong>@_importResult.TroopsProcessed</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><MudIcon Icon="@Icons.Material.Filled.GroupAdd" Size="Size.Small" Class="mr-2" /> Avdelningsmedlemskap</td>
+                                    <td class="text-right"><strong>@_importResult.TroopMembershipsCreated</strong></td>
+                                </tr>
+                            </tbody>
+                        </MudSimpleTable>
+
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.ArrowForward"
+                                   Href="@($"/sk/{_scoutGroupId!.Value}")"
+                                   FullWidth="true"
+                                   Size="Size.Large">
+                            Gå till scoutkåren
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Error" Class="mb-4">
+                            Import misslyckades: @_importResult.ErrorMessage
+                        </MudAlert>
+
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Refresh"
+                                   OnClick="@(() => { _activeStep = 0; _verifiedScoutGroup = null; })"
+                                   FullWidth="true">
+                            Börja om
+                        </MudButton>
+                    }
+                }
+            </MudPaper>
+        </MudStep>
+    </MudStepper>
+
+    @* Progress Log *@
+    @if (_logMessages.Count > 0)
+    {
+        <MudPaper Elevation="2" Class="pa-4 mt-4">
+            <div class="d-flex align-center mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.Terminal" Class="mr-2" Color="Color.Primary" />
+                <MudText Typo="Typo.h6">Importlogg</MudText>
+            </div>
+
+            <MudPaper Elevation="0"
+                      Style="background-color: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; max-height: 300px; overflow-y: auto;"
+                      Class="pa-3">
+                @foreach (var (message, timestamp, severity) in _logMessages)
+                {
+                    <div style="color: @GetLogColor(severity)">
+                        <span style="color: #6a9955;">[@timestamp.ToString("HH:mm:ss")]</span> @message
+                    </div>
+                }
+            </MudPaper>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    private int _activeStep = 0;
+    private int? _scoutGroupId;
+    private string _apiKey = string.Empty;
+    private bool _isVerifying = false;
+    private bool _isImporting = false;
+    private string? _verifyError;
+    private ScoutGroup? _verifiedScoutGroup;
+    private ScoutGroup? _existingScoutGroup;
+    private int _memberCount;
+    private List<Semester> _availableSemesters = new();
+    private int _selectedSemesterId;
+    private ScoutnetImportResult? _importResult;
+    private List<(string Message, DateTime Timestamp, LogSeverity Severity)> _logMessages = new();
+    private ScoutnetMemberListResponse? _verifiedResponse;
+
+    private List<BreadcrumbItem> _breadcrumbs = new()
+    {
+        new BreadcrumbItem("Scoutkårer", href: "/sk"),
+        new BreadcrumbItem("Lägg till ny", href: null, disabled: true)
+    };
+
+    private enum LogSeverity { Info, Success, Warning, Error }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load available semesters
+        var currentSemester = await SemesterRepository.GetOrCreateCurrentSemesterAsync();
+        var semesters = await SemesterRepository.GetAllOrderedAsync();
+        _availableSemesters = semesters.ToList();
+
+        if (!_availableSemesters.Any(s => s.Id == currentSemester.Id))
+        {
+            _availableSemesters.Insert(0, currentSemester);
+        }
+
+        _selectedSemesterId = currentSemester.Id;
+    }
+
+    private async Task VerifyCredentials()
+    {
+        if (!_scoutGroupId.HasValue || _scoutGroupId.Value <= 0 || string.IsNullOrWhiteSpace(_apiKey))
+            return;
+
+        _isVerifying = true;
+        _verifyError = null;
+        _logMessages.Clear();
+
+        try
+        {
+            AddLog($"Verifierar anslutning till Scoutnet för grupp {_scoutGroupId.Value}...", LogSeverity.Info);
+
+            // Try to fetch members from Scoutnet to verify credentials
+            _verifiedResponse = await ApiClient.GetMemberListAsync(_scoutGroupId.Value, _apiKey);
+
+            if (_verifiedResponse.Data.Count == 0)
+            {
+                _verifyError = "Inga medlemmar hittades. Kontrollera att API-nyckeln har rätt behörighet.";
+                AddLog(_verifyError, LogSeverity.Error);
+                return;
+            }
+
+            // Extract scout group name from first member
+            var firstMember = _verifiedResponse.Data.Values.First();
+            var groupName = firstMember.GetGroupName() ?? $"Scoutkår {_scoutGroupId.Value}";
+            _memberCount = _verifiedResponse.Data.Count;
+
+            // Check if scout group already exists
+            _existingScoutGroup = await ScoutGroupRepository.GetByIdAsync(_scoutGroupId.Value);
+
+            // Create a preview object
+            _verifiedScoutGroup = _existingScoutGroup ?? new ScoutGroup
+            {
+                Id = _scoutGroupId.Value,
+                Name = groupName,
+                ApiKeyAllMembers = _apiKey
+            };
+
+            AddLog($"Anslutning lyckades! Hittade {_memberCount} medlemmar i {groupName}", LogSeverity.Success);
+
+            // Move to next step
+            _activeStep = 1;
+        }
+        catch (ScoutnetApiException ex)
+        {
+            _verifyError = $"Scoutnet API-fel: {ex.Message}";
+            AddLog(_verifyError, LogSeverity.Error);
+        }
+        catch (HttpRequestException ex)
+        {
+            _verifyError = $"Kunde inte ansluta till Scoutnet: {ex.Message}";
+            AddLog(_verifyError, LogSeverity.Error);
+        }
+        catch (Exception ex)
+        {
+            _verifyError = $"Ett oväntat fel uppstod: {ex.Message}";
+            AddLog(_verifyError, LogSeverity.Error);
+        }
+        finally
+        {
+            _isVerifying = false;
+        }
+    }
+
+    private async Task StartImport()
+    {
+        if (_verifiedScoutGroup == null || _verifiedResponse == null)
+            return;
+
+        _isImporting = true;
+
+        try
+        {
+            // Create or update scout group
+            if (_existingScoutGroup != null)
+            {
+                AddLog($"Uppdaterar befintlig scoutkår {_existingScoutGroup.Name}...", LogSeverity.Info);
+                _existingScoutGroup.ApiKeyAllMembers = _apiKey;
+                _existingScoutGroup.UpdatedAt = DateTime.UtcNow;
+                await ScoutGroupRepository.UpdateAsync(_existingScoutGroup);
+            }
+            else
+            {
+                AddLog($"Skapar ny scoutkår {_verifiedScoutGroup.Name}...", LogSeverity.Info);
+                _verifiedScoutGroup.ApiKeyAllMembers = _apiKey;
+                await ScoutGroupRepository.AddAsync(_verifiedScoutGroup);
+            }
+
+            // Run import using the already fetched response
+            var selectedSemester = _availableSemesters.FirstOrDefault(s => s.Id == _selectedSemesterId);
+            AddLog($"Startar import för termin {selectedSemester?.DisplayName ?? _selectedSemesterId.ToString()}...", LogSeverity.Info);
+
+            var progress = new Progress<string>(message =>
+            {
+                InvokeAsync(() =>
+                {
+                    var severity = message.Contains("error", StringComparison.OrdinalIgnoreCase) ? LogSeverity.Error :
+                                   message.Contains("warning", StringComparison.OrdinalIgnoreCase) ? LogSeverity.Warning :
+                                   message.Contains("completed", StringComparison.OrdinalIgnoreCase) ? LogSeverity.Success :
+                                   LogSeverity.Info;
+                    AddLog(message, severity);
+                    StateHasChanged();
+                });
+            });
+
+            _importResult = await ImportService.ImportFromResponseAsync(
+                _scoutGroupId!.Value,
+                _selectedSemesterId,
+                _verifiedResponse,
+                progress);
+
+            if (_importResult.Success)
+            {
+                AddLog($"Import slutförd! {_importResult.PersonsCreated} nya, {_importResult.PersonsUpdated} uppdaterade", LogSeverity.Success);
+                Snackbar.Add($"Scoutkåren {_verifiedScoutGroup.Name} har lagts till!", Severity.Success);
+                _activeStep = 2;
+            }
+            else
+            {
+                AddLog($"Import misslyckades: {_importResult.ErrorMessage}", LogSeverity.Error);
+                Snackbar.Add($"Import misslyckades: {_importResult.ErrorMessage}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            AddLog($"Ett oväntat fel uppstod: {ex.Message}", LogSeverity.Error);
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+            _importResult = new ScoutnetImportResult
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+        finally
+        {
+            _isImporting = false;
+        }
+    }
+
+    private void AddLog(string message, LogSeverity severity)
+    {
+        _logMessages.Add((message, DateTime.Now, severity));
+    }
+
+    private static string GetLogColor(LogSeverity severity) => severity switch
+    {
+        LogSeverity.Success => "#4ec9b0",
+        LogSeverity.Warning => "#dcdcaa",
+        LogSeverity.Error => "#f14c4c",
+        _ => "#d4d4d4"
+    };
+}

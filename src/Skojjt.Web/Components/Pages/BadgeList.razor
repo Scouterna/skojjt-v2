@@ -1,0 +1,296 @@
+@page "/sk/{ScoutGroupId:int}/badges"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject IBadgeService BadgeService
+@inject IBadgeTemplateRepository BadgeTemplateRepository
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+<PageTitle>Märken - @(_scoutGroup?.Name ?? "Kår") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">Du har inte behörighet att visa denna scoutkår.</MudAlert>
+    }
+    else if (_scoutGroup == null)
+    {
+        <MudAlert Severity="Severity.Error">Scoutkåren kunde inte hittas.</MudAlert>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap align-center justify-space-between mb-4 gap-2">
+            <MudText Typo="Typo.h4">Märken - @_scoutGroup.Name</MudText>
+            <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="@(() => _showNewBadgeDialog = true)">
+                    Nytt märke
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.ContentCopy"
+                           OnClick="OpenTemplateDialog">
+                    Från mall
+                </MudButton>
+                <MudButton StartIcon="@(_showArchived ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                           OnClick="ToggleArchived">
+                    @(_showArchived ? "Dölj arkiverade" : "Visa arkiverade")
+                </MudButton>
+            </MudButtonGroup>
+        </div>
+
+        @if (_badges.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">
+                Inga märken definierade för denna kår. Skapa ett nytt märke eller välj en mall.
+            </MudAlert>
+        }
+        else
+        {
+            <MudGrid>
+                @foreach (var badge in _badges)
+                {
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Elevation="2" Class="@(badge.IsArchived ? "mud-card-archived" : "")">
+                            <MudCardHeader>
+                                <CardHeaderAvatar>
+                                    @if (!string.IsNullOrEmpty(badge.ImageUrl))
+                                    {
+                                        <MudAvatar Src="@badge.ImageUrl" Size="Size.Large" />
+                                    }
+                                    else
+                                    {
+                                        <MudAvatar Color="Color.Primary" Size="Size.Large">
+                                            <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" />
+                                        </MudAvatar>
+                                    }
+                                </CardHeaderAvatar>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">@badge.Name</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @badge.Parts.Count(p => !p.IsAdminPart) scoutdelar,
+                                        @badge.Parts.Count(p => p.IsAdminPart) admindelar
+                                    </MudText>
+                                </CardHeaderContent>
+                                <CardHeaderActions>
+                                    @if (badge.IsArchived)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Default">Arkiverad</MudChip>
+                                    }
+                                </CardHeaderActions>
+                            </MudCardHeader>
+                            @if (!string.IsNullOrEmpty(badge.Description))
+                            {
+                                <MudCardContent>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@badge.Description</MudText>
+                                </MudCardContent>
+                            }
+                            <MudCardActions>
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           Href="@($"/sk/{ScoutGroupId}/badges/{badge.Id}")">
+                                    Visa
+                                </MudButton>
+                                <MudSpacer />
+                                <MudTooltip Text="@(badge.IsArchived ? "Avarkivera" : "Arkivera")">
+                                    <MudIconButton Icon="@(badge.IsArchived ? Icons.Material.Filled.Unarchive : Icons.Material.Filled.Archive)"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => ToggleBadgeArchive(badge))" />
+                                </MudTooltip>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+
+        @* New Badge Dialog *@
+        <MudDialog @bind-Visible="_showNewBadgeDialog" Options="_dialogOptions">
+            <TitleContent>
+                <MudText Typo="Typo.h6">Nytt märke</MudText>
+            </TitleContent>
+            <DialogContent>
+                <MudTextField @bind-Value="_newBadgeName" Label="Namn" Required="true" Class="mb-2" />
+                <MudTextField @bind-Value="_newBadgeDescription" Label="Beskrivning" Lines="3" />
+                <MudTextField @bind-Value="_newBadgeImageUrl" Label="Bild-URL" Class="mt-2" />
+            </DialogContent>
+            <DialogActions>
+                <MudButton OnClick="@(() => _showNewBadgeDialog = false)">Avbryt</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                           OnClick="CreateBadge" Disabled="@string.IsNullOrWhiteSpace(_newBadgeName)">
+                    Skapa
+                </MudButton>
+            </DialogActions>
+        </MudDialog>
+
+        @* Template Dialog *@
+        <MudDialog @bind-Visible="_showTemplateDialog" Options="_dialogOptions">
+            <TitleContent>
+                <MudText Typo="Typo.h6">Skapa märke från mall</MudText>
+            </TitleContent>
+            <DialogContent>
+                @if (_templates.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info">Inga mallar tillgängliga.</MudAlert>
+                }
+                else
+                {
+                    <MudList T="BadgeTemplate" Dense="true">
+                        @foreach (var template in _templates)
+                        {
+                            <MudListItem T="BadgeTemplate" OnClick="@(() => CreateFromTemplate(template))">
+                                <div class="d-flex align-center gap-2">
+                                    @if (!string.IsNullOrEmpty(template.ImageUrl))
+                                    {
+                                        <MudAvatar Src="@template.ImageUrl" Size="Size.Small" />
+                                    }
+                                    else
+                                    {
+                                        <MudAvatar Color="Color.Secondary" Size="Size.Small">
+                                            <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Size="Size.Small" />
+                                        </MudAvatar>
+                                    }
+                                    <div>
+                                        <MudText>@template.Name</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                            @template.Parts.Count(p => !p.IsAdminPart) scoutdelar,
+                                            @template.Parts.Count(p => p.IsAdminPart) admindelar
+                                        </MudText>
+                                    </div>
+                                </div>
+                            </MudListItem>
+                        }
+                    </MudList>
+                }
+            </DialogContent>
+            <DialogActions>
+                <MudButton OnClick="@(() => _showTemplateDialog = false)">Stäng</MudButton>
+            </DialogActions>
+        </MudDialog>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int ScoutGroupId { get; set; }
+
+    private ScoutGroup? _scoutGroup;
+    private List<Badge> _badges = [];
+    private List<BadgeTemplate> _templates = [];
+    private bool _loading = true;
+    private bool _hasAccess;
+    private bool _showArchived;
+    private bool _showNewBadgeDialog;
+    private bool _showTemplateDialog;
+    private string _newBadgeName = "";
+    private string? _newBadgeDescription;
+    private string? _newBadgeImageUrl;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
+            if (!_hasAccess)
+            {
+                _breadcrumbs = [new("Scoutkårer", href: "/sk"), new("Ingen behörighet", href: null, disabled: true)];
+                return;
+            }
+
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+            if (_scoutGroup != null)
+            {
+                _badges = (await BadgeService.GetBadgesForGroupAsync(ScoutGroupId, _showArchived)).ToList();
+                _breadcrumbs =
+                [
+                    new("Scoutkårer", href: "/sk"),
+                    new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
+                    new("Märken", href: null, disabled: true)
+                ];
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ToggleArchived()
+    {
+        _showArchived = !_showArchived;
+        await LoadData();
+    }
+
+    private async Task ToggleBadgeArchive(Badge badge)
+    {
+        try
+        {
+            await BadgeService.SetArchivedAsync(badge.Id, !badge.IsArchived);
+            Snackbar.Add(badge.IsArchived ? $"{badge.Name} avarkiverad" : $"{badge.Name} arkiverad", Severity.Success);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task CreateBadge()
+    {
+        try
+        {
+            var badge = await BadgeService.CreateBadgeAsync(ScoutGroupId, _newBadgeName, _newBadgeDescription, _newBadgeImageUrl);
+            _showNewBadgeDialog = false;
+            _newBadgeName = "";
+            _newBadgeDescription = null;
+            _newBadgeImageUrl = null;
+            Snackbar.Add($"Märke '{badge.Name}' skapat", Severity.Success);
+            NavigationManager.NavigateTo($"/sk/{ScoutGroupId}/badges/{badge.Id}");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OpenTemplateDialog()
+    {
+        var all = await BadgeTemplateRepository.GetAllWithPartsAsync();
+        _templates = all.ToList();
+        _showTemplateDialog = true;
+    }
+
+    private async Task CreateFromTemplate(BadgeTemplate template)
+    {
+        try
+        {
+            var badge = await BadgeService.CreateFromTemplateAsync(template.Id, ScoutGroupId);
+            _showTemplateDialog = false;
+            Snackbar.Add($"Märke '{badge.Name}' skapat från mall", Severity.Success);
+            NavigationManager.NavigateTo($"/sk/{ScoutGroupId}/badges/{badge.Id}");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+        }
+    }
+}

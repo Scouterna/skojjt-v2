@@ -1,0 +1,24 @@
+Attendance reporting system
+
+There should be a system where you can export the attendance in data formats for use in other systems.
+In old skojjt there was number of export formats, including:
+   - DAK (Digitalt Aktivitetskort) XML export. See file: old\documentation\DAK-formatet-dokumentation-v2.2.pdf. Implemented in old skojjt's class DakData, used in old/start.py(433-496).
+   - Excel reports (Gothenburg format). See file: old\excelreport.py
+   - Excel reports (Stockholm format).See file: old\excelreport_sthlm.py
+   - Sensus attendance lists. This is a specific format used by Sensus. The end result should be pdf format, right now it's a web page that you have to print as pdf.
+   - Camp subsidy reports (Lagerbidrag) - Gothenburg & Stockholm. See file: old\lagerbidrag.py
+   - JSON export
+   - Group summary statistics, number of meetings, total attendance, attendance per females/males, attendance per leaders females/men.
+
+There is also exports for exporting member data for the scout group's current semester. This is needed for some entities like Göteborgs Stad that require member data to be exported in a specific format. See old\persons.py(154-211).
+We also need data for number of persons per age and gender.
+
+After the attendance is generated at the end of the semester the troop should optionally be locked for editing, to ensure data integrity.
+
+The attendance reporting system should be modular, so that new export formats can be added easily.
+
+Stretch goal 1: If we can implement a extension/plugin system for this that would be great (scratch-programing or a simple script language).
+Stretch goal 2: there should be a way to schedule automatic exports, e.g., weekly or monthly, and have them sent via email to specified recipients.
+Stretch goal 3: There is are badges for overnights and camp attendance. If we can summarize the number of camp meetings (IsHike=true) attended per person we can help the leaders to award these badges.
+
+There needs to be unit tests for the export formats, to ensure that the exported data is correct and follows the required specifications.
