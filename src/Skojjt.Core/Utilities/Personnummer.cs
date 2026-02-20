@@ -1,17 +1,12 @@
-﻿using System;
-using System.Text.RegularExpressions;
-
-namespace Skojjt.Core.Utilities;
+﻿namespace Skojjt.Core.Utilities;
 
 public class Personnummer : IEquatable<Personnummer>, IComparable<Personnummer>
 {
-    private readonly string _personnummer;
-	private static Regex _rePnr = new Regex(@"\d{8}\d{4}", RegexOptions.Compiled);
-    public Personnummer(string nummer)
-    {
-        nummer = nummer.Replace("-", "");
-        _personnummer = nummer;
-    }
+	private readonly string _personnummer;
+	public Personnummer(string nummer)
+	{
+		_personnummer = nummer.Replace("-", "");
+	}
 
 	public override string ToString()
 	{
@@ -24,43 +19,39 @@ public class Personnummer : IEquatable<Personnummer>, IComparable<Personnummer>
 	}
 
 	public bool CorrectChecksum()
-        {
-            if (_personnummer.Length != 12) return false;
-            var checknumber = CalculateCheckDigit();
-            return Int32.Parse(_personnummer.AsSpan(11, 1)) == checknumber;
+	{
+		if (_personnummer.Length != 12) return false;
+		var checknumber = CalculateCheckDigit();
+		return Int32.Parse(_personnummer.AsSpan(11, 1)) == checknumber;
 	}
 
 	public int CalculateCheckDigit()
-    {
-        int sum = 0;
+	{
+		int sum = 0;
 
-        for (int i = 2; i < _personnummer.Length-1; i++)
-        {
-            int v = (int)Char.GetNumericValue(_personnummer[i]);
-            // integer multiply every every second with 2, 1, 2 ..
-            v *= 2 - (i & 1);
+		for (int i = 2; i < _personnummer.Length - 1; i++)
+		{
+			int v = (int)Char.GetNumericValue(_personnummer[i]);
+			// integer multiply every every second with 2, 1, 2 ..
+			v *= 2 - (i & 1);
 
-            if (v > 9)
-            {
-                // if larger than 9: 10-18, add the separate numbers together
-                sum += 1 + (v % 10);
-            }
-            else
-            {
-                sum += v;
-            }
-        }
-        return (10 - sum % 10) % 10; // subtract from next higher 10
+			if (v > 9)
+			{
+				// if larger than 9: 10-18, add the separate numbers together
+				sum += 1 + (v % 10);
+			}
+			else
+			{
+				sum += v;
+			}
+		}
+		return (10 - sum % 10) % 10; // subtract from next higher 10
 	}
 
-	public bool IsValid 
+	public bool IsValid
 	{
 		get
 		{
-			if (_rePnr.Match(_personnummer).Success != true)
-			{
-				return false;
-			}
 			if (_personnummer.Length != 12)
 			{
 				return false;
@@ -73,8 +64,8 @@ public class Personnummer : IEquatable<Personnummer>, IComparable<Personnummer>
 		}
 	}
 	public int Year => Int32.Parse(_personnummer.AsSpan(0, 4));
-    public int Month => Int32.Parse(_personnummer.AsSpan(4, 2));
-    public int Day
+	public int Month => Int32.Parse(_personnummer.AsSpan(4, 2));
+	public int Day
 	{
 		get
 		{
@@ -83,11 +74,11 @@ public class Personnummer : IEquatable<Personnummer>, IComparable<Personnummer>
 			return day - 60;
 		}
 	}
-    public bool IsSamordningsnummer => Int32.Parse(_personnummer.AsSpan(6, 2)) >= 60;
-    public bool IsFemale => (Int32.Parse(_personnummer.AsSpan(10, 1)) & 1) == 0;
-    public bool IsMale => (Int32.Parse(_personnummer.AsSpan(10, 1)) & 1) != 0;
-    public DateOnly BirthDay => new DateOnly(Year, Month, Day);
-	public string BirthDayString =>	BirthDay.ToString("yyyy-MM-dd");
+	public bool IsSamordningsnummer => Int32.Parse(_personnummer.AsSpan(6, 2)) >= 60;
+	public bool IsFemale => (Int32.Parse(_personnummer.AsSpan(10, 1)) & 1) == 0;
+	public bool IsMale => (Int32.Parse(_personnummer.AsSpan(10, 1)) & 1) != 0;
+	public DateOnly BirthDay => new DateOnly(Year, Month, Day);
+	public string BirthDayString => BirthDay.ToString("yyyy-MM-dd");
 
 	public bool Equals(Personnummer? other)
 	{
@@ -117,7 +108,7 @@ public class Personnummer : IEquatable<Personnummer>, IComparable<Personnummer>
 	public override int GetHashCode()
 	{
 		// Century number as first digit in the int
-		int hash = (int.Parse(_personnummer.AsSpan(0, 2))-18) * 1000000000;
+		int hash = (int.Parse(_personnummer.AsSpan(0, 2)) - 18) * 1000000000;
 		// behind the centry are all other digits except the check number
 		hash += int.Parse(_personnummer.AsSpan(2, 9));
 		return hash;

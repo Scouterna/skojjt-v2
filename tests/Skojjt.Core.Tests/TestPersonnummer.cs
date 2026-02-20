@@ -23,6 +23,20 @@ public class TestPersonnummer
 	}
 
 	[TestMethod]
+	public void TestHashCode()
+	{
+		var personnummer = new Personnummer("20000101-2384");
+		Assert.IsTrue(personnummer.IsValid);
+		var hash = personnummer.GetHashCode();
+		Assert.AreEqual(2000101238, hash);
+
+		personnummer = new Personnummer("19991231-2387");
+		Assert.IsTrue(personnummer.IsValid);
+		hash = personnummer.GetHashCode();
+		Assert.AreEqual(1991231238, hash);
+	}
+
+	[TestMethod]
 	public void TestEquals()
 	{
 		// test personnummer from skatteverket
