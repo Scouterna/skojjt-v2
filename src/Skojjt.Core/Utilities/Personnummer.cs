@@ -114,7 +114,7 @@ public class Personnummer : IEquatable<Personnummer>, IComparable<Personnummer>
 		return hash;
 	}
 
-	public static bool operator ==(Personnummer left, Personnummer right)
+	public static bool operator ==(Personnummer? left, Personnummer? right)
 	{
 		if (ReferenceEquals(left, null))
 		{
@@ -124,12 +124,12 @@ public class Personnummer : IEquatable<Personnummer>, IComparable<Personnummer>
 		return left.Equals(right);
 	}
 
-	public static bool operator !=(Personnummer left, Personnummer right)
+	public static bool operator !=(Personnummer? left, Personnummer? right)
 	{
 		return !(left == right);
 	}
 
-	public static bool operator <(Personnummer left, Personnummer right)
+	public static bool operator <(Personnummer? left, Personnummer? right)
 	{
 		return ReferenceEquals(left, null) ? !ReferenceEquals(right, null) : left.CompareTo(right) < 0;
 	}

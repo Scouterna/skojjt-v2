@@ -105,7 +105,7 @@ public class MyProfileServiceTests : IDisposable
 
         var groups = await _service.GetGroupMembershipsAsync(TestPersonId);
 
-        Assert.AreEqual(2, groups.Count);
+        Assert.HasCount(2, groups);
         Assert.IsTrue(groups.Any(g => g.ScoutGroupId == TestGroupId1 && g.ScoutGroupName == "Testscoutkåren"));
         Assert.IsTrue(groups.Any(g => g.ScoutGroupId == TestGroupId2 && g.ScoutGroupName == "Andrakåren"));
     }
@@ -131,7 +131,7 @@ public class MyProfileServiceTests : IDisposable
 
         var groups = await _service.GetGroupMembershipsAsync(TestPersonId);
 
-        Assert.AreEqual(1, groups.Count);
+        Assert.HasCount(1, groups);
         Assert.AreEqual(TestGroupId1, groups[0].ScoutGroupId);
     }
 
@@ -142,7 +142,7 @@ public class MyProfileServiceTests : IDisposable
 
         var groups = await _service.GetGroupMembershipsAsync(TestPersonId);
 
-        Assert.AreEqual(0, groups.Count);
+        Assert.HasCount(0, groups);
     }
 
     [TestMethod]
@@ -159,7 +159,7 @@ public class MyProfileServiceTests : IDisposable
 
         var groups = await _service.GetGroupMembershipsAsync(TestPersonId);
 
-        Assert.AreEqual(0, groups.Count);
+        Assert.HasCount(0, groups);
     }
 
     [TestMethod]
@@ -177,7 +177,7 @@ public class MyProfileServiceTests : IDisposable
 
         var groups = await _service.GetGroupMembershipsAsync(TestPersonId);
 
-        Assert.AreEqual(1, groups.Count);
+        Assert.HasCount(1, groups);
         Assert.AreEqual("leader,member_registrar", groups[0].Roles);
     }
 
@@ -196,7 +196,7 @@ public class MyProfileServiceTests : IDisposable
 
         var groups = await _service.GetGroupMembershipsAsync(TestPersonId);
 
-        Assert.AreEqual(1, groups.Count);
+        Assert.HasCount(1, groups);
         Assert.AreEqual("", groups[0].Roles);
     }
 
@@ -227,7 +227,7 @@ public class MyProfileServiceTests : IDisposable
 
         var summary = await _service.GetAttendanceSummaryAsync(TestPersonId);
 
-        Assert.AreEqual(1, summary.Count);
+        Assert.HasCount(1, summary);
         Assert.AreEqual("Spårarna", summary[0].TroopName);
         Assert.AreEqual(2025, summary[0].Year);
         Assert.IsTrue(summary[0].IsAutumn);
@@ -242,7 +242,7 @@ public class MyProfileServiceTests : IDisposable
 
         var summary = await _service.GetAttendanceSummaryAsync(TestPersonId);
 
-        Assert.AreEqual(0, summary.Count);
+        Assert.HasCount(0, summary);
     }
 
     [TestMethod]
@@ -265,7 +265,7 @@ public class MyProfileServiceTests : IDisposable
 
         var summary = await _service.GetAttendanceSummaryAsync(TestPersonId);
 
-        Assert.AreEqual(2, summary.Count);
+        Assert.HasCount(2, summary);
         // Ordered by year desc, then isAutumn desc ? HT 2025 first, VT 2025 second
         Assert.AreEqual("HT 2025", summary[0].SemesterDisplayName);
         Assert.AreEqual(2, summary[0].AttendedMeetings);
@@ -288,7 +288,7 @@ public class MyProfileServiceTests : IDisposable
 
         var summary = await _service.GetAttendanceSummaryAsync(TestPersonId);
 
-        Assert.AreEqual(0, summary.Count);
+        Assert.HasCount(0, summary);
     }
 
     [TestMethod]
@@ -311,7 +311,7 @@ public class MyProfileServiceTests : IDisposable
 
         var summary = await _service.GetAttendanceSummaryAsync(TestPersonId);
 
-        Assert.AreEqual(2, summary.Count);
+        Assert.HasCount(2, summary);
         Assert.AreEqual(2025, summary[0].Year, "Newest semester should come first");
         Assert.AreEqual(2024, summary[1].Year, "Older semester should come second");
     }

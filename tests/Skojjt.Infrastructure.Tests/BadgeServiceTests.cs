@@ -109,7 +109,7 @@ public class BadgeServiceTests : IDisposable
 
         Assert.IsNotNull(result);
         Assert.AreEqual(badge.Id, result.Id);
-        Assert.AreEqual(3, result.Parts.Count);
+        Assert.HasCount(3, result.Parts);
     }
 
     [TestMethod]
@@ -130,7 +130,7 @@ public class BadgeServiceTests : IDisposable
         var parts = result!.Parts.ToList();
         for (int i = 1; i < parts.Count; i++)
         {
-            Assert.IsTrue(parts[i].SortOrder > parts[i - 1].SortOrder,
+            Assert.IsGreaterThan(parts[i - 1].SortOrder, parts[i].SortOrder,
                 $"Part at index {i} should have higher SortOrder than part at index {i - 1}");
         }
     }
@@ -146,7 +146,7 @@ public class BadgeServiceTests : IDisposable
 
         var result = await _service.GetBadgesForGroupAsync(TestGroupId);
 
-        Assert.AreEqual(2, result.Count);
+        Assert.HasCount(2, result);
         Assert.AreEqual("Alfa", result[0].Name);
         Assert.AreEqual("Beta", result[1].Name);
     }
@@ -162,7 +162,7 @@ public class BadgeServiceTests : IDisposable
 
         var result = await _service.GetBadgesForGroupAsync(TestGroupId);
 
-        Assert.AreEqual(1, result.Count);
+        Assert.HasCount(1, result);
         Assert.AreEqual("Active", result[0].Name);
     }
 
@@ -177,7 +177,7 @@ public class BadgeServiceTests : IDisposable
 
         var result = await _service.GetBadgesForGroupAsync(TestGroupId, includeArchived: true);
 
-        Assert.AreEqual(2, result.Count);
+        Assert.HasCount(2, result);
     }
 
     // --- TogglePartAsync ---
@@ -342,7 +342,7 @@ public class BadgeServiceTests : IDisposable
             .OrderBy(p => p.SortOrder)
             .ToListAsync();
 
-        Assert.AreEqual(2, parts.Count);
+        Assert.HasCount(2, parts);
         Assert.AreEqual("Tälta", parts[0].ShortDescription);
         Assert.IsFalse(parts[0].IsAdminPart);
         Assert.AreEqual("Godkänd", parts[1].ShortDescription);
@@ -426,16 +426,16 @@ public class BadgeServiceTests : IDisposable
         var progress = await _service.GetTroopProgressAsync(badge.Id, TestTroopId);
 
         Assert.AreEqual(badge.Id, progress.Badge.Id);
-        Assert.AreEqual(2, progress.Parts.Count);
-        Assert.AreEqual(2, progress.PersonProgress.Count);
+        Assert.HasCount(2, progress.Parts);
+        Assert.HasCount(2, progress.PersonProgress);
 
         var person1Progress = progress.PersonProgress.First(p => p.Person.Id == TestPerson1Id);
-        Assert.IsTrue(person1Progress.CompletedPartIds.Contains(parts[0].Id));
-        Assert.IsFalse(person1Progress.CompletedPartIds.Contains(parts[1].Id));
+        Assert.Contains(parts[0].Id, person1Progress.CompletedPartIds);
+        Assert.DoesNotContain(parts[1].Id, person1Progress.CompletedPartIds);
         Assert.IsFalse(person1Progress.IsCompleted);
 
         var person2Progress = progress.PersonProgress.First(p => p.Person.Id == TestPerson2Id);
-        Assert.AreEqual(0, person2Progress.CompletedPartIds.Count);
+        Assert.IsEmpty(person2Progress.CompletedPartIds);
     }
 
     [TestMethod]
@@ -459,7 +459,7 @@ public class BadgeServiceTests : IDisposable
 
         var summaries = await _service.GetPersonBadgesAsync(TestPerson1Id);
 
-        Assert.AreEqual(1, summaries.Count);
+        Assert.HasCount(1, summaries);
         Assert.AreEqual(badge.Id, summaries[0].Badge.Id);
         Assert.AreEqual(2, summaries[0].TotalParts);
         Assert.AreEqual(1, summaries[0].CompletedParts);
@@ -470,7 +470,7 @@ public class BadgeServiceTests : IDisposable
     public async Task GetPersonBadgesAsync_ReturnsEmptyWhenNoProgress()
     {
         var summaries = await _service.GetPersonBadgesAsync(TestPerson1Id);
-        Assert.AreEqual(0, summaries.Count);
+        Assert.HasCount(0, summaries);
     }
 
     [TestMethod]
@@ -484,7 +484,7 @@ public class BadgeServiceTests : IDisposable
 
         var summaries = await _service.GetPersonBadgesAsync(TestPerson1Id);
 
-        Assert.AreEqual(1, summaries.Count);
+        Assert.HasCount(1, summaries);
         Assert.IsTrue(summaries[0].IsCompleted);
     }
 
@@ -494,7 +494,7 @@ public class BadgeServiceTests : IDisposable
     public async Task GetTroopBadgesAsync_ReturnsEmptyWhenNoneAssigned()
     {
         var badges = await _service.GetTroopBadgesAsync(TestTroopId);
-        Assert.AreEqual(0, badges.Count);
+        Assert.HasCount(0, badges);
     }
 
     [TestMethod]
@@ -506,7 +506,7 @@ public class BadgeServiceTests : IDisposable
         await _service.AssignBadgeToTroopAsync(badge.Id, TestTroopId);
 
         var badges = await _service.GetTroopBadgesAsync(TestTroopId);
-        Assert.AreEqual(1, badges.Count);
+        Assert.HasCount(1, badges);
         Assert.AreEqual(badge.Id, badges[0].Id);
     }
 
@@ -520,7 +520,7 @@ public class BadgeServiceTests : IDisposable
         await _service.AssignBadgeToTroopAsync(badge.Id, TestTroopId); // duplicate
 
         var badges = await _service.GetTroopBadgesAsync(TestTroopId);
-        Assert.AreEqual(1, badges.Count);
+        Assert.HasCount(1, badges);
     }
 
     [TestMethod]
@@ -534,7 +534,7 @@ public class BadgeServiceTests : IDisposable
         await _service.AssignBadgeToTroopAsync(badge2.Id, TestTroopId);
 
         var badges = await _service.GetTroopBadgesAsync(TestTroopId);
-        Assert.AreEqual(2, badges.Count);
+        Assert.HasCount(2, badges);
         Assert.AreEqual(badge1.Id, badges[0].Id, "First assigned badge should come first");
         Assert.AreEqual(badge2.Id, badges[1].Id, "Second assigned badge should come second");
     }
@@ -549,7 +549,7 @@ public class BadgeServiceTests : IDisposable
         await _service.UnassignBadgeFromTroopAsync(badge.Id, TestTroopId);
 
         var badges = await _service.GetTroopBadgesAsync(TestTroopId);
-        Assert.AreEqual(0, badges.Count);
+        Assert.HasCount(0, badges);
     }
 
     [TestMethod]
@@ -568,7 +568,7 @@ public class BadgeServiceTests : IDisposable
         await _service.AssignBadgeToTroopAsync(badge.Id, TestTroopId);
 
         var badges = await _service.GetTroopBadgesAsync(TestTroopId);
-        Assert.AreEqual(1, badges.Count);
-        Assert.AreEqual(3, badges[0].Parts.Count, "Should include parts");
+        Assert.HasCount(1, badges);
+        Assert.HasCount(3, badges[0].Parts, "Should include parts");
     }
 }

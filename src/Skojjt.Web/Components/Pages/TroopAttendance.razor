@@ -525,7 +525,7 @@
     private bool _newMeetingIsHike = false;
     private DateTime? _newMeetingDate = DateTime.Today;
     private TimeSpan? _newMeetingTime = new TimeSpan(18, 30, 0);
-    private string? _newMeetingLocation;
+    private string? _newMeetingLocation = "";
     
     private DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
     private List<BreadcrumbItem> _breadcrumbs = new();
@@ -549,7 +549,7 @@
     private List<Badge> _availableBadges = [];
 
     // Add field
-    private Dictionary<int, ScoutGroupPerson?> _scoutGroupPersonLookup = new();
+    private Dictionary<int, ScoutGroupPerson> _scoutGroupPersonLookup = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -1127,7 +1127,7 @@
                         MeetingDate = DateOnly.FromDateTime(_newMeetingDate.Value),
                         StartTime = _newMeetingTime.HasValue ? TimeOnly.FromTimeSpan(_newMeetingTime.Value) : new TimeOnly(18, 30),
                         DurationMinutes = _newMeetingDuration,
-                        Location = _newMeetingLocation,
+                        Location = _newMeetingLocation ?? "",
                         IsHike = _newMeetingIsHike
                     };
                     

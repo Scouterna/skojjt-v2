@@ -57,7 +57,7 @@ public class ClaimsTransformationTests
 
         // Assert
         var uidClaims = ((ClaimsIdentity)result.Identity!).FindAll(ScoutIdClaimTypes.ScoutnetUid).ToList();
-        Assert.AreEqual(1, uidClaims.Count, "Should not duplicate ScoutnetUid claim");
+        Assert.HasCount(1, uidClaims, "Should not duplicate ScoutnetUid claim");
     }
 
     [TestMethod]

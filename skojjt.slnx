@@ -1,0 +1,55 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+  </Folder>  
+  <Folder Name="/docs/">
+    <File Path="docs/TODO.md" />
+    <File Path="docs/DATABASE.md" />
+    <File Path="docs/database-er-diagram.md" />
+    <File Path="docs/idea.txt" />
+    <File Path="docs/idea2.txt" />
+    <File Path="docs/Idea3.txt" />
+    <File Path="docs/Idea4.txt" />
+    <File Path="docs/Idea5.txt" />
+    <File Path="docs/PRD-skojjt-refactor.md" />
+    <File Path="docs/ScoutID-Authentication.md" />
+  </Folder>
+  <Folder Name="/external/">
+    <Project Path="external/scoutid-keycloak-provider.shproj" />
+  </Folder>
+  <Folder Name="/scripts/">
+    <Project Path="scripts/migration/migration.pyproj" Type="888888a0-9f3d-457c-b088-3a5042f75d52" Id="b8d74f54-b71d-465b-932f-842b3e31ea62">
+      <Platform Project="AnyCPU" />
+      <Build Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Skojjt.Core/Skojjt.Core.csproj" />
+    <Project Path="src/Skojjt.Infrastructure/Skojjt.Infrastructure.csproj" />
+    <Project Path="src/Skojjt.Shared/Skojjt.Shared.csproj" />
+    <Project Path="src/Skojjt.Web/Skojjt.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Skojjt.Core.Tests/Skojjt.Core.Tests.csproj" />
+    <Project Path="tests/Skojjt.Infrastructure.Tests/Skojjt.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Skojjt.Web.Tests/Skojjt.Web.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Skojjt.ImportTool/Skojjt.ImportTool.csproj" />
+  </Folder>
+  <Folder Name="/v1/">
+    <Project Path="v1/skojjt.pyproj" Type="888888a0-9f3d-457c-b088-3a5042f75d52" Id="b9f34766-fb60-4ea6-bf80-0666118661b9">
+      <Platform Project="AnyCPU" />
+      <Build Project="false" />
+    </Project>
+  </Folder>
+  <Project Path="StressTest/StressTest.csproj" />
+</Solution>

@@ -1,4 +1,4 @@
-	using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -130,15 +130,19 @@ else
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
     })
-    .AddOpenIdConnect(options =>
-    {
-        options.Authority = builder.Configuration["ScoutId:Authority"];
-        options.ClientId = builder.Configuration["ScoutId:ClientId"];
-        options.ClientSecret = builder.Configuration["ScoutId:ClientSecret"];
+	.AddOpenIdConnect(options =>
+	{
+		options.Authority = builder.Configuration["ScoutId:Authority"];
+		options.ClientId = builder.Configuration["ScoutId:ClientId"];
+		options.ClientSecret = builder.Configuration["ScoutId:ClientSecret"];
 		options.ResponseType = OpenIdConnectResponseType.Code;
-        options.SaveTokens = true;
-        options.GetClaimsFromUserInfoEndpoint = true;
-        
+		options.SaveTokens = true;
+		options.GetClaimsFromUserInfoEndpoint = true;
+
+		// Disable Pushed Authorization Requests (PAR) - ScoutID advertises PAR
+		// support but rejects the requests with 'invalid_request'
+		options.PushedAuthorizationBehavior = PushedAuthorizationBehavior.Disable;
+      
         // Allow HTTP for local development (e.g., http://localhost:8080)
         // In production, Authority should always use HTTPS
         if (builder.Environment.IsDevelopment())

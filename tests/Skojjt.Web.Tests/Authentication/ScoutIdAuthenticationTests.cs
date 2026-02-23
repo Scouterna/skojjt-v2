@@ -21,7 +21,7 @@ public class ScoutIdAuthenticationTests
 
         // Assert
         Assert.IsNotNull(users);
-        Assert.IsTrue(users.Count >= 4, "Should have at least 4 default test users");
+        Assert.IsGreaterThanOrEqualTo(4, users.Count, "Should have at least 4 default test users");
         Assert.IsTrue(users.Any(u => u.IsMemberRegistrar), "Should have at least one member registrar");
     }
 
@@ -68,8 +68,8 @@ public class ScoutIdAuthenticationTests
         Assert.IsNotNull(claims);
         Assert.AreEqual(user.Email, claims.Email);
         Assert.AreEqual(user.Uid, claims.Uid);
-        Assert.IsTrue(claims.MemberRegistrarGroups.Contains(user.GroupId));
-        Assert.IsTrue(claims.AccessibleGroupIds.Count > 0);
+        Assert.Contains(user.GroupId, claims.MemberRegistrarGroups);
+        Assert.IsGreaterThan(0, claims.AccessibleGroupIds.Count);
     }
 
     [TestMethod]
@@ -89,7 +89,7 @@ public class ScoutIdAuthenticationTests
         Assert.AreEqual("custom@test.se", user.Email);
         Assert.AreEqual(2000, user.GroupId);
         Assert.IsTrue(user.IsMemberRegistrar);
-        Assert.AreEqual(2, user.AccessibleGroupIds.Count);
+        Assert.HasCount(2, user.AccessibleGroupIds);
         Assert.IsTrue(user.GroupRoles.ContainsKey("2000"));
     }
 
@@ -123,7 +123,7 @@ public class ScoutIdAuthenticationTests
         Assert.AreEqual("test@test.se", user.Email);
         Assert.AreEqual("Test User", user.DisplayName);
         Assert.IsTrue(user.IsMemberRegistrar(1001));
-        Assert.AreEqual(2, user.AccessibleGroupIds.Count);
+        Assert.HasCount(2, user.AccessibleGroupIds);
     }
 
     [TestMethod]
@@ -202,7 +202,7 @@ public class ScoutIdAuthenticationTests
         var accessibleGroups = service.GetAccessibleGroupIds();
 
         // Assert
-        Assert.AreEqual(3, accessibleGroups.Count);
+        Assert.HasCount(3, accessibleGroups);
         CollectionAssert.AreEquivalent(new[] { 1001, 1002, 1003 }, accessibleGroups.ToList());
     }
 
@@ -225,7 +225,7 @@ public class ScoutIdAuthenticationTests
         // Act & Assert
         var ex = Assert.ThrowsExactly<UnauthorizedAccessException>(() => 
             service.RequireGroupAccess(9999));
-        Assert.IsTrue(ex.Message.Contains("9999"), "Exception should mention the group ID");
+        Assert.Contains("9999", ex.Message, "Exception should mention the group ID");
     }
 
     [TestMethod]

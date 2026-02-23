@@ -43,7 +43,7 @@ else
                     <div class="d-flex align-center gap-2">
                         @if (!string.IsNullOrEmpty(context.ImageUrl))
                         {
-                            <MudAvatar Src="@context.ImageUrl" Size="Size.Small" />
+                            <MudAvatar src="@context.ImageUrl" Size="Size.Small" />
                         }
                         <strong>@context.Name</strong>
                     </div>
@@ -140,8 +140,8 @@ else
                 <MudSelectItem T="bool" Value="false">Scout</MudSelectItem>
                 <MudSelectItem T="bool" Value="true">Admin</MudSelectItem>
             </MudSelect>
-            <MudTextField @bind-Value="_newPartShort" Label="Kort" Dense="true" MaxLength="255" Style="flex:1" />
-            <MudTextField @bind-Value="_newPartLong" Label="Lång" Dense="true" Style="flex:1" />
+            <MudTextField @bind-Value="_newPartShort" Label="Kort" dense="true" MaxLength="255" Style="flex:1" />
+            <MudTextField @bind-Value="_newPartLong" Label="Lång" dense="true" Style="flex:1" />
             <MudIconButton Icon="@Icons.Material.Filled.Add"
                            Color="Color.Primary"
                            Disabled="@string.IsNullOrWhiteSpace(_newPartShort)"

@@ -126,7 +126,7 @@ public class DakXmlExporterTests
         var kodValue = xml.Substring(kodStart, kodEnd - kodStart);
         
         // Verify it meets minimum length requirement (3 characters)
-        Assert.IsTrue(kodValue.Length >= 3, $"Meeting kod '{kodValue}' should be at least 3 characters");
+        Assert.IsGreaterThanOrEqualTo(3, kodValue.Length, $"Meeting kod '{kodValue}' should be at least 3 characters");
         
         // Verify it can be parsed as int32 (schema allows numeric strings)
         Assert.IsTrue(int.TryParse(kodValue, out var intValue), $"Meeting kod '{kodValue}' should be convertible to int32");
