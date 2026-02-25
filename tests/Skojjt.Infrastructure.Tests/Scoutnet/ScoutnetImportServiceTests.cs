@@ -412,7 +412,10 @@ public class ScoutnetImportServiceTests : IDisposable
         // Arrange
         var response = ScoutnetTestDataGenerator.CreateMemberListResponse(60, TestScoutGroupId);
         var progressMessages = new List<string>();
-        var progress = new Progress<string>(msg => progressMessages.Add(msg));
+        // Use a synchronous IProgress implementation to avoid race conditions.
+        // Progress<T> posts callbacks to the thread pool asynchronously, which can
+        // cause the assertion to run before the callbacks have executed on CI.
+        var progress = new SynchronousProgress<string>(msg => progressMessages.Add(msg));
 
         // Act
         var result = await _service.ImportFromResponseAsync(
@@ -450,4 +453,14 @@ public class ScoutnetImportServiceTests : IDisposable
     }
 
     #endregion
+}
+
+/// <summary>
+/// A synchronous <see cref="IProgress{T}"/> implementation for use in tests.
+/// Unlike <see cref="Progress{T}"/>, which posts callbacks to the thread pool,
+/// this invokes the callback inline on the reporting thread.
+/// </summary>
+file sealed class SynchronousProgress<T>(Action<T> handler) : IProgress<T>
+{
+    public void Report(T value) => handler(value);
 }
