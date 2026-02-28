@@ -20,6 +20,12 @@ using Skojjt.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Log startup diagnostics
+var startupLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("Startup");
+startupLogger.LogInformation("Starting Skojjt.Web, Environment: {Env}", builder.Environment.EnvironmentName);
+startupLogger.LogInformation("ConnectionString configured: {HasCs}", !string.IsNullOrEmpty(builder.Configuration.GetConnectionString("DefaultConnection")));
+startupLogger.LogInformation("ScoutId Authority: {Authority}", builder.Configuration["ScoutId:Authority"]);
+
 // Add MudBlazor services with Swedish localization
 builder.Services.AddMudServices();
 builder.Services.AddTransient<MudLocalizer, SwedishMudLocalizer>();
@@ -187,12 +193,12 @@ else
                 // Log all claims for debugging
                 if (context.Principal != null)
                 {
-                    logger.LogInformation("=== ScoutID Claims for {Name} ===", name);
+                    logger.LogDebug("=== ScoutID Claims for {Name} ===", name);
                     foreach (var claim in context.Principal.Claims)
                     {
-                        logger.LogInformation("  Claim: {Type} = {Value}", claim.Type, claim.Value);
+                        logger.LogDebug("  Claim: {Type} = {Value}", claim.Type, claim.Value);
                     }
-                    logger.LogInformation("=== End Claims ===");
+                    logger.LogDebug("=== End Claims ===");
                     
                     // Add Admin role if user has the scoutid_admin claim
                     // This must be done here (during sign-in) so it persists in the cookie
@@ -270,6 +276,9 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Log that configuration and DI completed successfully
+app.Logger.LogInformation("Application built successfully. Configuring middleware pipeline...");
+
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
@@ -301,5 +310,7 @@ app.MapHub<BadgeHub>("/hubs/badge");
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.Logger.LogInformation("Middleware pipeline configured. Starting application...");
 
 app.Run();
