@@ -95,6 +95,23 @@ For local development, override settings in `appsettings.Development.json`.
 dotnet test
 ```
 
+## Health Check
+
+The application exposes a health check endpoint for Azure monitoring:
+
+```
+GET /healthz
+```
+
+This endpoint is **unauthenticated** and returns:
+
+| Status | HTTP Code | Description |
+|--------|-----------|-------------|
+| `Healthy` | 200 | Application and database are reachable |
+| `Unhealthy` | 503 | Database connectivity check failed |
+
+Configure the Azure App Service health check probe to `https://<your-app>.azurewebsites.net/healthz`.
+
 ## License
 
 This project is licensed under the Apache License 2.0 — see the [LICENSE](LICENSE) file for details.

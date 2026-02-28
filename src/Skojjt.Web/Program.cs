@@ -264,6 +264,10 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddCascadingAuthenticationState();
 
+// Add health checks for Azure monitoring
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<SkojjtDbContext>("database");
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -283,6 +287,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseAntiforgery();
+
+// Map health check endpoint (unauthenticated, for Azure monitoring)
+app.MapHealthChecks("/healthz");
 
 // Map API controllers
 app.MapControllers();
