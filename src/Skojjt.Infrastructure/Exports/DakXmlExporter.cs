@@ -58,7 +58,7 @@ public class DakXmlExporter : IAttendanceExporter
 			Kort =
             {
                 NamnPaKort = data.Troop.Name,
-                NarvarokortNummer = GetNarvarokortNummer(data.Troop, data.Semester),
+                NarvarokortNummer = GetNarvarokortNummer(data.Troop, data.Semester).ToString(),
                 Lokal = data.DefaultLocation
             }
         };
@@ -139,16 +139,9 @@ public class DakXmlExporter : IAttendanceExporter
     /// The DAK schema requires this to be xs:int (Int32).
     /// Uses a combination of troop ScoutnetId and semester year to create uniqueness.
     /// </summary>
-    private static string GetNarvarokortNummer(Core.Entities.Troop troop, Core.Entities.Semester semester)
+    private static int GetNarvarokortNummer(Core.Entities.Troop troop, Core.Entities.Semester semester)
     {
-        // Create a unique integer by combining ScoutnetId with a hash of the semester
-        // ScoutnetId * 100 + (year % 100) gives us a unique number per troop per century
-        // This keeps the number within int32 range while being unique enough for practical use
-        var baseNumber = troop.ScoutnetId;
-        
-        // If ScoutnetId alone is unique enough within the context, just use it
-        // The NarvarokortNummer only needs to be unique within a single import
-        return baseNumber.ToString();
+        return troop.ScoutnetId * 1000 + semester.Id;
     }
 
     /// <summary>
@@ -158,17 +151,16 @@ public class DakXmlExporter : IAttendanceExporter
     private static string GetMeetingCode(Core.Entities.Meeting meeting, Core.Entities.Troop troop)
     {
 		//
-		//get_short_key returns a unique key for the meeting that will fit into a 32-bit signed integer.
-		//It is based on the date and troop id. Only one meeting per day is unique.
-		//"""
-		//# MAX ID: 2147483647 (max signed 32 bit int)
-		//# Example:1231zzyyxx
-		//# where zzyyxx is the troop id (to avoid collisions on the same day)
-		//toopid = troop.get_unique_id()
+		// get_short_key returns a unique string for this meeting.
+		//
+		// It does not have to be an signed int as before (bug fixed in Gothenburg kommun)
+		// It is a string with the max length of 50 chars(see DAK 2.2 specification) and should be unique for each meeting.
+		//
+		// It should also be deterministic, so the same meeting will always get the same short key, even if the meeting is deleted and recreated.
 		var toopid = troop.ScoutnetId;
-		var troopstr = toopid.ToString("000000");
-		var date = meeting.MeetingDate.ToString("MMdd");
-		return date + troopstr;
+		var semesterid = troop.SemesterId;
+		var datestr = meeting.MeetingDate.ToString("MMdd");
+		return $"{toopid}-{semesterid}-{datestr}";
     }
 
     private static string GenerateXml(DakData dak)

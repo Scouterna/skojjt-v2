@@ -127,10 +127,7 @@ public class DakXmlExporterTests
         
         // Verify it meets minimum length requirement (3 characters)
         Assert.IsGreaterThanOrEqualTo(3, kodValue.Length, $"Meeting kod '{kodValue}' should be at least 3 characters");
-        
-        // Verify it can be parsed as int32 (schema allows numeric strings)
-        Assert.IsTrue(int.TryParse(kodValue, out var intValue), $"Meeting kod '{kodValue}' should be convertible to int32");
-        Assert.AreEqual(315000100, intValue); // Should be the meeting ID
+        Assert.IsLessThanOrEqualTo(50, kodValue.Length, $"Meeting kod '{kodValue}' should be shorter than 50 characters");
     }
 
     [TestMethod]

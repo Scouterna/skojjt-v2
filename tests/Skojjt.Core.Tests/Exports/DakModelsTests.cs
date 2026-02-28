@@ -56,11 +56,8 @@ public class DakModelsTests
     [TestMethod]
     public void DakSammankomst_GetDateString_ReturnsFormattedDate()
     {
-        var sammankomst = new DakSammankomst
-        {
-            Datum = new DateTime(2025, 3, 15, 18, 30, 0)
-        };
-        
+        var sammankomst = new DakSammankomst("KOD123", new DateTime(2025, 3, 15, 18, 30, 0), 90, "Aktivitet");
+      
         Assert.AreEqual("2025-03-15", sammankomst.GetDateString());
         Assert.AreEqual("03/15", sammankomst.GetDateString("MM/dd"));
     }
@@ -68,10 +65,7 @@ public class DakModelsTests
     [TestMethod]
     public void DakSammankomst_GetStartTimeString_ReturnsFormattedTime()
     {
-        var sammankomst = new DakSammankomst
-        {
-            Datum = new DateTime(2025, 3, 15, 18, 30, 0)
-        };
+        var sammankomst = new DakSammankomst("KOD123", new DateTime(2025, 3, 15, 18, 30, 0), 90, "Aktivitet");
         
         Assert.AreEqual("18:30:00", sammankomst.GetStartTimeString());
         Assert.AreEqual("18:30", sammankomst.GetStartTimeString("HH:mm"));
@@ -80,11 +74,7 @@ public class DakModelsTests
     [TestMethod]
     public void DakSammankomst_GetStopTimeString_ReturnsCorrectEndTime()
     {
-        var sammankomst = new DakSammankomst
-        {
-            Datum = new DateTime(2025, 3, 15, 18, 30, 0),
-            DurationMinutes = 90
-        };
+        var sammankomst = new DakSammankomst("KOD123", new DateTime(2025, 3, 15, 18, 30, 0), 90, "Aktivitet");
         
         Assert.AreEqual("20:00:00", sammankomst.GetStopTimeString());
     }
@@ -92,11 +82,11 @@ public class DakModelsTests
     [TestMethod]
     public void DakSammankomst_GetStopTimeString_CapsAtMidnight()
     {
-        var sammankomst = new DakSammankomst
-        {
-            Datum = new DateTime(2025, 3, 15, 23, 30, 0),
-            DurationMinutes = 120  // Would go past midnight
-        };
+        var sammankomst = new DakSammankomst(
+			"KOD123", 
+			new DateTime(2025, 3, 15, 23, 30, 0), 
+			120, // Would go past midnight
+			"Aktivitet");
         
         Assert.AreEqual("23:59:59", sammankomst.GetStopTimeString());
     }
@@ -104,7 +94,7 @@ public class DakModelsTests
     [TestMethod]
     public void DakSammankomst_GetAllPersons_ReturnsAllLeadersAndParticipants()
     {
-        var sammankomst = new DakSammankomst();
+        var sammankomst = new DakSammankomst("KOD123", new DateTime(2025, 3, 15, 18, 30, 0), 90, "Aktivitet");
         sammankomst.Ledare.Add(new DakDeltagare { Uid = "1", Ledare = true });
         sammankomst.Ledare.Add(new DakDeltagare { Uid = "2", Ledare = true });
         sammankomst.Deltagare.Add(new DakDeltagare { Uid = "3", Ledare = false });

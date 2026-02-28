@@ -168,11 +168,12 @@ public class DakDeltagare
 /// </summary>
 public class DakSammankomst
 {
-    public DakSammankomst() { }
-
     public DakSammankomst(string kod, DateTime datum, int durationMinutes, string aktivitet)
     {
-        Kod = kod;
+		if (kod.Length > 50)
+			throw new ArgumentException("Kod cannot be longer than 50 characters.", nameof(kod));
+
+		Kod = kod;
         Datum = datum;
         DurationMinutes = durationMinutes;
         Aktivitet = aktivitet;
@@ -181,7 +182,7 @@ public class DakSammankomst
     /// <summary>
     /// Meeting code/ID.
     /// </summary>
-    public string Kod { get; set; } = string.Empty;
+    public string Kod { get; private set; } = string.Empty;
 
     /// <summary>
     /// Meeting date and start time.
