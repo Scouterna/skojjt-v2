@@ -35,6 +35,17 @@ jobs:
       - name: Publish
         run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --output ./publish
 
+      - name: Verify publish output
+        run: |
+          echo "=== runtimeconfig.json files ==="
+          find ./publish -name '*.runtimeconfig.json'
+          echo "=== Checking for Skojjt.Web.dll ==="
+          ls -la ./publish/Skojjt.Web.dll
+          RUNTIMECONFIG_COUNT=$(find ./publish -name '*.runtimeconfig.json' | wc -l)
+          if [ "$RUNTIMECONFIG_COUNT" -ne 1 ]; then
+            echo "::warning::Found $RUNTIMECONFIG_COUNT runtimeconfig.json files instead of 1"
+          fi
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
