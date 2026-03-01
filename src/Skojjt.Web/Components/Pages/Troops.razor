@@ -36,7 +36,7 @@
 else if (_troops.Count == 0)
 {
     <MudAlert Severity="Severity.Info">
-        Inga avdelningar hittades för den valda terminen.
+        Inga avdelningar hittades fÃ¶r den valda terminen.
     </MudAlert>
 }
 else
@@ -49,7 +49,7 @@ else
               LoadingProgressColor="Color.Primary">
         <HeaderContent>
             <MudTh>Namn</MudTh>
-            <MudTh>Märken</MudTh>
+            <MudTh>MÃ¤rken</MudTh>
             <MudTh Style="width: 100px;"></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -58,7 +58,7 @@ else
                     @context.Name
                 </MudLink>
             </MudTd>
-            <MudTd DataLabel="Märken">
+            <MudTd DataLabel="MÃ¤rken">
                 @* TODO: Show badges assigned to troop *@
                 <MudChip T="string" Size="Size.Small" Color="Color.Info">
                     <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Size="Size.Small" />
@@ -77,7 +77,7 @@ else
 
 @* Report buttons section *@
 <MudExpansionPanels MultiExpansion="true">
-    <MudExpansionPanel Text="Närvarorapport" Icon="@Icons.Material.Filled.Assessment">
+    <MudExpansionPanel Text="NÃ¤rvarorapport" Icon="@Icons.Material.Filled.Assessment">
         <MudGrid>
             <MudItem xs="12" sm="6" md="4">
                 <MudButton Variant="Variant.Filled" 
@@ -112,13 +112,13 @@ else
                            FullWidth="true"
                            Href="/reports/lagerbidrag"
                            StartIcon="@Icons.Material.Filled.Payments">
-                    Lägerbidrag
+                    LÃ¤gerbidrag
                 </MudButton>
             </MudItem>
         </MudGrid>
     </MudExpansionPanel>
     
-    <MudExpansionPanel Text="Kårinställningar" Icon="@Icons.Material.Filled.Settings">
+    <MudExpansionPanel Text="KÃ¥rinstÃ¤llningar" Icon="@Icons.Material.Filled.Settings">
         <MudGrid>
             <MudItem xs="12" sm="6">
                 <MudButton Variant="Variant.Outlined" 
@@ -126,7 +126,7 @@ else
                            FullWidth="true"
                            Href="/admin/scoutgroup"
                            StartIcon="@Icons.Material.Filled.Business">
-                    Kårinformation
+                    KÃ¥rinformation
                 </MudButton>
             </MudItem>
             <MudItem xs="12" sm="6">
@@ -135,29 +135,29 @@ else
                            FullWidth="true"
                            Href="/reports/summary"
                            StartIcon="@Icons.Material.Filled.Summarize">
-                    Föreningsredovisning
+                    FÃ¶reningsredovisning
                 </MudButton>
             </MudItem>
         </MudGrid>
     </MudExpansionPanel>
     
-    <MudExpansionPanel Text="Lägg till avdelning" Icon="@Icons.Material.Filled.Add">
+    <MudExpansionPanel Text="LÃ¤gg till avdelning" Icon="@Icons.Material.Filled.Add">
         <MudAlert Severity="Severity.Warning" Class="mb-4">
-            OBS! Avdelningen läggs inte till i Scoutnet, bara i Skojjt. 
-            Du kan använda en Skojjt-avdelning för att dela upp närvaron i flera grupper.
+            OBS! Avdelningen lÃ¤ggs inte till i Scoutnet, bara i Skojjt. 
+            Du kan anvÃ¤nda en Skojjt-avdelning fÃ¶r att dela upp nÃ¤rvaron i flera grupper.
         </MudAlert>
         <MudForm @ref="_newTroopForm">
             <MudTextField @bind-Value="_newTroopName" 
                           Label="Avdelningsnamn" 
                           Variant="Variant.Outlined"
                           Required="true"
-                          RequiredError="Ange ett namn för avdelningen" />
+                          RequiredError="Ange ett namn fÃ¶r avdelningen" />
             <MudButton Variant="Variant.Filled" 
                        Color="Color.Primary" 
                        Class="mt-4"
                        OnClick="CreateTroop"
                        StartIcon="@Icons.Material.Filled.Add">
-                Lägg till
+                LÃ¤gg till
             </MudButton>
         </MudForm>
     </MudExpansionPanel>

@@ -9,7 +9,7 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
-<MudText Typo="Typo.h6" Class="mb-4">Hantera Scoutkårer</MudText>
+<MudText Typo="Typo.h6" Class="mb-4">Hantera ScoutkÃ¥rer</MudText>
 
 @if (_loading)
 {
@@ -18,7 +18,7 @@
 else if (_scoutGroups.Count == 0)
 {
     <MudAlert Severity="Severity.Info">
-        Inga scoutkårer finns i systemet.
+        Inga scoutkÃ¥rer finns i systemet.
     </MudAlert>
 }
 else
@@ -31,7 +31,7 @@ else
             <MudTh>Personer</MudTh>
             <MudTh>Avdelningar</MudTh>
             <MudTh>Skapad</MudTh>
-            <MudTh>Åtgärder</MudTh>
+            <MudTh>Ã…tgÃ¤rder</MudTh>
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="ID">@context.Id</MudTd>
@@ -40,12 +40,12 @@ else
             <MudTd DataLabel="Personer">@context.ScoutGroupPersons.Count</MudTd>
             <MudTd DataLabel="Avdelningar">@context.Troops.Count</MudTd>
             <MudTd DataLabel="Skapad">@context.CreatedAt.ToString("yyyy-MM-dd")</MudTd>
-            <MudTd DataLabel="Åtgärder">
+            <MudTd DataLabel="Ã…tgÃ¤rder">
                 <MudIconButton Icon="@Icons.Material.Filled.Delete" 
                                Color="Color.Error" 
                                Size="Size.Small"
                                OnClick="@(() => ConfirmDeleteScoutGroup(context))"
-                               title="Ta bort scoutkår" />
+                               title="Ta bort scoutkÃ¥r" />
             </MudTd>
         </RowTemplate>
     </MudTable>
@@ -55,43 +55,43 @@ else
     <TitleContent>
         <MudText Typo="Typo.h6">
             <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Class="mr-2" />
-            Ta bort scoutkår
+            Ta bort scoutkÃ¥r
         </MudText>
     </TitleContent>
     <DialogContent>
         @if (_deletionPreview != null)
         {
             <MudAlert Severity="Severity.Warning" Class="mb-4">
-                <strong>Varning!</strong> Detta kommer permanent ta bort scoutkåren och all relaterad data.
+                <strong>Varning!</strong> Detta kommer permanent ta bort scoutkÃ¥ren och all relaterad data.
             </MudAlert>
             
             <MudText Typo="Typo.body1" Class="mb-2">
-                <strong>Scoutkår:</strong> @_deletionPreview.ScoutGroupName (ID: @_deletionPreview.ScoutGroupId)
+                <strong>ScoutkÃ¥r:</strong> @_deletionPreview.ScoutGroupName (ID: @_deletionPreview.ScoutGroupId)
             </MudText>
             
-            <MudText Typo="Typo.subtitle2" Class="mt-4 mb-2">Följande data kommer att tas bort:</MudText>
+            <MudText Typo="Typo.subtitle2" Class="mt-4 mb-2">FÃ¶ljande data kommer att tas bort:</MudText>
             
             <MudList T="string" Dense="true">
                 <MudListItem Icon="@Icons.Material.Filled.Person">
-                    <strong>@_deletionPreview.PersonsToDelete</strong> personer (endast i denna kår)
+                    <strong>@_deletionPreview.PersonsToDelete</strong> personer (endast i denna kÃ¥r)
                 </MudListItem>
                 <MudListItem Icon="@Icons.Material.Filled.PersonRemove">
-                    <strong>@_deletionPreview.PersonMembershipsToRemove</strong> medlemskap tas bort (personer finns i andra kårer)
+                    <strong>@_deletionPreview.PersonMembershipsToRemove</strong> medlemskap tas bort (personer finns i andra kÃ¥rer)
                 </MudListItem>
                 <MudListItem Icon="@Icons.Material.Filled.Groups">
                     <strong>@_deletionPreview.TroopsToDelete</strong> avdelningar
                 </MudListItem>
                 <MudListItem Icon="@Icons.Material.Filled.Event">
-                    <strong>@_deletionPreview.MeetingsToDelete</strong> möten
+                    <strong>@_deletionPreview.MeetingsToDelete</strong> mÃ¶ten
                 </MudListItem>
                 <MudListItem Icon="@Icons.Material.Filled.EmojiEvents">
-                    <strong>@_deletionPreview.BadgesToDelete</strong> märken
+                    <strong>@_deletionPreview.BadgesToDelete</strong> mÃ¤rken
                 </MudListItem>
             </MudList>
 
             <MudTextField @bind-Value="_confirmationText" 
-                          Label="Skriv kårens namn för att bekräfta"
-                          HelperText="@($"Skriv '{_deletionPreview.ScoutGroupName}' för att bekräfta borttagning")"
+                          Label="Skriv kÃ¥rens namn fÃ¶r att bekrÃ¤fta"
+                          HelperText="@($"Skriv '{_deletionPreview.ScoutGroupName}' fÃ¶r att bekrÃ¤fta borttagning")"
                           Class="mt-4"
                           Variant="Variant.Outlined" />
         }
@@ -167,9 +167,9 @@ else
             
             if (result.Success)
             {
-                Snackbar.Add($"Scoutkåren '{_deletionPreview.ScoutGroupName}' har tagits bort. " +
+                Snackbar.Add($"ScoutkÃ¥ren '{_deletionPreview.ScoutGroupName}' har tagits bort. " +
                             $"{result.PersonsDeleted} personer, {result.TroopsDeleted} avdelningar, " +
-                            $"{result.MeetingsDeleted} möten och {result.BadgesDeleted} märken borttagna.",
+                            $"{result.MeetingsDeleted} mÃ¶ten och {result.BadgesDeleted} mÃ¤rken borttagna.",
                     Severity.Success);
                 
                 _showDeleteDialog = false;
@@ -177,7 +177,7 @@ else
             }
             else
             {
-                Snackbar.Add($"Kunde inte ta bort scoutkåren: {result.ErrorMessage}", Severity.Error);
+                Snackbar.Add($"Kunde inte ta bort scoutkÃ¥ren: {result.ErrorMessage}", Severity.Error);
             }
         }
         finally

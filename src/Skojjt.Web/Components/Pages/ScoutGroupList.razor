@@ -9,16 +9,16 @@
 @inject IAdminModeService AdminModeService
 @inject IWebHostEnvironment Environment
 
-<PageTitle>Scoutkårer - Skojjt</PageTitle>
+<PageTitle>ScoutkÃ¥rer - Skojjt</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <div class="d-flex justify-space-between align-center mb-4">
-        <MudText Typo="Typo.h4">Scoutkårer</MudText>
+        <MudText Typo="Typo.h4">ScoutkÃ¥rer</MudText>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.Add"
                    Href="/sk/new">
-            Lägg till scoutkår
+            LÃ¤gg till scoutkÃ¥r
         </MudButton>
     </div>
 
@@ -26,7 +26,7 @@
     {
         <MudAlert Severity="Severity.Info" Class="mb-4" Dense="true">
             <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Class="mr-2" />
-            Du ser alla scoutkårer som administratör.
+            Du ser alla scoutkÃ¥rer som administratÃ¶r.
         </MudAlert>
     }
 
@@ -53,11 +53,11 @@
         <MudAlert Severity="Severity.Info" Class="mb-4">
             @if (_accessibleGroupIds.Count == 0 && !_isAdmin)
             {
-                <span>Du har inte tillgång till några scoutkårer. Kontakta en administratör för att få tillgång.</span>
+                <span>Du har inte tillgÃ¥ng till nÃ¥gra scoutkÃ¥rer. Kontakta en administratÃ¶r fÃ¶r att fÃ¥ tillgÃ¥ng.</span>
             }
             else
             {
-                <span>Inga scoutkårer hittades. Klicka på "Lägg till scoutkår" för att importera en kår från Scoutnet.</span>
+                <span>Inga scoutkÃ¥rer hittades. Klicka pÃ¥ "LÃ¤gg till scoutkÃ¥r" fÃ¶r att importera en kÃ¥r frÃ¥n Scoutnet.</span>
             }
         </MudAlert>
     }

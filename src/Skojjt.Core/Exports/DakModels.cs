@@ -10,7 +10,7 @@ namespace Skojjt.Core.Exports;
 public class DakData
 {
     /// <summary>
-    /// The attendance card (närvarokort).
+    /// The attendance card (nÃ¤rvarokort).
     /// </summary>
     public DakNarvarokort Kort { get; set; } = new();
 
@@ -20,12 +20,12 @@ public class DakData
     public string KommunId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Association ID (förenings-ID).
+    /// Association ID (fÃ¶renings-ID).
     /// </summary>
     public string ForeningsId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Association name (föreningsnamn).
+    /// Association name (fÃ¶reningsnamn).
     /// </summary>
     public string ForeningsNamn { get; set; } = string.Empty;
 
@@ -36,7 +36,7 @@ public class DakData
 }
 
 /// <summary>
-/// Attendance card (närvarokort) in DAK format.
+/// Attendance card (nÃ¤rvarokort) in DAK format.
 /// </summary>
 public class DakNarvarokort
 {
@@ -56,7 +56,7 @@ public class DakNarvarokort
     public List<DakSammankomst> Sammankomster { get; set; } = [];
 
     /// <summary>
-    /// Attendance card number (närvarokort-nummer).
+    /// Attendance card number (nÃ¤rvarokort-nummer).
     /// </summary>
     public string NarvarokortNummer { get; set; } = string.Empty;
 
@@ -66,7 +66,7 @@ public class DakNarvarokort
     public string Lokal { get; set; } = "Scouthuset"; // TODO: Meeting.Location
 
 	/// <summary>
-	/// Name on card (namn på kort) - usually troop name.
+	/// Name on card (namn pÃ¥ kort) - usually troop name.
 	/// </summary>
 	public string NamnPaKort { get; set; } = string.Empty;
 
@@ -102,7 +102,7 @@ public class DakDeltagare
     public string Uid { get; set; } = string.Empty;
 
     /// <summary>
-    /// First name (förnamn).
+    /// First name (fÃ¶rnamn).
     /// </summary>
     public string Fornamn { get; set; } = string.Empty;
 

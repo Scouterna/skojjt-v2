@@ -25,12 +25,12 @@
     else if (!_hasAccess)
     {
         <MudAlert Severity="Severity.Error">
-            Du har inte behörighet att visa denna scoutkår.
+            Du har inte behÃ¶righet att visa denna scoutkÃ¥r.
         </MudAlert>
     }
     else if (_scoutGroup == null || _semester == null)
     {
-        <MudAlert Severity="Severity.Error">Scoutkåren eller terminen kunde inte hittas.</MudAlert>
+        <MudAlert Severity="Severity.Error">ScoutkÃ¥ren eller terminen kunde inte hittas.</MudAlert>
     }
     else
     {
@@ -62,7 +62,7 @@
         @if (_troops.Count == 0)
         {
             <MudAlert Severity="Severity.Info">
-                Inga avdelningar för denna termin.
+                Inga avdelningar fÃ¶r denna termin.
             </MudAlert>
         }
         else
@@ -79,7 +79,7 @@
                                             <MudText Typo="Typo.h6">@troop.Name</MudText>
                                             @if (troop.IsLocked)
                                             {
-                                                <MudTooltip Text="Avdelningen är låst för redigering">
+                                                <MudTooltip Text="Avdelningen Ã¤r lÃ¥st fÃ¶r redigering">
                                                     <MudIcon Icon="@Icons.Material.Filled.Lock" 
                                                              Size="Size.Small"
                                                              Style="color: #b5a642;" />
@@ -98,7 +98,7 @@
                                             <MudText Typo="Typo.h6">@troop.TroopPersons.Count</MudText>
                                         </div>
                                         <div>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Möten</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">MÃ¶ten</MudText>
                                             <MudText Typo="Typo.h6">@troop.Meetings.Count</MudText>
                                         </div>
                                     </div>
@@ -150,14 +150,14 @@
         <MudDivider Class="my-6" />
         <MudExpansionPanels>
             <MudExpansionPanel Text="Rapporter & Export" Icon="@Icons.Material.Filled.Assessment">
-                <MudText Typo="Typo.subtitle2" Class="mb-2">Närvarorapporter per avdelning finns i respektive avdelnings vy.</MudText>
+                <MudText Typo="Typo.subtitle2" Class="mb-2">NÃ¤rvarorapporter per avdelning finns i respektive avdelnings vy.</MudText>
                 <MudGrid>
                     <MudItem xs="12" sm="6" md="4">
                         <MudButton Variant="Variant.Outlined" 
                                    FullWidth="true"
                                    StartIcon="@Icons.Material.Filled.Description"
                                    OnClick="@(() => OpenGothenburgCsvDialog())">
-                            Aktivitetsbidrag CSV (Göteborg)
+                            Aktivitetsbidrag CSV (GÃ¶teborg)
                         </MudButton>
                     </MudItem>
                     <MudItem xs="12" sm="6" md="4">
@@ -165,7 +165,7 @@
                                    FullWidth="true"
                                    StartIcon="@Icons.Material.Filled.Payments"
                                    OnClick="@(() => OpenLagerbidragDialog("gbg"))">
-                            Lägerbidrag (Göteborg)
+                            LÃ¤gerbidrag (GÃ¶teborg)
                         </MudButton>
                     </MudItem>
                     <MudItem xs="12" sm="6" md="4">
@@ -173,7 +173,7 @@
                                    FullWidth="true"
                                    StartIcon="@Icons.Material.Filled.Payments"
                                    OnClick="@(() => OpenLagerbidragDialog("sthlm"))">
-                            Lägerbidrag (Stockholm)
+                            LÃ¤gerbidrag (Stockholm)
                         </MudButton>
                     </MudItem>
                     <MudItem xs="12" sm="6" md="4">
@@ -181,7 +181,7 @@
                                    FullWidth="true"
                                    StartIcon="@Icons.Material.Filled.Summarize"
                                    Href="@($"/sk/{ScoutGroupId}/summary/{SemesterId}")">
-                            Föreningsredovisning
+                            FÃ¶reningsredovisning
                         </MudButton>
                     </MudItem>
                 </MudGrid>
@@ -195,7 +195,7 @@
     <TitleContent>
         <MudText Typo="Typo.h6">
             <MudIcon Icon="@Icons.Material.Filled.Payments" Class="mr-2" />
-            Lägerbidrag @(_lagerbidragRegion == "gbg" ? "Göteborg" : "Stockholm")
+            LÃ¤gerbidrag @(_lagerbidragRegion == "gbg" ? "GÃ¶teborg" : "Stockholm")
         </MudText>
     </TitleContent>
     <DialogContent>
@@ -210,10 +210,10 @@
             <MudTextField @bind-Value="_lagerbidragContact" Label="Kontaktperson" Variant="Variant.Outlined" Required="true" />
             <MudTextField @bind-Value="_lagerbidragContactEmail" Label="E-post" Variant="Variant.Outlined" />
             <MudTextField @bind-Value="_lagerbidragContactPhone" Label="Telefon" Variant="Variant.Outlined" />
-            <MudTextField @bind-Value="_lagerbidragSite" Label="Lägerplats" Variant="Variant.Outlined" Required="true" />
-            <MudDatePicker @bind-Date="_lagerbidragFromDate" Label="Från datum" Variant="Variant.Outlined" Required="true" />
+            <MudTextField @bind-Value="_lagerbidragSite" Label="LÃ¤gerplats" Variant="Variant.Outlined" Required="true" />
+            <MudDatePicker @bind-Date="_lagerbidragFromDate" Label="FrÃ¥n datum" Variant="Variant.Outlined" Required="true" />
             <MudDatePicker @bind-Date="_lagerbidragToDate" Label="Till datum" Variant="Variant.Outlined" Required="true" />
-            <MudCheckBox @bind-Value="_lagerbidragDuringBreak" Label="Läger under lov" Color="Color.Primary" />
+            <MudCheckBox @bind-Value="_lagerbidragDuringBreak" Label="LÃ¤ger under lov" Color="Color.Primary" />
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -227,20 +227,20 @@
     <TitleContent>
         <MudText Typo="Typo.h6">
             <MudIcon Icon="@Icons.Material.Filled.Description" Class="mr-2" />
-            Aktivitetsbidrag CSV (Göteborg)
+            Aktivitetsbidrag CSV (GÃ¶teborg)
         </MudText>
     </TitleContent>
     <DialogContent>
         <MudAlert Severity="Severity.Info" Class="mb-4" Dense="true">
-            Exporterar en CSV-fil med alla medlemmar som uppfyller närvarokravet för aktivitetsbidrag.
-            Filen kan laddas upp till Göteborgs kommuns portal.
+            Exporterar en CSV-fil med alla medlemmar som uppfyller nÃ¤rvarokravet fÃ¶r aktivitetsbidrag.
+            Filen kan laddas upp till GÃ¶teborgs kommuns portal.
         </MudAlert>
         <MudRadioGroup @bind-Value="_gbgCsvUseSemesterMin">
             <MudRadio Value="false" Color="Color.Primary">
                 <div>
-                    <MudText>Årsvis (@_semester?.Year)</MudText>
+                    <MudText>Ã…rsvis (@_semester?.Year)</MudText>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        Minst @(_scoutGroup?.AttendanceMinYear ?? 10) möten under hela året
+                        Minst @(_scoutGroup?.AttendanceMinYear ?? 10) mÃ¶ten under hela Ã¥ret
                     </MudText>
                 </div>
             </MudRadio>
@@ -248,13 +248,13 @@
                 <div>
                     <MudText>Terminsvis (@_semester?.DisplayName)</MudText>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        Minst @(_scoutGroup?.AttendanceMinSemester ?? 5) möten under terminen
+                        Minst @(_scoutGroup?.AttendanceMinSemester ?? 5) mÃ¶ten under terminen
                     </MudText>
                 </div>
             </MudRadio>
         </MudRadioGroup>
         <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-4">
-            Närvarogränser kan ändras i <MudLink Href="@($"/sk/{ScoutGroupId}/settings")">kårinställningar</MudLink>.
+            NÃ¤rvarogrÃ¤nser kan Ã¤ndras i <MudLink Href="@($"/sk/{ScoutGroupId}/settings")">kÃ¥rinstÃ¤llningar</MudLink>.
         </MudText>
     </DialogContent>
     <DialogActions>
@@ -351,8 +351,8 @@
             {
                 _breadcrumbs = new List<BreadcrumbItem>
                 {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                    new BreadcrumbItem("Ingen behörighet", href: null, disabled: true)
+                    new BreadcrumbItem("ScoutkÃ¥rer", href: "/sk"),
+                    new BreadcrumbItem("Ingen behÃ¶righet", href: null, disabled: true)
                 };
                 return;
             }
@@ -364,7 +364,7 @@
             {
                 _breadcrumbs = new List<BreadcrumbItem>
                 {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem("ScoutkÃ¥rer", href: "/sk"),
                     new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
                     new BreadcrumbItem(_semester.DisplayName, href: null, disabled: true)
                 };

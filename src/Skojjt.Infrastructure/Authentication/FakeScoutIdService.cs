@@ -131,7 +131,7 @@ public class FakeScoutIdService : IScoutIdSimulator
             {
                 Uid = "12348",
                 Email = "readonly@test.scout.se",
-                DisplayName = "Läsare Testsson",
+                DisplayName = "LÃ¤sare Testsson",
                 GroupNo = "1137",
                 GroupId = 1137,
                 IsMemberRegistrar = false,

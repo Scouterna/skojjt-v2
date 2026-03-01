@@ -23,7 +23,7 @@
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 
-<PageTitle>Närvaro - @(_troop?.Name ?? "Avdelning") - Skojjt</PageTitle>
+<PageTitle>NÃ¤rvaro - @(_troop?.Name ?? "Avdelning") - Skojjt</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-8">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
@@ -35,7 +35,7 @@
     else if (!_hasAccess)
     {
         <MudAlert Severity="Severity.Error">
-            Du har inte behörighet att visa denna avdelning.
+            Du har inte behÃ¶righet att visa denna avdelning.
         </MudAlert>
     }
     else if (_troop == null)
@@ -52,7 +52,7 @@
                     @if (_troop.IsLocked)
                     {
                         <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Color="Color.Warning" Class="ml-2" />
-                        <span class="mud-text-warning">Låst</span>
+                        <span class="mud-text-warning">LÃ¥st</span>
                     }
                     <MudIcon Icon="@Icons.Material.Filled.Wifi" Size="Size.Small" Color="Color.Success" Class="ml-2" 
                              Title="Realtidssynkronisering aktiv" />
@@ -63,16 +63,16 @@
                 <MudButton StartIcon="@Icons.Material.Filled.Add"
                            OnClick="@(() => _showNewMeetingDialog = true)"
                            Disabled="@_troop.IsLocked">
-                    Nytt möte
+                    Nytt mÃ¶te
                 </MudButton>
                 <MudButton StartIcon="@Icons.Material.Filled.Hiking"
                            OnClick="OpenNewHikeDialog"
                            Disabled="@_troop.IsLocked">
-                    Läger
+                    LÃ¤ger
                 </MudButton>
                 <MudButton StartIcon="@Icons.Material.Filled.PersonAdd"
                            OnClick="@(() => _showAddMemberDialog = true)">
-                    Lägg till
+                    LÃ¤gg till
                 </MudButton>
             </MudButtonGroup>
         </div>
@@ -80,7 +80,7 @@
         @* Attendance Grid *@
         <MudPaper Elevation="2" Class="pa-2 pa-sm-4">
             <div class="d-flex flex-wrap justify-space-between align-center mb-4 gap-2">
-                <MudText Typo="Typo.h6">Närvaroregistrering</MudText>
+                <MudText Typo="Typo.h6">NÃ¤rvaroregistrering</MudText>
                 <div class="d-flex align-center gap-2">
                     <MudChip T="string" 
                              Size="Size.Small" 
@@ -102,7 +102,7 @@
             @if (_troopPersons.Count == 0)
             {
                 <MudAlert Severity="Severity.Info">
-                    Inga medlemmar i avdelningen. Lägg till medlemmar för att börja registrera närvaro.
+                    Inga medlemmar i avdelningen. LÃ¤gg till medlemmar fÃ¶r att bÃ¶rja registrera nÃ¤rvaro.
                 </MudAlert>
             }
             else
@@ -110,10 +110,10 @@
                 @if (_meetings.Count == 0)
                 {
                     <MudAlert Severity="Severity.Info" Class="mb-4">
-                        Inga möten registrerade. 
+                        Inga mÃ¶ten registrerade. 
                         <MudLink OnClick="@(() => _showNewMeetingDialog = true)" Class="cursor-pointer">
-                            Skapa ett möte
-                        </MudLink> för att börja registrera närvaro.
+                            Skapa ett mÃ¶te
+                        </MudLink> fÃ¶r att bÃ¶rja registrera nÃ¤rvaro.
                     </MudAlert>
                 }
                 
@@ -124,7 +124,7 @@
                                 <th class="sticky-col name-col">Namn</th>
                                 @if (_showExtraInfo)
                                 {
-                                    <th class="age-col d-none d-sm-table-cell">Ålder</th>
+                                    <th class="age-col d-none d-sm-table-cell">Ã…lder</th>
                                     <th class="leader-col d-none d-sm-table-cell">Ledare</th>
                                     <th class="patrol-col d-none d-md-table-cell">Patrull</th>
                                     <th class="action-col d-none d-sm-table-cell"></th>
@@ -205,13 +205,13 @@
                     <MudDivider Class="my-4" />
                     <div class="d-flex flex-wrap gap-2">
                         <MudText Typo="Typo.caption" Class="align-self-center mr-2">
-                            Senaste mötet (@_meetings.First().MeetingDate.ToString("dd/MM")):
+                            Senaste mÃ¶tet (@_meetings.First().MeetingDate.ToString("dd/MM")):
                         </MudText>
                         <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="SelectAllForLastMeeting">Alla</MudButton>
                         <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="SelectNoneForLastMeeting">Ingen</MudButton>
                         @if (_meetings.Count >= 2)
                         {
-                            <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="CopyFromPreviousMeeting">Kopiera föregående</MudButton>
+                            <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="CopyFromPreviousMeeting">Kopiera fÃ¶regÃ¥ende</MudButton>
                         }
                     </div>
                 }
@@ -219,18 +219,18 @@
         </MudPaper>
 
         <MudExpansionPanels Class="mt-4">
-            <MudExpansionPanel Text="Märken" Icon="@Icons.Material.Filled.EmojiEvents">
+            <MudExpansionPanel Text="MÃ¤rken" Icon="@Icons.Material.Filled.EmojiEvents">
                 @if (_troopBadges.Count == 0 && _availableBadges.Count == 0)
                 {
                     <MudAlert Severity="Severity.Info" Dense="true">
-                        Inga märken definierade för kåren. <MudLink Href="@($"/sk/{ScoutGroupId}/badges")">Skapa märken</MudLink> först.
+                        Inga mÃ¤rken definierade fÃ¶r kÃ¥ren. <MudLink Href="@($"/sk/{ScoutGroupId}/badges")">Skapa mÃ¤rken</MudLink> fÃ¶rst.
                     </MudAlert>
                 }
                 else
                 {
                     @if (_troopBadges.Count > 0)
                     {
-                        <MudText Typo="Typo.subtitle2" Class="mb-2">Tilldelade märken</MudText>
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Tilldelade mÃ¤rken</MudText>
                         <div class="d-flex flex-wrap gap-2 mb-4">
                             @foreach (var badge in _troopBadges)
                             {
@@ -248,7 +248,7 @@
 
                     @if (_availableBadges.Count > 0)
                     {
-                        <MudText Typo="Typo.subtitle2" Class="mb-2">Lägg till märke</MudText>
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">LÃ¤gg till mÃ¤rke</MudText>
                         <div class="d-flex flex-wrap gap-2">
                             @foreach (var badge in _availableBadges)
                             {
@@ -262,7 +262,7 @@
                     }
                 }
             </MudExpansionPanel>
-            <MudExpansionPanel Text="Inställningar & Export" Icon="@Icons.Material.Filled.Settings">
+            <MudExpansionPanel Text="InstÃ¤llningar & Export" Icon="@Icons.Material.Filled.Settings">
                 <MudGrid>
                     <MudItem xs="12" sm="6" md="3">
                         <ExportButton ExportUrl="@($"/reports/dak?scoutnetId={_troop.ScoutnetId}&semesterId={_troop.SemesterId}")"
@@ -282,7 +282,7 @@
                         <ExportButton ExportUrl="@($"/reports/excel-gbg?scoutnetId={_troop.ScoutnetId}&semesterId={_troop.SemesterId}")"
                                       ScoutGroupId="@ScoutGroupId"
                                       Icon="@Icons.Material.Filled.TableChart">
-                            Excel (Göteborg)
+                            Excel (GÃ¶teborg)
                         </ExportButton>
                     </MudItem>
                     <MudItem xs="12" sm="6" md="3">
@@ -290,14 +290,14 @@
                                    StartIcon="@((_troop.IsLocked ? Icons.Material.Filled.LockOpen : Icons.Material.Filled.Lock))"
                                    Color="@(_troop.IsLocked ? Color.Success : Color.Warning)"
                                    OnClick="ToggleLock">
-                            @(_troop.IsLocked ? "Lås upp" : "Lås närvaro")
+                            @(_troop.IsLocked ? "LÃ¥s upp" : "LÃ¥s nÃ¤rvaro")
                         </MudButton>
                     </MudItem>
                     <MudItem xs="12" sm="6" md="3">
                         <MudButton Variant="Variant.Outlined" FullWidth="true"
                                    StartIcon="@Icons.Material.Filled.Tune"
                                    Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}/settings")">
-                            Standardvärden
+                            StandardvÃ¤rden
                         </MudButton>
                     </MudItem>
                 </MudGrid>
@@ -310,7 +310,7 @@
     <TitleContent>
         <MudText Typo="Typo.h6">
             <MudIcon Icon="@Icons.Material.Filled.Event" Class="mr-2" />
-            @(_newMeetingIsHike ? "Nytt läger" : "Nytt möte")
+            @(_newMeetingIsHike ? "Nytt lÃ¤ger" : "Nytt mÃ¶te")
         </MudText>
     </TitleContent>
     <DialogContent>
@@ -319,8 +319,8 @@
             <MudDatePicker @bind-Date="_newMeetingDate" Label="Datum" Variant="Variant.Outlined" Required="true"
                            Validation="@((DateOnly? date) => ValidateMeetingDate(date))" />
             <MudTimePicker @bind-Time="_newMeetingTime" Label="Starttid" Variant="Variant.Outlined" />
-            <MudNumericField @bind-Value="_newMeetingDuration" Label="Längd (minuter)" Variant="Variant.Outlined" Min="1" MaxLength="1440"/>
-            <MudCheckBox @bind-Value="_newMeetingIsHike" Label="Läger/vandring" Color="Color.Primary" />
+            <MudNumericField @bind-Value="_newMeetingDuration" Label="LÃ¤ngd (minuter)" Variant="Variant.Outlined" Min="1" MaxLength="1440"/>
+            <MudCheckBox @bind-Value="_newMeetingIsHike" Label="LÃ¤ger/vandring" Color="Color.Primary" />
             <MudTextField @bind-Value="_newMeetingLocation" Label="Plats" Variant="Variant.Outlined" MaxLength="50" />
         </MudForm>
     </DialogContent>
@@ -334,15 +334,15 @@
     <TitleContent>
         <MudText Typo="Typo.h6">
             <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Class="mr-2" />
-            Lägg till medlem
+            LÃ¤gg till medlem
         </MudText>
     </TitleContent>
     <DialogContent>
         <MudAlert Severity="Severity.Info" Dense="true" Class="mb-4">
-            Sök bland kårens medlemmar för att lägga till i avdelningen.
+            SÃ¶k bland kÃ¥rens medlemmar fÃ¶r att lÃ¤gga till i avdelningen.
         </MudAlert>
         <MudTextField @bind-Value="_memberSearchText" 
-                      Label="Sök namn" 
+                      Label="SÃ¶k namn" 
                       Variant="Variant.Outlined"
                       Immediate="true" 
                       DebounceInterval="300"
@@ -366,7 +366,7 @@
                                 <MudText>@person.FullName</MudText>
                                 @if (person.Age > 0)
                                 {
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@person.Age år</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@person.Age Ã¥r</MudText>
                                 }
                             </div>
                             @if (isAlreadyMember)
@@ -380,7 +380,7 @@
                                            Size="Size.Small"
                                            StartIcon="@Icons.Material.Filled.Add"
                                            OnClick="@(() => AddMemberToTroop(person))">
-                                    Lägg till
+                                    LÃ¤gg till
                                 </MudButton>
                             }
                         </div>
@@ -397,12 +397,12 @@
         else if (!string.IsNullOrWhiteSpace(_memberSearchText))
         {
             <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4 text-center">
-                Skriv minst 2 tecken för att söka.
+                Skriv minst 2 tecken fÃ¶r att sÃ¶ka.
             </MudText>
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="CloseAddMemberDialog">Stäng</MudButton>
+        <MudButton OnClick="CloseAddMemberDialog">StÃ¤ng</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -520,7 +520,7 @@
     private CancellationTokenSource? _saveDebounceTokenSource;
     private const int SaveDebounceMs = 1500;
     
-    private string _newMeetingName = "Möte";
+    private string _newMeetingName = "MÃ¶te";
     private int _newMeetingDuration = 90;
     private bool _newMeetingIsHike = false;
     private DateTime? _newMeetingDate = DateTime.Today;
@@ -561,8 +561,8 @@
             _loading = false;
             _breadcrumbs = new List<BreadcrumbItem>
             {
-                new("Scoutkårer", href: "/sk"),
-                new("Ingen behörighet", href: null, disabled: true)
+                new("ScoutkÃ¥rer", href: "/sk"),
+                new("Ingen behÃ¶righet", href: null, disabled: true)
             };
             _initialized = true;
             return;
@@ -666,7 +666,7 @@
                 if (!window._beforeUnloadRegistered) {
                     window._beforeUnloadRegistered = true;
                     window.addEventListener('beforeunload', function(e) {
-                        if (window.hasUnsavedChanges) { e.preventDefault(); e.returnValue = 'Du har osparade ändringar.'; return e.returnValue; }
+                        if (window.hasUnsavedChanges) { e.preventDefault(); e.returnValue = 'Du har osparade Ã¤ndringar.'; return e.returnValue; }
                     });
                 }
             """);
@@ -724,7 +724,7 @@
             {
                 _breadcrumbs = new List<BreadcrumbItem>
                 {
-                    new("Scoutkårer", href: "/sk"),
+                    new("ScoutkÃ¥rer", href: "/sk"),
                     new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
                     new(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
                     new(_troop.Name, href: null, disabled: true)
@@ -810,7 +810,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Sökning misslyckades: {ex.Message}", Severity.Error);
+            Snackbar.Add($"SÃ¶kning misslyckades: {ex.Message}", Severity.Error);
             _memberSearchResults.Clear();
         }
         finally
@@ -840,7 +840,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Kunde inte lägga till medlem: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Kunde inte lÃ¤gga till medlem: {ex.Message}", Severity.Error);
         }
     }
 
@@ -907,13 +907,13 @@
                 .ToList();
             
             Snackbar.Add(newIsLeader 
-                ? $"{tp.Person.FullName} är nu ledare" 
-                : $"{tp.Person.FullName} är inte längre ledare", 
+                ? $"{tp.Person.FullName} Ã¤r nu ledare" 
+                : $"{tp.Person.FullName} Ã¤r inte lÃ¤ngre ledare", 
                 Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Kunde inte ändra ledarstatus: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Kunde inte Ã¤ndra ledarstatus: {ex.Message}", Severity.Error);
         }
     }
 
@@ -938,7 +938,7 @@
             _troopPersons.Remove(tp);
             _troopPersonIds.Remove(tp.PersonId);
             
-            Snackbar.Add($"{tp.Person.FullName} har tagits bort från avdelningen", Severity.Success);
+            Snackbar.Add($"{tp.Person.FullName} har tagits bort frÃ¥n avdelningen", Severity.Success);
         }
         catch (Exception ex)
         {
@@ -1081,7 +1081,7 @@
         {
             SaveStatus.Saved => "Sparad",
             SaveStatus.Saving => "Sparar...",
-            SaveStatus.Unsaved => "Ändringar osparade",
+            SaveStatus.Unsaved => "Ã„ndringar osparade",
             _ => ""
         };
     }
@@ -1106,7 +1106,7 @@
 
     private void OpenNewHikeDialog()
     {
-        _newMeetingName = "Läger";
+        _newMeetingName = "LÃ¤ger";
         _newMeetingIsHike = true;
         _showNewMeetingDialog = true;
     }
@@ -1137,9 +1137,9 @@
                     // Broadcast meeting added to other components
                     await NotificationService.NotifyMeetingChangedAsync(TroopId, meeting.Id, MeetingChangeType.Added, _instanceId);
                     
-                    Snackbar.Add($"Möte '{_newMeetingName}' skapat!", Severity.Success);
+                    Snackbar.Add($"MÃ¶te '{_newMeetingName}' skapat!", Severity.Success);
                     _showNewMeetingDialog = false;
-                    _newMeetingName = "Möte";
+                    _newMeetingName = "MÃ¶te";
                     _newMeetingDuration = _troop?.DefaultDurationMinutes ?? 90;
                     _newMeetingIsHike = false;
                     _newMeetingDate = DateTime.Today;
@@ -1149,7 +1149,7 @@
                 }
                 catch (Exception ex)
                 {
-                    Snackbar.Add($"Kunde inte skapa möte: {ex.Message}", Severity.Error);
+                    Snackbar.Add($"Kunde inte skapa mÃ¶te: {ex.Message}", Severity.Error);
                 }
             }
         }
@@ -1194,12 +1194,12 @@
                 _troop.IsLocked = !_troop.IsLocked;
                 await TroopRepository.UpdateAsync(_troop);
                 await UnitOfWork.SaveChangesAsync();
-                Snackbar.Add(_troop.IsLocked ? "Närvarolistan är nu låst" : "Närvarolistan är nu upplåst", Severity.Info);
+                Snackbar.Add(_troop.IsLocked ? "NÃ¤rvarolistan Ã¤r nu lÃ¥st" : "NÃ¤rvarolistan Ã¤r nu upplÃ¥st", Severity.Info);
             }
             catch (Exception ex)
             {
                 _troop.IsLocked = !_troop.IsLocked;
-                Snackbar.Add($"Kunde inte ändra låsstatus: {ex.Message}", Severity.Error);
+                Snackbar.Add($"Kunde inte Ã¤ndra lÃ¥sstatus: {ex.Message}", Severity.Error);
             }
         }
     }
@@ -1230,14 +1230,14 @@
     private string ValidateMeetingDate(DateOnly? date)
     {
         if (date == null)
-            return "Datum krävs";
+            return "Datum krÃ¤vs";
 
         if (_troop == null)
             return "Avdelningsdata saknas";
 
         if (!_troop.Semester.IsValidDate(date.Value))
         {
-            return $"Datumet ligger utanför avdelningens termin ({_troop.Semester.DisplayName})";
+            return $"Datumet ligger utanfÃ¶r avdelningens termin ({_troop.Semester.DisplayName})";
         }
 
         return "";
@@ -1254,7 +1254,7 @@
                 </a>
                 @if (IsBirthdayToday(tp.Person))
                 {
-                    <MudIcon Icon="@Icons.Material.Filled.Cake" Size="Size.Small" Color="Color.Warning" Class="ml-1" Title="Fyller år idag!" />
+                    <MudIcon Icon="@Icons.Material.Filled.Cake" Size="Size.Small" Color="Color.Warning" Class="ml-1" Title="Fyller Ã¥r idag!" />
                 }
                 @if (tp.IsLeader)
                 {
@@ -1304,7 +1304,7 @@
                         <div class="patrol-display" @onclick="@(() => StartPatrolEdit(tp))">
                             @if (string.IsNullOrEmpty(tp.Patrol))
                             {
-                                <span class="patrol-placeholder">Klicka för att ange...</span>
+                                <span class="patrol-placeholder">Klicka fÃ¶r att ange...</span>
                             }
                             else
                             {
@@ -1318,7 +1318,7 @@
                     @if (_pendingRemovePersonId == tp.PersonId)
                     {
                         <div class="d-flex align-center gap-1">
-                            <MudTooltip Text="Bekräfta borttagning">
+                            <MudTooltip Text="BekrÃ¤fta borttagning">
                                 <MudIconButton Icon="@Icons.Material.Filled.Check" 
                                                Size="Size.Small" 
                                                Color="Color.Error"
@@ -1334,7 +1334,7 @@
                     }
                     else
                     {
-                        <MudTooltip Text="Ta bort från avdelningen">
+                        <MudTooltip Text="Ta bort frÃ¥n avdelningen">
                             <MudIconButton Icon="@Icons.Material.Filled.PersonRemove" 
                                            Size="Size.Small" 
                                            Color="Color.Error"

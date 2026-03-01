@@ -5,7 +5,7 @@
 @inject IBadgeRepository BadgeRepository
 @inject ISnackbar Snackbar
 
-<MudText Typo="Typo.h6" Class="mb-4">Hantera m‰rkesmallar</MudText>
+<MudText Typo="Typo.h6" Class="mb-4">Hantera m√§rkesmallar</MudText>
 
 @if (_loading)
 {
@@ -23,7 +23,7 @@ else
 
     @if (_templates.Count == 0)
     {
-        <MudAlert Severity="Severity.Info">Inga m‰rkesmallar finns i systemet.</MudAlert>
+        <MudAlert Severity="Severity.Info">Inga m√§rkesmallar finns i systemet.</MudAlert>
     }
     else
     {
@@ -35,7 +35,7 @@ else
                 <MudTh>Scoutdelar</MudTh>
                 <MudTh>Admindelar</MudTh>
                 <MudTh>Skapad</MudTh>
-                <MudTh>≈tg‰rder</MudTh>
+                <MudTh>√Ötg√§rder</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="ID">@context.Id</MudTd>
@@ -48,11 +48,11 @@ else
                         <strong>@context.Name</strong>
                     </div>
                 </MudTd>
-                <MudTd DataLabel="Beskrivning">@(context.Description ?? "ó")</MudTd>
+                <MudTd DataLabel="Beskrivning">@(context.Description ?? "‚Äî")</MudTd>
                 <MudTd DataLabel="Scoutdelar">@context.Parts.Count(p => !p.IsAdminPart)</MudTd>
                 <MudTd DataLabel="Admindelar">@context.Parts.Count(p => p.IsAdminPart)</MudTd>
                 <MudTd DataLabel="Skapad">@context.CreatedAt.ToString("yyyy-MM-dd")</MudTd>
-                <MudTd DataLabel="≈tg‰rder">
+                <MudTd DataLabel="√Ötg√§rder">
                     <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                    Color="Color.Primary"
                                    Size="Size.Small"
@@ -70,13 +70,13 @@ else
 @* Create / Edit Dialog *@
 <MudDialog @bind-Visible="_showEditDialog" Options="@_dialogOptions">
     <TitleContent>
-        <MudText Typo="Typo.h6">@(_editingTemplate == null ? "Ny m‰rkesmall" : $"Redigera {_editingTemplate.Name}")</MudText>
+        <MudText Typo="Typo.h6">@(_editingTemplate == null ? "Ny m√§rkesmall" : $"Redigera {_editingTemplate.Name}")</MudText>
     </TitleContent>
     <DialogContent>
         <MudTextField @bind-Value="_editName"
                       Label="Namn"
                       Required="true"
-                      RequiredError="Namn kr‰vs"
+                      RequiredError="Namn kr√§vs"
                       MaxLength="255"
                       Counter="255"
                       Immediate="true"
@@ -104,7 +104,7 @@ else
                         <th style="width:40px">#</th>
                         <th>Typ</th>
                         <th>Kort beskrivning</th>
-                        <th>LÂng beskrivning</th>
+                        <th>L√•ng beskrivning</th>
                         <th style="width:48px"></th>
                     </tr>
                 </thead>
@@ -120,7 +120,7 @@ else
                                 </MudChip>
                             </td>
                             <td>@part.ShortDescription</td>
-                            <td>@(part.LongDescription ?? "ó")</td>
+                            <td>@(part.LongDescription ?? "‚Äî")</td>
                             <td>
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                Size="Size.Small"
@@ -134,14 +134,14 @@ else
         }
 
         <MudDivider Class="my-2" />
-        <MudText Typo="Typo.caption" Class="mb-2">L‰gg till ny del</MudText>
+        <MudText Typo="Typo.caption" Class="mb-2">L√§gg till ny del</MudText>
         <div class="d-flex gap-2 align-end">
             <MudSelect @bind-Value="_newPartIsAdmin" Label="Typ" Dense="true" Style="max-width:120px">
                 <MudSelectItem T="bool" Value="false">Scout</MudSelectItem>
                 <MudSelectItem T="bool" Value="true">Admin</MudSelectItem>
             </MudSelect>
             <MudTextField @bind-Value="_newPartShort" Label="Kort" dense="true" MaxLength="255" Style="flex:1" />
-            <MudTextField @bind-Value="_newPartLong" Label="LÂng" dense="true" Style="flex:1" />
+            <MudTextField @bind-Value="_newPartLong" Label="L√•ng" dense="true" Style="flex:1" />
             <MudIconButton Icon="@Icons.Material.Filled.Add"
                            Color="Color.Primary"
                            Disabled="@string.IsNullOrWhiteSpace(_newPartShort)"
@@ -169,7 +169,7 @@ else
     <DialogContent>
         <MudAlert Severity="Severity.Warning" Class="mb-4">
             Detta tar permanent bort mallen <strong>@_deletingTemplate?.Name</strong>.
-            M‰rken som redan skapats frÂn mallen pÂverkas inte.
+            M√§rken som redan skapats fr√•n mallen p√•verkas inte.
         </MudAlert>
     </DialogContent>
     <DialogActions>
@@ -224,7 +224,7 @@ else
     private string? ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
-            return "Namn kr‰vs";
+            return "Namn kr√§vs";
         if (name.Length > 255)
             return "Max 255 tecken";
         var duplicate = _templates.Any(t =>

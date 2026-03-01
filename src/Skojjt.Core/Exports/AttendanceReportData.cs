@@ -9,7 +9,7 @@ namespace Skojjt.Core.Exports;
 public class AttendanceReportData
 {
     /// <summary>
-    /// The scout group (kår) for the report.
+    /// The scout group (kÃ¥r) for the report.
     /// </summary>
     public required ScoutGroup ScoutGroup { get; init; }
 

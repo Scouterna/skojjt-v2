@@ -10,12 +10,12 @@ namespace Skojjt.Infrastructure.Exports;
 public class ExcelGothenburgExporter : IAttendanceExporter
 {
     public string ExporterId => "excel-gbg";
-    public string DisplayName => "Excel (Göteborg)";
+    public string DisplayName => "Excel (GÃ¶teborg)";
 
     public Task<ExportResult> ExportAsync(AttendanceReportData data, CancellationToken cancellationToken = default)
     {
         using var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add("Närvarokort");
+        var worksheet = workbook.Worksheets.Add("NÃ¤rvarokort");
 
         BuildWorksheet(worksheet, data);
 
@@ -36,9 +36,9 @@ public class ExcelGothenburgExporter : IAttendanceExporter
         const int firstMeetingColumn = 11;
 
         // Header information
-        ws.Cell("A1").Value = "Närvarokort Nr:";
+        ws.Cell("A1").Value = "NÃ¤rvarokort Nr:";
         ws.Cell("E1").Value = GetUniqueId(data.Troop);
-        ws.Cell("H1").Value = "År:";
+        ws.Cell("H1").Value = "Ã…r:";
         ws.Cell("I1").Value = data.Semester.Year;
 
         ws.Cell("A2").Value = "Grupp/Avdelning:";
@@ -62,12 +62,12 @@ public class ExcelGothenburgExporter : IAttendanceExporter
         ws.Cell("B12").Value = "Namn";
         ws.Cell("H12").Value = "K/M";
         ws.Cell("I12").Value = "Postnr";
-        ws.Cell("J12").Value = "Föd.datum";
+        ws.Cell("J12").Value = "FÃ¶d.datum";
 
         // Time labels
         ws.Cell("A7").Value = "Starttid";
         ws.Cell("A9").Value = "Sluttid";
-        ws.Cell("A10").Value = "Månad";
+        ws.Cell("A10").Value = "MÃ¥nad";
         ws.Cell("A11").Value = "Dag";
 
         // Separate participants and leaders

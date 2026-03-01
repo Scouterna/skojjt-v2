@@ -284,10 +284,10 @@ public class LagerbidragExporter : ILagerbidragExporter
         var days = (to.ToDateTime(TimeOnly.MinValue) - from.ToDateTime(TimeOnly.MinValue)).Days + 1;
         
         if (days > limits.MaxDays)
-            throw new InvalidOperationException($"Lägret får max vara {limits.MaxDays} dagar");
+            throw new InvalidOperationException($"LÃ¤gret fÃ¥r max vara {limits.MaxDays} dagar");
         
         if (days < limits.MinDays)
-            throw new InvalidOperationException($"Lägret måste vara minst {limits.MinDays} dagar");
+            throw new InvalidOperationException($"LÃ¤gret mÃ¥ste vara minst {limits.MinDays} dagar");
     }
 
     private static Task<ExportResult> ExportGothenburgAsync(LagerbidragData data, RegionLimits limits, CancellationToken cancellationToken)
@@ -314,15 +314,15 @@ public class LagerbidragExporter : ILagerbidragExporter
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("<!DOCTYPE html>");
-        sb.AppendLine("<html><head><meta charset='utf-8'><title>Lägerbidrag Göteborg</title>");
+        sb.AppendLine("<html><head><meta charset='utf-8'><title>LÃ¤gerbidrag GÃ¶teborg</title>");
         sb.AppendLine("<style>body{font-family:Arial,sans-serif;margin:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background-color:#4CAF50;color:white}.summary{margin:20px 0}h1,h2{color:#333}</style>");
         sb.AppendLine("</head><body>");
         
-        sb.AppendLine($"<h1>Lägerbidragsansökan - Göteborg</h1>");
+        sb.AppendLine($"<h1>LÃ¤gerbidragsansÃ¶kan - GÃ¶teborg</h1>");
         sb.AppendLine($"<h2>{data.ScoutGroupName}</h2>");
         
         sb.AppendLine("<div class='summary'>");
-        sb.AppendLine($"<p><strong>Lägerplats:</strong> {data.Site}</p>");
+        sb.AppendLine($"<p><strong>LÃ¤gerplats:</strong> {data.Site}</p>");
         sb.AppendLine($"<p><strong>Period:</strong> {data.DateFrom:yyyy-MM-dd} - {data.DateTo:yyyy-MM-dd}</p>");
         sb.AppendLine($"<p><strong>Kontaktperson:</strong> {data.Contact}</p>");
         sb.AppendLine($"<p><strong>E-post:</strong> {data.ContactEmail}</p>");
@@ -331,15 +331,15 @@ public class LagerbidragExporter : ILagerbidragExporter
 
         sb.AppendLine("<h3>Sammanfattning</h3>");
         sb.AppendLine("<table>");
-        sb.AppendLine($"<tr><td>Antal deltagare 7-25 år</td><td>{data.YoungPersonsCount}</td></tr>");
-        sb.AppendLine($"<tr><td>Antal deltagare över 25 år</td><td>{data.OlderPersonsCount}</td></tr>");
-        sb.AppendLine($"<tr><td>Antal övernattningar 7-25 år</td><td>{data.NightsUpToMaxAge}</td></tr>");
-        sb.AppendLine($"<tr><td>Antal övernattningar över 25 år</td><td>{data.NightsOverMaxAge}</td></tr>");
-        sb.AppendLine($"<tr><td><strong>Totalt antal bidragsgrundande övernattningar</strong></td><td><strong>{data.TotalNights}</strong></td></tr>");
+        sb.AppendLine($"<tr><td>Antal deltagare 7-25 Ã¥r</td><td>{data.YoungPersonsCount}</td></tr>");
+        sb.AppendLine($"<tr><td>Antal deltagare Ã¶ver 25 Ã¥r</td><td>{data.OlderPersonsCount}</td></tr>");
+        sb.AppendLine($"<tr><td>Antal Ã¶vernattningar 7-25 Ã¥r</td><td>{data.NightsUpToMaxAge}</td></tr>");
+        sb.AppendLine($"<tr><td>Antal Ã¶vernattningar Ã¶ver 25 Ã¥r</td><td>{data.NightsOverMaxAge}</td></tr>");
+        sb.AppendLine($"<tr><td><strong>Totalt antal bidragsgrundande Ã¶vernattningar</strong></td><td><strong>{data.TotalNights}</strong></td></tr>");
         sb.AppendLine("</table>");
 
-        sb.AppendLine("<h3>Deltagarförteckning</h3>");
-        sb.AppendLine("<table><thead><tr><th>Nr</th><th>Namn</th><th>Födelseår</th><th>Ålder</th><th>Antal dagar</th></tr></thead><tbody>");
+        sb.AppendLine("<h3>DeltagarfÃ¶rteckning</h3>");
+        sb.AppendLine("<table><thead><tr><th>Nr</th><th>Namn</th><th>FÃ¶delseÃ¥r</th><th>Ã…lder</th><th>Antal dagar</th></tr></thead><tbody>");
         
         var i = 1;
         foreach (var person in data.Persons)
@@ -357,33 +357,33 @@ public class LagerbidragExporter : ILagerbidragExporter
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("<!DOCTYPE html>");
-        sb.AppendLine("<html><head><meta charset='utf-8'><title>Lägerbidrag Stockholm</title>");
+        sb.AppendLine("<html><head><meta charset='utf-8'><title>LÃ¤gerbidrag Stockholm</title>");
         sb.AppendLine("<style>body{font-family:Arial,sans-serif;margin:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background-color:#0066cc;color:white}.summary{margin:20px 0}h1,h2{color:#333}</style>");
         sb.AppendLine("</head><body>");
         
-        sb.AppendLine($"<h1>Lägerbidragsansökan - Stockholm</h1>");
+        sb.AppendLine($"<h1>LÃ¤gerbidragsansÃ¶kan - Stockholm</h1>");
         sb.AppendLine($"<h2>{data.ScoutGroupName}</h2>");
         
         sb.AppendLine("<div class='summary'>");
         sb.AppendLine($"<p><strong>Organisationsnummer:</strong> {data.Organisationsnummer}</p>");
-        sb.AppendLine($"<p><strong>Lägerplats:</strong> {data.Site}</p>");
+        sb.AppendLine($"<p><strong>LÃ¤gerplats:</strong> {data.Site}</p>");
         sb.AppendLine($"<p><strong>Period:</strong> {data.DateFrom:yyyy-MM-dd} - {data.DateTo:yyyy-MM-dd}</p>");
         sb.AppendLine($"<p><strong>Ledare:</strong> {data.Contact}</p>");
         sb.AppendLine($"<p><strong>E-post:</strong> {data.ContactEmail}</p>");
         sb.AppendLine($"<p><strong>Telefon:</strong> {data.ContactPhone}</p>");
-        sb.AppendLine($"<p><strong>Läger under lov:</strong> {(data.HikeDuringBreak ? "Ja" : "Nej")}</p>");
+        sb.AppendLine($"<p><strong>LÃ¤ger under lov:</strong> {(data.HikeDuringBreak ? "Ja" : "Nej")}</p>");
         sb.AppendLine("</div>");
 
         sb.AppendLine("<h3>Sammanfattning</h3>");
         sb.AppendLine("<table>");
-        sb.AppendLine($"<tr><td>Antal medlemmar (7-20 år)</td><td>{data.YoungPersonsCount}</td></tr>");
+        sb.AppendLine($"<tr><td>Antal medlemmar (7-20 Ã¥r)</td><td>{data.YoungPersonsCount}</td></tr>");
         var days = (data.DateTo.ToDateTime(TimeOnly.MinValue) - data.DateFrom.ToDateTime(TimeOnly.MinValue)).Days + 1;
         sb.AppendLine($"<tr><td>Antal dagar</td><td>{days}</td></tr>");
         sb.AppendLine($"<tr><td><strong>Summa bidragsgrundande dagar</strong></td><td><strong>{data.TotalDays}</strong></td></tr>");
         sb.AppendLine("</table>");
 
-        sb.AppendLine("<h3>Deltagarförteckning</h3>");
-        sb.AppendLine("<table><thead><tr><th>Nr</th><th>Namn</th><th>Postadress</th><th>Födelseår</th><th>Antal dagar</th></tr></thead><tbody>");
+        sb.AppendLine("<h3>DeltagarfÃ¶rteckning</h3>");
+        sb.AppendLine("<table><thead><tr><th>Nr</th><th>Namn</th><th>Postadress</th><th>FÃ¶delseÃ¥r</th><th>Antal dagar</th></tr></thead><tbody>");
         
         var i = 1;
         foreach (var person in data.Persons.Take(data.YoungPersonsCount))

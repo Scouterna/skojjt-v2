@@ -1,7 +1,7 @@
 namespace Skojjt.Core.Exports.Validation;
 
 /// <summary>
-/// Summary of calculated aktivitetsbidrag for an entire n‰rvarokort.
+/// Summary of calculated aktivitetsbidrag for an entire n√§rvarokort.
 /// </summary>
 public class BidragsSummering
 {

@@ -12,14 +12,14 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager Navigation
 
-<PageTitle>Lägg till ny scoutkår - Skojjt</PageTitle>
+<PageTitle>LÃ¤gg till ny scoutkÃ¥r - Skojjt</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 mb-8">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
 
-    <MudText Typo="Typo.h4" Class="mb-2">Lägg till ny scoutkår</MudText>
+    <MudText Typo="Typo.h4" Class="mb-2">LÃ¤gg till ny scoutkÃ¥r</MudText>
     <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">
-        Importera en scoutkår från Scoutnet
+        Importera en scoutkÃ¥r frÃ¥n Scoutnet
     </MudText>
 
     <MudStepper @bind-ActiveIndex="_activeStep">
@@ -30,8 +30,8 @@
 
                 <MudAlert Severity="Severity.Info" Class="mb-4">
                     <MudText Typo="Typo.body2">
-                        Du hittar Scoutnet-ID och API-nyckel i Scoutnet under <strong>Kårinställningar ? Webbkopplingar</strong>.
-                        Välj API-nyckeln för <strong>"Alla medlemmar (utökad)"</strong>.
+                        Du hittar Scoutnet-ID och API-nyckel i Scoutnet under <strong>KÃ¥rinstÃ¤llningar ? Webbkopplingar</strong>.
+                        VÃ¤lj API-nyckeln fÃ¶r <strong>"Alla medlemmar (utÃ¶kad)"</strong>.
                     </MudText>
                 </MudAlert>
 
@@ -39,7 +39,7 @@
                     <MudNumericField @bind-Value="_scoutGroupId"
                                      Label="Scoutnet Grupp-ID"
                                      Variant="Variant.Outlined"
-                                     HelperText="Kårens ID i Scoutnet (t.ex. 1137)"
+                                     HelperText="KÃ¥rens ID i Scoutnet (t.ex. 1137)"
                                      Min="1"
                                      Disabled="_isVerifying" />
 
@@ -47,7 +47,7 @@
                                   Label="API-nyckel (Alla medlemmar)"
                                   Variant="Variant.Outlined"
                                   InputType="InputType.Password"
-                                  HelperText="API-nyckeln för 'Alla medlemmar (utökad)'"
+                                  HelperText="API-nyckeln fÃ¶r 'Alla medlemmar (utÃ¶kad)'"
                                   Disabled="_isVerifying" />
 
                     @if (!string.IsNullOrEmpty(_verifyError))
@@ -71,7 +71,7 @@
                         }
                         else
                         {
-                            <span>Verifiera och fortsätt</span>
+                            <span>Verifiera och fortsÃ¤tt</span>
                         }
                     </MudButton>
                 </MudStack>
@@ -79,9 +79,9 @@
         </MudStep>
 
         @* Step 2: Confirm and import *@
-        <MudStep Title="Bekräfta och importera">
+        <MudStep Title="BekrÃ¤fta och importera">
             <MudPaper Elevation="2" Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-4">Bekräfta import</MudText>
+                <MudText Typo="Typo.h6" Class="mb-4">BekrÃ¤fta import</MudText>
 
                 @if (_verifiedScoutGroup != null)
                 {
@@ -92,7 +92,7 @@
                     <MudSimpleTable Dense="true" Striped="true" Class="mb-4">
                         <tbody>
                             <tr>
-                                <td><strong>Kårnamn</strong></td>
+                                <td><strong>KÃ¥rnamn</strong></td>
                                 <td>@_verifiedScoutGroup.Name</td>
                             </tr>
                             <tr>
@@ -110,7 +110,7 @@
                                @bind-Value="_selectedSemesterId"
                                Label="Termin"
                                Variant="Variant.Outlined"
-                               HelperText="Välj vilken termin som ska importeras till"
+                               HelperText="VÃ¤lj vilken termin som ska importeras till"
                                Disabled="_isImporting"
                                Class="mb-4">
                         @foreach (var semester in _availableSemesters)
@@ -123,8 +123,8 @@
                     {
                         <MudAlert Severity="Severity.Warning" Class="mb-4">
                             <MudText Typo="Typo.body2">
-                                Scoutkåren <strong>@_existingScoutGroup.Name</strong> finns redan i databasen. 
-                                API-nyckeln kommer att uppdateras och en ny import kommer att köras.
+                                ScoutkÃ¥ren <strong>@_existingScoutGroup.Name</strong> finns redan i databasen. 
+                                API-nyckeln kommer att uppdateras och en ny import kommer att kÃ¶ras.
                             </MudText>
                         </MudAlert>
                     }
@@ -160,7 +160,7 @@
                     @if (_importResult.Success)
                     {
                         <MudAlert Severity="Severity.Success" Class="mb-4">
-                            Import slutförd på @_importResult.Duration.TotalSeconds.ToString("F1") sekunder
+                            Import slutfÃ¶rd pÃ¥ @_importResult.Duration.TotalSeconds.ToString("F1") sekunder
                         </MudAlert>
 
                         <MudSimpleTable Dense="true" Striped="true" Class="mb-4">
@@ -190,7 +190,7 @@
                                    Href="@($"/sk/{_scoutGroupId!.Value}")"
                                    FullWidth="true"
                                    Size="Size.Large">
-                            Gå till scoutkåren
+                            GÃ¥ till scoutkÃ¥ren
                         </MudButton>
                     }
                     else
@@ -204,7 +204,7 @@
                                    StartIcon="@Icons.Material.Filled.Refresh"
                                    OnClick="@(() => { _activeStep = 0; _verifiedScoutGroup = null; })"
                                    FullWidth="true">
-                            Börja om
+                            BÃ¶rja om
                         </MudButton>
                     }
                 }
@@ -253,8 +253,8 @@
 
     private List<BreadcrumbItem> _breadcrumbs = new()
     {
-        new BreadcrumbItem("Scoutkårer", href: "/sk"),
-        new BreadcrumbItem("Lägg till ny", href: null, disabled: true)
+        new BreadcrumbItem("ScoutkÃ¥rer", href: "/sk"),
+        new BreadcrumbItem("LÃ¤gg till ny", href: null, disabled: true)
     };
 
     private enum LogSeverity { Info, Success, Warning, Error }
@@ -285,21 +285,21 @@
 
         try
         {
-            AddLog($"Verifierar anslutning till Scoutnet för grupp {_scoutGroupId.Value}...", LogSeverity.Info);
+            AddLog($"Verifierar anslutning till Scoutnet fÃ¶r grupp {_scoutGroupId.Value}...", LogSeverity.Info);
 
             // Try to fetch members from Scoutnet to verify credentials
             _verifiedResponse = await ApiClient.GetMemberListAsync(_scoutGroupId.Value, _apiKey);
 
             if (_verifiedResponse.Data.Count == 0)
             {
-                _verifyError = "Inga medlemmar hittades. Kontrollera att API-nyckeln har rätt behörighet.";
+                _verifyError = "Inga medlemmar hittades. Kontrollera att API-nyckeln har rÃ¤tt behÃ¶righet.";
                 AddLog(_verifyError, LogSeverity.Error);
                 return;
             }
 
             // Extract scout group name from first member
             var firstMember = _verifiedResponse.Data.Values.First();
-            var groupName = firstMember.GetGroupName() ?? $"Scoutkår {_scoutGroupId.Value}";
+            var groupName = firstMember.GetGroupName() ?? $"ScoutkÃ¥r {_scoutGroupId.Value}";
             _memberCount = _verifiedResponse.Data.Count;
 
             // Check if scout group already exists
@@ -330,7 +330,7 @@
         }
         catch (Exception ex)
         {
-            _verifyError = $"Ett oväntat fel uppstod: {ex.Message}";
+            _verifyError = $"Ett ovÃ¤ntat fel uppstod: {ex.Message}";
             AddLog(_verifyError, LogSeverity.Error);
         }
         finally
@@ -351,21 +351,21 @@
             // Create or update scout group
             if (_existingScoutGroup != null)
             {
-                AddLog($"Uppdaterar befintlig scoutkår {_existingScoutGroup.Name}...", LogSeverity.Info);
+                AddLog($"Uppdaterar befintlig scoutkÃ¥r {_existingScoutGroup.Name}...", LogSeverity.Info);
                 _existingScoutGroup.ApiKeyAllMembers = _apiKey;
                 _existingScoutGroup.UpdatedAt = DateTime.UtcNow;
                 await ScoutGroupRepository.UpdateAsync(_existingScoutGroup);
             }
             else
             {
-                AddLog($"Skapar ny scoutkår {_verifiedScoutGroup.Name}...", LogSeverity.Info);
+                AddLog($"Skapar ny scoutkÃ¥r {_verifiedScoutGroup.Name}...", LogSeverity.Info);
                 _verifiedScoutGroup.ApiKeyAllMembers = _apiKey;
                 await ScoutGroupRepository.AddAsync(_verifiedScoutGroup);
             }
 
             // Run import using the already fetched response
             var selectedSemester = _availableSemesters.FirstOrDefault(s => s.Id == _selectedSemesterId);
-            AddLog($"Startar import för termin {selectedSemester?.DisplayName ?? _selectedSemesterId.ToString()}...", LogSeverity.Info);
+            AddLog($"Startar import fÃ¶r termin {selectedSemester?.DisplayName ?? _selectedSemesterId.ToString()}...", LogSeverity.Info);
 
             var progress = new Progress<string>(message =>
             {
@@ -388,8 +388,8 @@
 
             if (_importResult.Success)
             {
-                AddLog($"Import slutförd! {_importResult.PersonsCreated} nya, {_importResult.PersonsUpdated} uppdaterade", LogSeverity.Success);
-                Snackbar.Add($"Scoutkåren {_verifiedScoutGroup.Name} har lagts till!", Severity.Success);
+                AddLog($"Import slutfÃ¶rd! {_importResult.PersonsCreated} nya, {_importResult.PersonsUpdated} uppdaterade", LogSeverity.Success);
+                Snackbar.Add($"ScoutkÃ¥ren {_verifiedScoutGroup.Name} har lagts till!", Severity.Success);
                 _activeStep = 2;
             }
             else
@@ -400,7 +400,7 @@
         }
         catch (Exception ex)
         {
-            AddLog($"Ett oväntat fel uppstod: {ex.Message}", LogSeverity.Error);
+            AddLog($"Ett ovÃ¤ntat fel uppstod: {ex.Message}", LogSeverity.Error);
             Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
             _importResult = new ScoutnetImportResult
             {

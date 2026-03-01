@@ -22,7 +22,7 @@
               Height="calc(100vh - 300px)">
         <ToolBarContent>
             <MudTextField @bind-Value="_searchString" 
-                          Placeholder="Sök..." 
+                          Placeholder="SÃ¶k..." 
                           Adornment="Adornment.Start" 
                           AdornmentIcon="@Icons.Material.Filled.Search" 
                           IconSize="Size.Medium" 
@@ -42,13 +42,13 @@
         </ToolBarContent>
         <HeaderContent>
             <MudTh><MudTableSortLabel SortBy="new Func<Person, object>(x => x.FullName)">Namn</MudTableSortLabel></MudTh>
-            <MudTh><MudTableSortLabel SortBy="new Func<Person, object?>(x => x.BirthDate)">Födelsedatum</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Person, object?>(x => x.BirthDate)">FÃ¶delsedatum</MudTableSortLabel></MudTh>
             <MudTh>Email</MudTh>
             <MudTh>Telefon</MudTh>
             <MudTh>Mobil</MudTh>
             <MudTh>Adress</MudTh>
             <MudTh>Postadress</MudTh>
-            <MudTh>Medlemsår</MudTh>
+            <MudTh>MedlemsÃ¥r</MudTh>
             <MudTh>Status</MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -57,7 +57,7 @@
                     @context.FullName
                 </MudLink>
             </MudTd>
-            <MudTd DataLabel="Födelsedatum">
+            <MudTd DataLabel="FÃ¶delsedatum">
                 @(context.BirthDate?.ToString("yyyy-MM-dd") ?? "")
             </MudTd>
             <MudTd DataLabel="Email">
@@ -85,7 +85,7 @@
                     @($"{context.ZipCode} {context.ZipName}")
                 }
             </MudTd>
-            <MudTd DataLabel="Medlemsår">
+            <MudTd DataLabel="MedlemsÃ¥r">
                 @if (context.MemberYears.Length > 0)
                 {
                     @string.Join(", ", context.MemberYears)
@@ -117,7 +117,7 @@
                            FullWidth="true"
                            StartIcon="@Icons.Material.Filled.CloudDownload"
                            Href="/import">
-                    Synka från Scoutnet
+                    Synka frÃ¥n Scoutnet
                 </MudButton>
             </MudItem>
             <MudItem xs="12" sm="6" md="4">
@@ -125,7 +125,7 @@
                            FullWidth="true"
                            StartIcon="@Icons.Material.Filled.ListAlt"
                            OnClick="ExportMemberListForGbg">
-                    Medlemslista för Göteborgs Kommun
+                    Medlemslista fÃ¶r GÃ¶teborgs Kommun
                 </MudButton>
             </MudItem>
         </MudGrid>
@@ -192,6 +192,6 @@
     private void ExportMemberListForGbg()
     {
         // TODO: Implement Gothenburg member list export
-        Snackbar.Add("Medlemslista för Göteborg kommer snart!", Severity.Info);
+        Snackbar.Add("Medlemslista fÃ¶r GÃ¶teborg kommer snart!", Severity.Info);
     }
 }

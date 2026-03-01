@@ -20,7 +20,7 @@ public class ExcelStockholmExporter : IAttendanceExporter
     public Task<ExportResult> ExportAsync(AttendanceReportData data, CancellationToken cancellationToken = default)
     {
         using var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add("Närvarokort");
+        var worksheet = workbook.Worksheets.Add("NÃ¤rvarokort");
 
         BuildWorksheet(worksheet, data);
 
@@ -54,12 +54,12 @@ public class ExcelStockholmExporter : IAttendanceExporter
         if (totalPersons > maxPersons || meetings.Count > maxMeetings)
         {
             throw new InvalidOperationException(
-                $"För många personer ({totalPersons}) eller sammankomster ({meetings.Count}). " +
-                $"Max är {maxPersons} personer och {maxMeetings} sammankomster.");
+                $"FÃ¶r mÃ¥nga personer ({totalPersons}) eller sammankomster ({meetings.Count}). " +
+                $"Max Ã¤r {maxPersons} personer och {maxMeetings} sammankomster.");
         }
 
         // Header information - Stockholm format
-        ws.Cell("A1").Value = $"Närvarokort Nr {GetUniqueId(data.Troop)}";
+        ws.Cell("A1").Value = $"NÃ¤rvarokort Nr {GetUniqueId(data.Troop)}";
         ws.Cell("AJ1").Value = data.Semester.Year;
         
         // Semester indicator
@@ -75,14 +75,14 @@ public class ExcelStockholmExporter : IAttendanceExporter
         // Column headers
         ws.Cell(10, 1).Value = "Starttid";
         ws.Cell(11, 1).Value = "Sluttid";
-        ws.Cell(12, 1).Value = "Månad";
+        ws.Cell(12, 1).Value = "MÃ¥nad";
         ws.Cell(13, 1).Value = "Dag";
 
-        ws.Cell(14, 2).Value = "Förnamn";
+        ws.Cell(14, 2).Value = "FÃ¶rnamn";
         ws.Cell(14, 3).Value = "Efternamn";
         ws.Cell(14, 4).Value = "K/M";
         ws.Cell(14, 5).Value = "Postnr";
-        ws.Cell(14, 6).Value = "Föd.år";
+        ws.Cell(14, 6).Value = "FÃ¶d.Ã¥r";
 
         // Write meeting headers
         for (int i = 0; i < meetings.Count; i++)

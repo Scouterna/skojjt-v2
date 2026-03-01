@@ -13,7 +13,7 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 
-<PageTitle>@(_badge?.Name ?? "Märke") - Skojjt</PageTitle>
+<PageTitle>@(_badge?.Name ?? "MÃ¤rke") - Skojjt</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
@@ -24,11 +24,11 @@
     }
     else if (!_hasAccess)
     {
-        <MudAlert Severity="Severity.Error">Du har inte behörighet att visa detta märke.</MudAlert>
+        <MudAlert Severity="Severity.Error">Du har inte behÃ¶righet att visa detta mÃ¤rke.</MudAlert>
     }
     else if (_badge == null)
     {
-        <MudAlert Severity="Severity.Error">Märket kunde inte hittas.</MudAlert>
+        <MudAlert Severity="Severity.Error">MÃ¤rket kunde inte hittas.</MudAlert>
     }
     else
     {
@@ -67,7 +67,7 @@
                             <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
                             <MudText Typo="Typo.h6">Scoutdelar</MudText>
                         </div>
-                        <MudTooltip Text="Lägg till scoutdel">
+                        <MudTooltip Text="LÃ¤gg till scoutdel">
                             <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small"
                                            OnClick="@(() => OpenAddPartDialog(false))" />
                         </MudTooltip>
@@ -95,7 +95,7 @@
                                     <tr>
                                         <td>@(idx + 1)</td>
                                         <td><strong>@part.ShortDescription</strong></td>
-                                        <td>@(part.LongDescription ?? "—")</td>
+                                        <td>@(part.LongDescription ?? "â€”")</td>
                                     </tr>
                                 }
                             </tbody>
@@ -112,7 +112,7 @@
                             <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Color="Color.Info" />
                             <MudText Typo="Typo.h6">Admindelar</MudText>
                         </div>
-                        <MudTooltip Text="Lägg till admindel">
+                        <MudTooltip Text="LÃ¤gg till admindel">
                             <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small"
                                            OnClick="@(() => OpenAddPartDialog(true))" />
                         </MudTooltip>
@@ -140,7 +140,7 @@
                                     <tr>
                                         <td>@(idx + 1)</td>
                                         <td><strong>@part.ShortDescription</strong></td>
-                                        <td>@(part.LongDescription ?? "—")</td>
+                                        <td>@(part.LongDescription ?? "â€”")</td>
                                     </tr>
                                 }
                             </tbody>
@@ -154,12 +154,12 @@
                 <MudPaper Elevation="2" Class="pa-4">
                     <div class="d-flex align-center mb-3 gap-2">
                         <MudIcon Icon="@Icons.Material.Filled.Groups" Color="Color.Primary" />
-                        <MudText Typo="Typo.h6">Avdelningar som använder märket</MudText>
+                        <MudText Typo="Typo.h6">Avdelningar som anvÃ¤nder mÃ¤rket</MudText>
                     </div>
                     @if (_troopBadges.Count == 0)
                     {
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
-                            Märket är inte kopplat till någon avdelning.
+                            MÃ¤rket Ã¤r inte kopplat till nÃ¥gon avdelning.
                         </MudText>
                     }
                     else
@@ -186,13 +186,13 @@
             </TitleContent>
             <DialogContent>
                 <MudTextField @bind-Value="_addPartShort" Label="Kort beskrivning" Required="true" Class="mb-2" />
-                <MudTextField @bind-Value="_addPartLong" Label="Lång beskrivning" Lines="3" />
+                <MudTextField @bind-Value="_addPartLong" Label="LÃ¥ng beskrivning" Lines="3" />
             </DialogContent>
             <DialogActions>
                 <MudButton OnClick="@(() => _showAddPartDialog = false)">Avbryt</MudButton>
                 <MudButton Color="Color.Primary" Variant="Variant.Filled"
                            OnClick="AddPart" Disabled="@string.IsNullOrWhiteSpace(_addPartShort)">
-                    Lägg till
+                    LÃ¤gg till
                 </MudButton>
             </DialogActions>
         </MudDialog>
@@ -242,10 +242,10 @@
 
             _breadcrumbs =
             [
-                new("Scoutkårer", href: "/sk"),
-                new(_scoutGroup?.Name ?? "Kår", href: $"/sk/{ScoutGroupId}"),
-                new("Märken", href: $"/sk/{ScoutGroupId}/badges"),
-                new(_badge?.Name ?? "Märke", href: null, disabled: true)
+                new("ScoutkÃ¥rer", href: "/sk"),
+                new(_scoutGroup?.Name ?? "KÃ¥r", href: $"/sk/{ScoutGroupId}"),
+                new("MÃ¤rken", href: $"/sk/{ScoutGroupId}/badges"),
+                new(_badge?.Name ?? "MÃ¤rke", href: null, disabled: true)
             ];
         }
         finally

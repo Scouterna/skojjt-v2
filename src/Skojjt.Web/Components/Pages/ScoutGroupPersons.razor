@@ -8,7 +8,7 @@
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
 
-<PageTitle>Medlemmar - @(_scoutGroup?.Name ?? "Scoutkår") - Skojjt</PageTitle>
+<PageTitle>Medlemmar - @(_scoutGroup?.Name ?? "ScoutkÃ¥r") - Skojjt</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
@@ -19,7 +19,7 @@
     }
     else if (_scoutGroup == null)
     {
-        <MudAlert Severity="Severity.Error">Scoutkåren kunde inte hittas.</MudAlert>
+        <MudAlert Severity="Severity.Error">ScoutkÃ¥ren kunde inte hittas.</MudAlert>
     }
     else
     {
@@ -38,7 +38,7 @@
                       RowClassFunc="@((person, _) => person.Removed ? "mud-text-disabled" : "")">
                 <ToolBarContent>
                     <MudTextField @bind-Value="_searchString" 
-                                  Placeholder="Sök namn, e-post, telefon..." 
+                                  Placeholder="SÃ¶k namn, e-post, telefon..." 
                                   Adornment="Adornment.Start" 
                                   AdornmentIcon="@Icons.Material.Filled.Search" 
                                   IconSize="Size.Medium" 
@@ -61,7 +61,7 @@
                 </ToolBarContent>
                 <HeaderContent>
                     <MudTh><MudTableSortLabel SortBy="new Func<Person, object>(x => x.LastName)">Namn</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Person, object?>(x => x.BirthDate)">Ålder</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Person, object?>(x => x.BirthDate)">Ã…lder</MudTableSortLabel></MudTh>
                     <MudTh>E-post</MudTh>
                     <MudTh Class="d-none d-md-table-cell">Mobil</MudTh>
                     <MudTh Class="d-none d-lg-table-cell">Adress</MudTh>
@@ -73,11 +73,11 @@
                             @context.FullName
                         </MudLink>
                     </MudTd>
-                    <MudTd DataLabel="Ålder">
+                    <MudTd DataLabel="Ã…lder">
                         @if (context.BirthDate.HasValue)
                         {
                             <MudTooltip Text="@context.BirthDate.Value.ToString("yyyy-MM-dd")">
-                                <MudText>@context.Age år</MudText>
+                                <MudText>@context.Age Ã¥r</MudText>
                             </MudTooltip>
                         }
                     </MudTd>
@@ -166,7 +166,7 @@
             {
                 _breadcrumbs = new List<BreadcrumbItem>
                 {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem("ScoutkÃ¥rer", href: "/sk"),
                     new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
                     new BreadcrumbItem("Medlemmar", href: null, disabled: true)
                 };

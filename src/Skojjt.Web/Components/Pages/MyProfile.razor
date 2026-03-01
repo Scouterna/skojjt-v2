@@ -21,7 +21,7 @@
     else if (_person == null)
     {
         <MudAlert Severity="Severity.Warning">
-            Kunde inte hitta din profil. Kontakta din kåradministratör om du tror att detta är fel.
+            Kunde inte hitta din profil. Kontakta din kÃ¥radministratÃ¶r om du tror att detta Ã¤r fel.
         </MudAlert>
     }
     else
@@ -45,13 +45,13 @@
                 <MudPaper Elevation="2" Class="pa-4">
                     <div class="d-flex align-center mb-4">
                         <MudIcon Icon="@Icons.Material.Filled.Groups" Class="mr-2" Color="Color.Primary" />
-                        <MudText Typo="Typo.h6">Mina kårer</MudText>
+                        <MudText Typo="Typo.h6">Mina kÃ¥rer</MudText>
                     </div>
 
                     @if (_groups.Count == 0)
                     {
                         <MudAlert Severity="Severity.Info" Dense="true">
-                            Du tillhör inga kårer.
+                            Du tillhÃ¶r inga kÃ¥rer.
                         </MudAlert>
                     }
                     else
@@ -90,13 +90,13 @@
                 <MudPaper Elevation="2" Class="pa-4">
                     <div class="d-flex align-center mb-4">
                         <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Class="mr-2" Color="Color.Primary" />
-                        <MudText Typo="Typo.h6">Närvarosammanfattning</MudText>
+                        <MudText Typo="Typo.h6">NÃ¤rvarosammanfattning</MudText>
                     </div>
 
                     @if (_attendance.Count == 0)
                     {
                         <MudAlert Severity="Severity.Info" Dense="true">
-                            Ingen närvaro registrerad.
+                            Ingen nÃ¤rvaro registrerad.
                         </MudAlert>
                     }
                     else
@@ -106,7 +106,7 @@
                                 <tr>
                                     <th>Avdelning</th>
                                     <th>Termin</th>
-                                    <th style="text-align: right;">Möten</th>
+                                    <th style="text-align: right;">MÃ¶ten</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -129,13 +129,13 @@
                 <MudPaper Elevation="2" Class="pa-4">
                     <div class="d-flex align-center mb-4">
                         <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Class="mr-2" Color="Color.Secondary" />
-                        <MudText Typo="Typo.h6">Märkesframsteg</MudText>
+                        <MudText Typo="Typo.h6">MÃ¤rkesframsteg</MudText>
                     </div>
 
                     @if (_badgeProgress.Count == 0)
                     {
                         <MudAlert Severity="Severity.Info" Dense="true">
-                            Inga märken påbörjade.
+                            Inga mÃ¤rken pÃ¥bÃ¶rjade.
                         </MudAlert>
                     }
                     else

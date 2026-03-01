@@ -13,7 +13,7 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 
-<PageTitle>Inst‰llningar - @(_troop?.Name ?? "Avdelning") - Skojjt</PageTitle>
+<PageTitle>Inst√§llningar - @(_troop?.Name ?? "Avdelning") - Skojjt</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
@@ -24,7 +24,7 @@
     }
     else if (!_hasAccess)
     {
-        <MudAlert Severity="Severity.Error">Du har inte behˆrighet att visa denna avdelning.</MudAlert>
+        <MudAlert Severity="Severity.Error">Du har inte beh√∂righet att visa denna avdelning.</MudAlert>
     }
     else if (_troop == null)
     {
@@ -32,7 +32,7 @@
     }
     else
     {
-        <MudText Typo="Typo.h4" Class="mb-4">Avdelningsinst‰llningar</MudText>
+        <MudText Typo="Typo.h4" Class="mb-4">Avdelningsinst√§llningar</MudText>
         <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">@_troop.Name</MudText>
 
         <MudForm @ref="_form" @bind-IsValid="_formIsValid">
@@ -41,7 +41,7 @@
                     <MudPaper Elevation="2" Class="pa-4">
                         <div class="d-flex align-center mb-4">
                             <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" Color="Color.Primary" />
-                            <MudText Typo="Typo.h6">Standardv‰rden fˆr mˆten</MudText>
+                            <MudText Typo="Typo.h6">Standardv√§rden f√∂r m√∂ten</MudText>
                         </div>
 
                         <MudGrid>
@@ -49,21 +49,21 @@
                                 <MudTimePicker @bind-Time="_defaultStartTime"
                                                Label="Starttid"
                                                Variant="Variant.Outlined"
-                                               HelperText="Standardstarttid fˆr nya mˆten" />
+                                               HelperText="Standardstarttid f√∂r nya m√∂ten" />
                             </MudItem>
                             <MudItem xs="12" md="4">
                                 <MudNumericField @bind-Value="_troop.DefaultDurationMinutes"
-                                                 Label="L‰ngd (minuter)"
+                                                 Label="L√§ngd (minuter)"
                                                  Variant="Variant.Outlined"
                                                  Min="15"
                                                  Max="480"
-                                                 HelperText="Standardl‰ngd fˆr nya mˆten" />
+                                                 HelperText="Standardl√§ngd f√∂r nya m√∂ten" />
                             </MudItem>
                             <MudItem xs="12" md="4">
                                 <MudTextField @bind-Value="_troop.DefaultMeetingLocation"
-                                              Label="Mˆtesplats"
+                                              Label="M√∂tesplats"
                                               Variant="Variant.Outlined"
-                                              HelperText="Standardplats fˆr nya mˆten" />
+                                              HelperText="Standardplats f√∂r nya m√∂ten" />
                             </MudItem>
                         </MudGrid>
                     </MudPaper>
@@ -82,7 +82,7 @@
                                    StartIcon="@Icons.Material.Filled.Save"
                                    OnClick="SaveSettings"
                                    Disabled="@(!_formIsValid || _saving)">
-                            Spara inst‰llningar
+                            Spara inst√§llningar
                         </MudButton>
                     </div>
                 </MudItem>
@@ -146,11 +146,11 @@
 
                 _breadcrumbs = new List<BreadcrumbItem>
                 {
-                    new("ScoutkÂrer", href: "/sk"),
+                    new("Scoutk√•rer", href: "/sk"),
                     new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
                     new(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
                     new(_troop.Name, href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}"),
-                    new("Inst‰llningar", href: null, disabled: true)
+                    new("Inst√§llningar", href: null, disabled: true)
                 };
             }
         }
@@ -177,7 +177,7 @@
 
                     await TroopRepository.UpdateAsync(_troop);
                     await UnitOfWork.SaveChangesAsync();
-                    Snackbar.Add("Inst‰llningarna har sparats!", Severity.Success);
+                    Snackbar.Add("Inst√§llningarna har sparats!", Severity.Success);
                 }
                 catch (Exception ex)
                 {

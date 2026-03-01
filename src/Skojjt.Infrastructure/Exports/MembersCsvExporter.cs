@@ -8,7 +8,7 @@ namespace Skojjt.Infrastructure.Exports;
 
 /// <summary>
 /// Generates a members CSV file for Gothenburg municipality attendance grant (aktivitetsbidrag).
-/// Format: "Förnamn;Efternamn;Personnummer;Har funktionsnedsättning"
+/// Format: "FÃ¶rnamn;Efternamn;Personnummer;Har funktionsnedsÃ¤ttning"
 /// UTF-8 with BOM, semicolon-delimited.
 /// 
 /// See documentation at:
@@ -40,7 +40,7 @@ public class MembersCsvExporter : IMembersCsvExporter
     {
         var scoutGroup = await _scoutGroupRepository.GetByIdAsync(input.ScoutGroupId, cancellationToken);
         if (scoutGroup == null)
-            throw new InvalidOperationException($"Scoutkåren kunde inte hittas: {input.ScoutGroupId}");
+            throw new InvalidOperationException($"ScoutkÃ¥ren kunde inte hittas: {input.ScoutGroupId}");
 
         var semester = await _semesterRepository.GetByIdAsync(input.SemesterId, cancellationToken);
         if (semester == null)
@@ -125,7 +125,7 @@ public class MembersCsvExporter : IMembersCsvExporter
         // Generate CSV with UTF-8 BOM
         var sb = new StringBuilder();
         sb.Append('\ufeff'); // BOM for Excel
-        sb.AppendLine("Förnamn;Efternamn;Personnummer;Har funktionsnedsättning");
+        sb.AppendLine("FÃ¶rnamn;Efternamn;Personnummer;Har funktionsnedsÃ¤ttning");
 
         // Filter and sort persons
         var eligiblePersons = personMeetingCounts

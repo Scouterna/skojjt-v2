@@ -13,7 +13,7 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 
-<PageTitle>Märken - @(_scoutGroup?.Name ?? "Kår") - Skojjt</PageTitle>
+<PageTitle>MÃ¤rken - @(_scoutGroup?.Name ?? "KÃ¥r") - Skojjt</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
@@ -24,28 +24,28 @@
     }
     else if (!_hasAccess)
     {
-        <MudAlert Severity="Severity.Error">Du har inte behörighet att visa denna scoutkår.</MudAlert>
+        <MudAlert Severity="Severity.Error">Du har inte behÃ¶righet att visa denna scoutkÃ¥r.</MudAlert>
     }
     else if (_scoutGroup == null)
     {
-        <MudAlert Severity="Severity.Error">Scoutkåren kunde inte hittas.</MudAlert>
+        <MudAlert Severity="Severity.Error">ScoutkÃ¥ren kunde inte hittas.</MudAlert>
     }
     else
     {
         <div class="d-flex flex-wrap align-center justify-space-between mb-4 gap-2">
-            <MudText Typo="Typo.h4">Märken - @_scoutGroup.Name</MudText>
+            <MudText Typo="Typo.h4">MÃ¤rken - @_scoutGroup.Name</MudText>
             <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
                 <MudButton StartIcon="@Icons.Material.Filled.Add"
                            OnClick="@(() => _showNewBadgeDialog = true)">
-                    Nytt märke
+                    Nytt mÃ¤rke
                 </MudButton>
                 <MudButton StartIcon="@Icons.Material.Filled.ContentCopy"
                            OnClick="OpenTemplateDialog">
-                    Från mall
+                    FrÃ¥n mall
                 </MudButton>
                 <MudButton StartIcon="@(_showArchived ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                            OnClick="ToggleArchived">
-                    @(_showArchived ? "Dölj arkiverade" : "Visa arkiverade")
+                    @(_showArchived ? "DÃ¶lj arkiverade" : "Visa arkiverade")
                 </MudButton>
             </MudButtonGroup>
         </div>
@@ -53,7 +53,7 @@
         @if (_badges.Count == 0)
         {
             <MudAlert Severity="Severity.Info">
-                Inga märken definierade för denna kår. Skapa ett nytt märke eller välj en mall.
+                Inga mÃ¤rken definierade fÃ¶r denna kÃ¥r. Skapa ett nytt mÃ¤rke eller vÃ¤lj en mall.
             </MudAlert>
         }
         else
@@ -118,7 +118,7 @@
         @* New Badge Dialog *@
         <MudDialog @bind-Visible="_showNewBadgeDialog" Options="_dialogOptions">
             <TitleContent>
-                <MudText Typo="Typo.h6">Nytt märke</MudText>
+                <MudText Typo="Typo.h6">Nytt mÃ¤rke</MudText>
             </TitleContent>
             <DialogContent>
                 <MudTextField @bind-Value="_newBadgeName" Label="Namn" Required="true" Class="mb-2" />
@@ -137,12 +137,12 @@
         @* Template Dialog *@
         <MudDialog @bind-Visible="_showTemplateDialog" Options="_dialogOptions">
             <TitleContent>
-                <MudText Typo="Typo.h6">Skapa märke från mall</MudText>
+                <MudText Typo="Typo.h6">Skapa mÃ¤rke frÃ¥n mall</MudText>
             </TitleContent>
             <DialogContent>
                 @if (_templates.Count == 0)
                 {
-                    <MudAlert Severity="Severity.Info">Inga mallar tillgängliga.</MudAlert>
+                    <MudAlert Severity="Severity.Info">Inga mallar tillgÃ¤ngliga.</MudAlert>
                 }
                 else
                 {
@@ -175,7 +175,7 @@
                 }
             </DialogContent>
             <DialogActions>
-                <MudButton OnClick="@(() => _showTemplateDialog = false)">Stäng</MudButton>
+                <MudButton OnClick="@(() => _showTemplateDialog = false)">StÃ¤ng</MudButton>
             </DialogActions>
         </MudDialog>
     }
@@ -212,7 +212,7 @@
             _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
             if (!_hasAccess)
             {
-                _breadcrumbs = [new("Scoutkårer", href: "/sk"), new("Ingen behörighet", href: null, disabled: true)];
+                _breadcrumbs = [new("ScoutkÃ¥rer", href: "/sk"), new("Ingen behÃ¶righet", href: null, disabled: true)];
                 return;
             }
 
@@ -222,9 +222,9 @@
                 _badges = (await BadgeService.GetBadgesForGroupAsync(ScoutGroupId, _showArchived)).ToList();
                 _breadcrumbs =
                 [
-                    new("Scoutkårer", href: "/sk"),
+                    new("ScoutkÃ¥rer", href: "/sk"),
                     new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
-                    new("Märken", href: null, disabled: true)
+                    new("MÃ¤rken", href: null, disabled: true)
                 ];
             }
         }
@@ -263,7 +263,7 @@
             _newBadgeName = "";
             _newBadgeDescription = null;
             _newBadgeImageUrl = null;
-            Snackbar.Add($"Märke '{badge.Name}' skapat", Severity.Success);
+            Snackbar.Add($"MÃ¤rke '{badge.Name}' skapat", Severity.Success);
             NavigationManager.NavigateTo($"/sk/{ScoutGroupId}/badges/{badge.Id}");
         }
         catch (Exception ex)
@@ -285,7 +285,7 @@
         {
             var badge = await BadgeService.CreateFromTemplateAsync(template.Id, ScoutGroupId);
             _showTemplateDialog = false;
-            Snackbar.Add($"Märke '{badge.Name}' skapat från mall", Severity.Success);
+            Snackbar.Add($"MÃ¤rke '{badge.Name}' skapat frÃ¥n mall", Severity.Success);
             NavigationManager.NavigateTo($"/sk/{ScoutGroupId}/badges/{badge.Id}");
         }
         catch (Exception ex)

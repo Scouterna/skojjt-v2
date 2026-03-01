@@ -18,7 +18,7 @@
         @* Header with logo *@
         <div class="d-flex flex-column align-center mb-4">
             <MudImage Src="/img/scoutid_small.png" Alt="ScoutID" Width="180" Class="mb-3" />
-            <MudText Typo="Typo.h4" Align="Align.Center">Logga in på Skojjt</MudText>
+            <MudText Typo="Typo.h4" Align="Align.Center">Logga in pÃ¥ Skojjt</MudText>
         </div>
 
         @* Error messages *@
@@ -35,10 +35,10 @@
             <MudAlert Severity="Severity.Warning" Class="mb-4" Dense="true">
                 <div class="d-flex align-center justify-space-between flex-wrap gap-2">
                     <div>
-                        <strong>Utvecklingsläge</strong>
+                        <strong>UtvecklingslÃ¤ge</strong>
                         @if (UseSimulatedAuth)
                         {
-                            <span> – Simulerad inloggning</span>
+                            <span> â€“ Simulerad inloggning</span>
                         }
                     </div>
                     <MudChip T="string" Size="Size.Small" Color="Color.Default">v@AppVersion</MudChip>
@@ -51,7 +51,7 @@
         {
             @* Simulated ScoutID login for development *@
             <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-4">
-                Välj en testanvändare för att logga in
+                VÃ¤lj en testanvÃ¤ndare fÃ¶r att logga in
             </MudText>
 
             @if (ScoutIdSimulator != null)
@@ -122,7 +122,7 @@
                                              Class="mb-2" />
 
                             <MudTextField T="string"
-                                          Label="Tillgång till grupper"
+                                          Label="TillgÃ¥ng till grupper"
                                           name="accessibleGroups"
                                           HelperText="Kommaseparerat, t.ex: 1137,1138"
                                           Variant="Variant.Outlined"
@@ -131,7 +131,7 @@
 
                             <div class="d-flex flex-wrap gap-4 mb-3">
                                 <MudCheckBox T="bool" name="isMemberRegistrar" Label="Medlemsregistrerare" Dense="true" />
-                                <MudCheckBox T="bool" name="isAdmin" Label="Administratör" Dense="true" />
+                                <MudCheckBox T="bool" name="isAdmin" Label="AdministratÃ¶r" Dense="true" />
                             </div>
 
                             <MudButton ButtonType="ButtonType.Submit"
@@ -139,7 +139,7 @@
                                        Color="Color.Secondary"
                                        FullWidth="true"
                                        Size="Size.Small">
-                                Logga in med anpassad användare
+                                Logga in med anpassad anvÃ¤ndare
                             </MudButton>
                         </form>
                     </MudExpansionPanel>
@@ -150,12 +150,12 @@
         {
             @* Real ScoutID login *@
             <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-4">
-                Använd ditt ScoutID för att logga in
+                AnvÃ¤nd ditt ScoutID fÃ¶r att logga in
             </MudText>
 
             <MudAlert Severity="Severity.Info" Class="mb-4" Dense="true">
                 <MudText Typo="Typo.body2">
-                    ScoutID är Scouternas inloggningslösning. Du loggar in med samma uppgifter som på Scoutnet.
+                    ScoutID Ã¤r Scouternas inloggningslÃ¶sning. Du loggar in med samma uppgifter som pÃ¥ Scoutnet.
                 </MudText>
             </MudAlert>
 
@@ -177,8 +177,8 @@
 
         @* Footer with version and service info *@
         <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Center" Class="mb-2">
-            Skojjt är ett närvarosystem för scoutkårer.
-            <MudLink Href="https://www.scouterna.se" Target="_blank">Läs mer om Scouterna</MudLink>
+            Skojjt Ã¤r ett nÃ¤rvarosystem fÃ¶r scoutkÃ¥rer.
+            <MudLink Href="https://www.scouterna.se" Target="_blank">LÃ¤s mer om Scouterna</MudLink>
         </MudText>
 
         @if (!IsDevMode)
@@ -192,11 +192,11 @@
         @if (IsDevMode)
         {
             <MudExpansionPanels Class="mt-4">
-                <MudExpansionPanel Text="Tjänstekonfiguration" Dense="true">
+                <MudExpansionPanel Text="TjÃ¤nstekonfiguration" Dense="true">
                     <MudSimpleTable Dense="true" Hover="true" Bordered="true">
                         <thead>
                             <tr>
-                                <th>Tjänst</th>
+                                <th>TjÃ¤nst</th>
                                 <th>Status</th>
                                 <th>URL</th>
                             </tr>
@@ -224,11 +224,11 @@
                                 <td><code>@ScoutnetBaseUrl</code></td>
                             </tr>
                             <tr>
-                                <td>Miljö</td>
+                                <td>MiljÃ¶</td>
                                 <td>
                                     <MudChip T="string" Size="Size.Small" Color="Color.Info">@Environment.EnvironmentName</MudChip>
                                 </td>
-                                <td>—</td>
+                                <td>â€”</td>
                             </tr>
                         </tbody>
                     </MudSimpleTable>
@@ -253,7 +253,7 @@
         string.IsNullOrEmpty(Configuration["ScoutId:ClientId"]);
 
     private string ScoutIdAuthority =>
-        UseSimulatedAuth ? "(simulerad)" : (Configuration["ScoutId:Authority"] ?? "—");
+        UseSimulatedAuth ? "(simulerad)" : (Configuration["ScoutId:Authority"] ?? "â€”");
 
     private string ScoutnetBaseUrl =>
         ScoutnetOptions.Value.BaseUrl;
@@ -270,9 +270,9 @@
 
     private string GetErrorMessage(string error) => error switch
     {
-        "fallback_disabled" => "Nödinloggning är inte aktiverad.",
-        "invalid_credentials" => "Felaktig e-postadress eller lösenord. Endast administratörer kan använda nödinloggning.",
-        "scoutid_unavailable" => "ScoutID är för tillfället otillgängligt. Prova nödinloggningen nedan om du är administratör.",
+        "fallback_disabled" => "NÃ¶dinloggning Ã¤r inte aktiverad.",
+        "invalid_credentials" => "Felaktig e-postadress eller lÃ¶senord. Endast administratÃ¶rer kan anvÃ¤nda nÃ¶dinloggning.",
+        "scoutid_unavailable" => "ScoutID Ã¤r fÃ¶r tillfÃ¤llet otillgÃ¤ngligt. Prova nÃ¶dinloggningen nedan om du Ã¤r administratÃ¶r.",
         _ => $"Ett fel uppstod: {error}"
     };
 }

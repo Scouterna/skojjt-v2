@@ -34,7 +34,7 @@
                             @if (_person.BirthDate.HasValue)
                             {
                                 <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
-                                    @_person.Age år (@_person.BirthDate.Value.ToString("yyyy-MM-dd"))
+                                    @_person.Age Ã¥r (@_person.BirthDate.Value.ToString("yyyy-MM-dd"))
                                 </MudText>
                             }
                         </div>
@@ -120,14 +120,14 @@
                 <MudPaper Elevation="2" Class="pa-4" Style="height: 100%;">
                     <div class="d-flex align-center mb-4">
                         <MudIcon Icon="@Icons.Material.Filled.FamilyRestroom" Class="mr-2" Color="Color.Primary" />
-                        <MudText Typo="Typo.h6">Vårdnadshavare</MudText>
+                        <MudText Typo="Typo.h6">VÃ¥rdnadshavare</MudText>
                     </div>
                     
                     <MudStack Spacing="3">
                         @if (!string.IsNullOrEmpty(_person.MumName) || !string.IsNullOrEmpty(_person.MumEmail) || !string.IsNullOrEmpty(_person.MumMobile))
                         {
                             <div>
-                                <MudText Typo="Typo.subtitle2">@(_person.MumName ?? "Vårdnadshavare 1")</MudText>
+                                <MudText Typo="Typo.subtitle2">@(_person.MumName ?? "VÃ¥rdnadshavare 1")</MudText>
                                 @if (!string.IsNullOrEmpty(_person.MumEmail))
                                 {
                                     <div class="d-flex align-center gap-2">
@@ -148,7 +148,7 @@
                         @if (!string.IsNullOrEmpty(_person.DadName) || !string.IsNullOrEmpty(_person.DadEmail) || !string.IsNullOrEmpty(_person.DadMobile))
                         {
                             <div>
-                                <MudText Typo="Typo.subtitle2">@(_person.DadName ?? "Vårdnadshavare 2")</MudText>
+                                <MudText Typo="Typo.subtitle2">@(_person.DadName ?? "VÃ¥rdnadshavare 2")</MudText>
                                 @if (!string.IsNullOrEmpty(_person.DadEmail))
                                 {
                                     <div class="d-flex align-center gap-2">
@@ -169,7 +169,7 @@
                         @if (string.IsNullOrEmpty(_person.MumName) && string.IsNullOrEmpty(_person.MumEmail) && 
                              string.IsNullOrEmpty(_person.DadName) && string.IsNullOrEmpty(_person.DadEmail))
                         {
-                            <MudText Color="Color.Secondary">Ingen vårdnadshavareinformation registrerad.</MudText>
+                            <MudText Color="Color.Secondary">Ingen vÃ¥rdnadshavareinformation registrerad.</MudText>
                         }
                     </MudStack>
                 </MudPaper>
@@ -200,7 +200,7 @@
                         @if (_person.MemberYears.Length > 0)
                         {
                             <div>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">Medlemsår</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">MedlemsÃ¥r</MudText>
                                 <MudText>@string.Join(", ", _person.MemberYears)</MudText>
                             </div>
                         }
@@ -209,7 +209,7 @@
 @*                         @if (!string.IsNullOrEmpty(_person.GroupRoles))
                         {
                             <div>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">Roller i kåren</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Roller i kÃ¥ren</MudText>
                                 <MudText>@_person.GroupRoles</MudText>
                             </div>
                         }
@@ -227,7 +227,7 @@
                     
                     @if (_troopMemberships.Count == 0)
                     {
-                        <MudText Color="Color.Secondary">Inte medlem i någon avdelning.</MudText>
+                        <MudText Color="Color.Secondary">Inte medlem i nÃ¥gon avdelning.</MudText>
                     }
                     else
                     {
@@ -298,7 +298,7 @@
             {
                 _breadcrumbs = new List<BreadcrumbItem>
                 {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem("ScoutkÃ¥rer", href: "/sk"),
                     new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
                     new BreadcrumbItem("Medlemmar", href: $"/sk/{ScoutGroupId}/p"),
                     new BreadcrumbItem(_person.FullName, href: null, disabled: true)

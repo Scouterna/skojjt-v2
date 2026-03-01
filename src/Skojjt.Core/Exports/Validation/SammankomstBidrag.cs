@@ -1,7 +1,7 @@
 namespace Skojjt.Core.Exports.Validation;
 
 /// <summary>
-/// Bidragsberäkning for a single sammankomst.
+/// BidragsberÃ¤kning for a single sammankomst.
 /// </summary>
 public class SammankomstBidrag
 {
@@ -36,12 +36,12 @@ public class SammankomstBidrag
     public int AntalPojkar { get; init; }
 
     /// <summary>
-    /// Grant amount for female participants (AntalFlickor × rate).
+    /// Grant amount for female participants (AntalFlickor Ã— rate).
     /// </summary>
     public decimal BeloppFlickor { get; init; }
 
     /// <summary>
-    /// Grant amount for male participants (AntalPojkar × rate).
+    /// Grant amount for male participants (AntalPojkar Ã— rate).
     /// </summary>
     public decimal BeloppPojkar { get; init; }
 

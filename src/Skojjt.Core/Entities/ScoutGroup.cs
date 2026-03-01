@@ -3,7 +3,7 @@
 namespace Skojjt.Core.Entities;
 
 /// <summary>
-/// Scout Group (Kår) - Local scout organization.
+/// Scout Group (KÃ¥r) - Local scout organization.
 /// ID is the Scoutnet group ID.
 /// </summary>
 public class ScoutGroup

@@ -20,23 +20,23 @@ public class DakXmlExporter : IAttendanceExporter
         if (string.IsNullOrWhiteSpace(data.ScoutGroup.AssociationId))
         {
             throw new InvalidOperationException(
-                $"Förenings-ID saknas för scoutkåren '{data.ScoutGroup.Name}'. " +
-                "Konfigurera förenings-ID i kårinställningar innan du exporterar DAK.");
+                $"FÃ¶renings-ID saknas fÃ¶r scoutkÃ¥ren '{data.ScoutGroup.Name}'. " +
+                "Konfigurera fÃ¶renings-ID i kÃ¥rinstÃ¤llningar innan du exporterar DAK.");
         }
 
         if (string.IsNullOrWhiteSpace(data.ScoutGroup.MunicipalityId))
         {
             throw new InvalidOperationException(
-                $"Kommun-ID saknas för scoutkåren '{data.ScoutGroup.Name}'. " +
-                "Konfigurera kommun-ID i kårinställningar innan du exporterar DAK.");
+                $"Kommun-ID saknas fÃ¶r scoutkÃ¥ren '{data.ScoutGroup.Name}'. " +
+                "Konfigurera kommun-ID i kÃ¥rinstÃ¤llningar innan du exporterar DAK.");
         }
 
         // Validate that the municipality code is valid
         if (!MunicipalityCodes.IsValidCode(data.ScoutGroup.MunicipalityId))
         {
             throw new InvalidOperationException(
-                $"Ogiltigt kommun-ID '{data.ScoutGroup.MunicipalityId}' för scoutkåren '{data.ScoutGroup.Name}'. " +
-                "Kontrollera kommun-ID i kårinställningar.");
+                $"Ogiltigt kommun-ID '{data.ScoutGroup.MunicipalityId}' fÃ¶r scoutkÃ¥ren '{data.ScoutGroup.Name}'. " +
+                "Kontrollera kommun-ID i kÃ¥rinstÃ¤llningar.");
         }
 
         var dakData = BuildDakData(data);
@@ -187,13 +187,13 @@ public class DakXmlExporter : IAttendanceExporter
         writer.WriteAttributeString("kommunID", dak.KommunId);
         writer.WriteAttributeString("version", "2.2");
 
-        // Förening
+        // FÃ¶rening
         writer.WriteStartElement("Foerening");
         writer.WriteAttributeString("foereningsID", dak.ForeningsId);
         writer.WriteAttributeString("foereningsNamn", dak.ForeningsNamn);
         writer.WriteAttributeString("organisationsnummer", dak.Organisationsnummer);
 
-        // Närvarokort
+        // NÃ¤rvarokort
         writer.WriteStartElement("Naervarokort");
         writer.WriteAttributeString("NaervarokortNummer", dak.Kort.NarvarokortNummer);
         

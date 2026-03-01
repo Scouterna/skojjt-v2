@@ -11,7 +11,7 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager Navigation
 
-<PageTitle>Scoutnet Import - @(_scoutGroup?.Name ?? "Scoutkår") - Skojjt</PageTitle>
+<PageTitle>Scoutnet Import - @(_scoutGroup?.Name ?? "ScoutkÃ¥r") - Skojjt</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
@@ -22,7 +22,7 @@
     }
     else if (_scoutGroup == null)
     {
-        <MudAlert Severity="Severity.Error">Scoutkåren kunde inte hittas.</MudAlert>
+        <MudAlert Severity="Severity.Error">ScoutkÃ¥ren kunde inte hittas.</MudAlert>
     }
     else
     {
@@ -35,15 +35,15 @@
                 <MudPaper Elevation="2" Class="pa-4">
                     <div class="d-flex align-center mb-4">
                         <MudIcon Icon="@Icons.Material.Filled.CloudDownload" Class="mr-2" Color="Color.Primary" />
-                        <MudText Typo="Typo.h6">Importinställningar</MudText>
+                        <MudText Typo="Typo.h6">ImportinstÃ¤llningar</MudText>
                     </div>
 
                     @if (string.IsNullOrEmpty(_scoutGroup.ApiKeyAllMembers))
                     {
                         <MudAlert Severity="Severity.Warning" Class="mb-4">
                             <MudText>
-                                API-nyckel för medlemslistan är inte konfigurerad.
-                                <MudLink Href="@($"/sk/{ScoutGroupId}/settings")">Gå till inställningar</MudLink> för att lägga till den.
+                                API-nyckel fÃ¶r medlemslistan Ã¤r inte konfigurerad.
+                                <MudLink Href="@($"/sk/{ScoutGroupId}/settings")">GÃ¥ till instÃ¤llningar</MudLink> fÃ¶r att lÃ¤gga till den.
                             </MudText>
                         </MudAlert>
                     }
@@ -54,7 +54,7 @@
                                        @bind-Value="_selectedSemesterId" 
                                        Label="Termin"
                                        Variant="Variant.Outlined"
-                                       HelperText="Välj vilken termin som ska importeras till"
+                                       HelperText="VÃ¤lj vilken termin som ska importeras till"
                                        Disabled="_isImporting">
                                 @foreach (var semester in _availableSemesters)
                                 {
@@ -64,8 +64,8 @@
 
                             <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">
                                 <MudText Typo="Typo.body2">
-                                    Importen hämtar alla medlemmar från Scoutnet och synkroniserar med databasen.
-                                    Nya medlemmar läggs till, befintliga uppdateras, och medlemmar som saknas markeras som borttagna.
+                                    Importen hÃ¤mtar alla medlemmar frÃ¥n Scoutnet och synkroniserar med databasen.
+                                    Nya medlemmar lÃ¤ggs till, befintliga uppdateras, och medlemmar som saknas markeras som borttagna.
                                 </MudText>
                             </MudAlert>
 
@@ -104,7 +104,7 @@
                         @if (_importResult.Success)
                         {
                             <MudAlert Severity="Severity.Success" Class="mb-4">
-                                Import slutförd på @_importResult.Duration.TotalSeconds.ToString("F1") sekunder
+                                Import slutfÃ¶rd pÃ¥ @_importResult.Duration.TotalSeconds.ToString("F1") sekunder
                             </MudAlert>
 
                             <MudSimpleTable Dense="true" Striped="true" Class="mb-4">
@@ -146,7 +146,7 @@
                     else if (!_isImporting)
                     {
                         <MudAlert Severity="Severity.Info" Dense="true">
-                            Ingen import har körts ännu. Klicka på "Starta import" för att börja.
+                            Ingen import har kÃ¶rts Ã¤nnu. Klicka pÃ¥ "Starta import" fÃ¶r att bÃ¶rja.
                         </MudAlert>
                     }
                 </MudPaper>
@@ -176,7 +176,7 @@
                               Class="pa-3">
                         @if (_logMessages.Count == 0)
                         {
-                            <div style="color: #6a9955;">// Importloggen visas här när importen startar</div>
+                            <div style="color: #6a9955;">// Importloggen visas hÃ¤r nÃ¤r importen startar</div>
                         }
                         else
                         {
@@ -196,7 +196,7 @@
             {
                 <MudItem xs="12">
                     <MudExpansionPanels>
-                        <MudExpansionPanel Text="@($"Detaljerade ändringar ({_importResult.LogMessages.Count} st)")">
+                        <MudExpansionPanel Text="@($"Detaljerade Ã¤ndringar ({_importResult.LogMessages.Count} st)")">
                             <MudList T="string" Dense="true">
                                 @foreach (var message in _importResult.LogMessages.Take(100))
                                 {
@@ -223,10 +223,10 @@
                     <MudExpansionPanels MultiExpansion="true">
                         @if (_importResult.CreatedScoutGroups.Count > 0)
                         {
-                            <MudExpansionPanel Text="@($"Nya scoutkårer ({_importResult.CreatedScoutGroups.Count} st)")" 
+                            <MudExpansionPanel Text="@($"Nya scoutkÃ¥rer ({_importResult.CreatedScoutGroups.Count} st)")" 
                                                Icon="@Icons.Material.Filled.Business">
                                 <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
-                                    Följande scoutkårer skapades automatiskt under importen.
+                                    FÃ¶ljande scoutkÃ¥rer skapades automatiskt under importen.
                                 </MudAlert>
                                 <MudSimpleTable Dense="true" Striped="true" Hover="true">
                                     <thead>
@@ -321,7 +321,7 @@
                             <MudExpansionPanel Text="@($"Borttagna personer ({_importResult.RemovedPersons.Count} st)")" 
                                                Icon="@Icons.Material.Filled.PersonRemove">
                                 <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
-                                    Dessa personer finns inte längre i Scoutnet och har markerats som borttagna.
+                                    Dessa personer finns inte lÃ¤ngre i Scoutnet och har markerats som borttagna.
                                 </MudAlert>
                                 <MudSimpleTable Dense="true" Striped="true" Hover="true">
                                     <thead>
@@ -413,7 +413,7 @@
                 
                 _breadcrumbs = new List<BreadcrumbItem>
                 {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem("ScoutkÃ¥rer", href: "/sk"),
                     new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
                     new BreadcrumbItem("Scoutnet Import", href: null, disabled: true)
                 };
@@ -438,7 +438,7 @@
         try
         {
             var selectedSemester = _availableSemesters.FirstOrDefault(s => s.Id == _selectedSemesterId);
-            AddLog($"Startar import för {_scoutGroup.Name}, termin {selectedSemester?.DisplayName ?? _selectedSemesterId.ToString()}", LogSeverity.Info);
+            AddLog($"Startar import fÃ¶r {_scoutGroup.Name}, termin {selectedSemester?.DisplayName ?? _selectedSemesterId.ToString()}", LogSeverity.Info);
             
             var progress = new Progress<string>(message =>
             {
@@ -461,8 +461,8 @@
 
             if (_importResult.Success)
             {
-                AddLog($"Import slutförd! {_importResult.PersonsCreated} nya, {_importResult.PersonsUpdated} uppdaterade, {_importResult.PersonsRemoved} borttagna", LogSeverity.Success);
-                Snackbar.Add($"Import slutförd för {_scoutGroup.Name}", Severity.Success);
+                AddLog($"Import slutfÃ¶rd! {_importResult.PersonsCreated} nya, {_importResult.PersonsUpdated} uppdaterade, {_importResult.PersonsRemoved} borttagna", LogSeverity.Success);
+                Snackbar.Add($"Import slutfÃ¶rd fÃ¶r {_scoutGroup.Name}", Severity.Success);
             }
             else
             {
@@ -472,12 +472,12 @@
         }
         catch (OperationCanceledException)
         {
-            AddLog("Import avbruten av användaren", LogSeverity.Warning);
+            AddLog("Import avbruten av anvÃ¤ndaren", LogSeverity.Warning);
             Snackbar.Add("Import avbruten", Severity.Warning);
         }
         catch (Exception ex)
         {
-            AddLog($"Ett oväntat fel uppstod: {ex.Message}", LogSeverity.Error);
+            AddLog($"Ett ovÃ¤ntat fel uppstod: {ex.Message}", LogSeverity.Error);
             Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
         }
         finally

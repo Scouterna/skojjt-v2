@@ -9,7 +9,7 @@
 @inject ICurrentUserService CurrentUserService
 @inject NavigationManager NavigationManager
 
-<PageTitle>@(_scoutGroup?.Name ?? "Scoutkår") - Skojjt</PageTitle>
+<PageTitle>@(_scoutGroup?.Name ?? "ScoutkÃ¥r") - Skojjt</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
@@ -21,12 +21,12 @@
     else if (!_hasAccess)
     {
         <MudAlert Severity="Severity.Error">
-            Du har inte behörighet att visa denna scoutkår.
+            Du har inte behÃ¶righet att visa denna scoutkÃ¥r.
         </MudAlert>
     }
     else if (_scoutGroup == null)
     {
-        <MudAlert Severity="Severity.Error">Scoutkåren kunde inte hittas.</MudAlert>
+        <MudAlert Severity="Severity.Error">ScoutkÃ¥ren kunde inte hittas.</MudAlert>
     }
     else
     {
@@ -50,7 +50,7 @@
                     @if (_semesters.Count == 0)
                     {
                         <MudAlert Severity="Severity.Info" Dense="true">
-                            Inga terminer med avdelningar ännu.
+                            Inga terminer med avdelningar Ã¤nnu.
                         </MudAlert>
                     }
                     else
@@ -77,7 +77,7 @@
                 <MudPaper Elevation="2" Class="pa-4">
                     <div class="d-flex align-center mb-4">
                         <MudIcon Icon="@Icons.Material.Filled.Apps" Class="mr-2" Color="Color.Primary" />
-                        <MudText Typo="Typo.h6">Snabblänkar</MudText>
+                        <MudText Typo="Typo.h6">SnabblÃ¤nkar</MudText>
                     </div>
                     
                     <MudStack Spacing="2">
@@ -104,7 +104,7 @@
                                    Href="@($"/sk/{ScoutGroupId}/badges")"
                                    Class="justify-start"
                                    Color="Color.Secondary">
-                            Märken
+                            MÃ¤rken
                         </MudButton>
                         
                         <MudButton Variant="Variant.Outlined" 
@@ -112,7 +112,7 @@
                                    StartIcon="@Icons.Material.Filled.Settings"
                                    Href="@($"/sk/{ScoutGroupId}/settings")"
                                    Class="justify-start">
-                            Kårinställningar
+                            KÃ¥rinstÃ¤llningar
                         </MudButton>
                         
                         <MudButton Variant="Variant.Outlined" 
@@ -199,8 +199,8 @@
             {
                 _breadcrumbs = new List<BreadcrumbItem>
                 {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                    new BreadcrumbItem("Ingen behörighet", href: null, disabled: true)
+                    new BreadcrumbItem("ScoutkÃ¥rer", href: "/sk"),
+                    new BreadcrumbItem("Ingen behÃ¶righet", href: null, disabled: true)
                 };
                 return;
             }
@@ -214,7 +214,7 @@
                 
                 _breadcrumbs = new List<BreadcrumbItem>
                 {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem("ScoutkÃ¥rer", href: "/sk"),
                     new BreadcrumbItem(_scoutGroup.Name, href: null, disabled: true)
                 };
             }

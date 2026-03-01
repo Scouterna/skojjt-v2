@@ -5,10 +5,10 @@
 @inject IDbContextFactory<SkojjtDbContext> DbContextFactory
 @inject ISnackbar Snackbar
 
-<MudText Typo="Typo.h6" Class="mb-4">Användare</MudText>
+<MudText Typo="Typo.h6" Class="mb-4">AnvÃ¤ndare</MudText>
 
 <MudAlert Severity="Severity.Info" Class="mb-4">
-    Administratörsbehörighet hanteras via ScoutID. Användare med rollen <strong>scoutid_admin</strong> i ScoutID blir automatiskt administratörer i Skojjt.
+    AdministratÃ¶rsbehÃ¶righet hanteras via ScoutID. AnvÃ¤ndare med rollen <strong>scoutid_admin</strong> i ScoutID blir automatiskt administratÃ¶rer i Skojjt.
 </MudAlert>
 
 @if (_loading)
@@ -20,7 +20,7 @@ else
     <MudTable Items="@_allUsers" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true" Filter="FilterUsers">
         <ToolBarContent>
             <MudTextField @bind-Value="_searchString" 
-                          Placeholder="Sök användare..." 
+                          Placeholder="SÃ¶k anvÃ¤ndare..." 
                           Adornment="Adornment.Start" 
                           AdornmentIcon="@Icons.Material.Filled.Search" 
                           IconSize="Size.Medium" 

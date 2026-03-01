@@ -106,7 +106,7 @@ public class AgeGroupStats
 public class LeaderStats
 {
     /// <summary>
-    /// Age group label (e.g., "t.o.m. 25 år", "över 25 år").
+    /// Age group label (e.g., "t.o.m. 25 Ã¥r", "Ã¶ver 25 Ã¥r").
     /// </summary>
     public required string AgeLabel { get; init; }
 

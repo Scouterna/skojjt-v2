@@ -14,7 +14,7 @@ public class GroupSummaryService : IGroupSummaryService
     private readonly IDbContextFactory<SkojjtDbContext> _contextFactory;
 
     // Roles that indicate board membership
-    private static readonly string[] BoardMemberRoles = ["Ordförande", "Kassör", "Sekreterare", "Styrelseledamot", "Styrelsesuppleant"];
+    private static readonly string[] BoardMemberRoles = ["OrdfÃ¶rande", "KassÃ¶r", "Sekreterare", "Styrelseledamot", "Styrelsesuppleant"];
 
     public GroupSummaryService(IDbContextFactory<SkojjtDbContext> contextFactory)
     {
@@ -50,8 +50,8 @@ public class GroupSummaryService : IGroupSummaryService
 
         var leaders = new List<LeaderStats>
         {
-            new() { AgeLabel = "t.o.m. 25 år" },
-            new() { AgeLabel = "över 25 år" }
+            new() { AgeLabel = "t.o.m. 25 Ã¥r" },
+            new() { AgeLabel = "Ã¶ver 25 Ã¥r" }
         };
 
         var boardMembers = new BoardMemberStats();

@@ -13,7 +13,7 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
-<PageTitle>@(_meeting?.Name ?? "Möte") - Skojjt</PageTitle>
+<PageTitle>@(_meeting?.Name ?? "MÃ¶te") - Skojjt</PageTitle>
 
 @if (_loading)
 {
@@ -21,21 +21,21 @@
 }
 else if (!_hasAccess)
 {
-    <MudAlert Severity="Severity.Error">Du har inte behörighet att visa detta möte.</MudAlert>
+    <MudAlert Severity="Severity.Error">Du har inte behÃ¶righet att visa detta mÃ¶te.</MudAlert>
 }
 else if (_meeting == null)
 {
-    <MudAlert Severity="Severity.Error">Mötet kunde inte hittas.</MudAlert>
+    <MudAlert Severity="Severity.Error">MÃ¶tet kunde inte hittas.</MudAlert>
 }
 else
 {
-    <MudText Typo="Typo.h4" Class="mb-2">Redigera möte</MudText>
+    <MudText Typo="Typo.h4" Class="mb-2">Redigera mÃ¶te</MudText>
     <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-4">
         @_troop?.Name
         @if (_troop?.IsLocked == true)
         {
             <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Color="Color.Warning" Class="ml-2" />
-            <span class="mud-text-warning">Låst</span>
+            <span class="mud-text-warning">LÃ¥st</span>
         }
     </MudText>
 
@@ -53,7 +53,7 @@ else
                 
                 <MudItem xs="12" md="6">
                     <MudCheckBox @bind-Value="_meeting.IsHike"
-                                 Label="Läger/vandring"
+                                 Label="LÃ¤ger/vandring"
                                  Color="Color.Primary"
                                  Disabled="@IsLocked" />
                 </MudItem>
@@ -72,7 +72,7 @@ else
                                    Label="Datum"
                                    Variant="Variant.Outlined"
                                    Required="true"
-                                   RequiredError="Välj ett datum"
+                                   RequiredError="VÃ¤lj ett datum"
                                    Disabled="@IsLocked" />
                 </MudItem>
 
@@ -85,7 +85,7 @@ else
 
                 <MudItem xs="12" sm="6" md="4">
                     <MudNumericField @bind-Value="_meeting.DurationMinutes"
-                                     Label="Längd (minuter)"
+                                     Label="LÃ¤ngd (minuter)"
                                      Variant="Variant.Outlined"
                                      Min="1"
                                      Disabled="@IsLocked" />
@@ -93,7 +93,7 @@ else
 
                 <MudItem xs="12" sm="6" md="4">
                     <MudTimePicker @bind-Time="_endTime"
-                                   Label="Sluttid (för att räkna ut längd)"
+                                   Label="Sluttid (fÃ¶r att rÃ¤kna ut lÃ¤ngd)"
                                    Variant="Variant.Outlined"
                                    Disabled="@IsLocked" />
                 </MudItem>
@@ -104,11 +104,11 @@ else
                 <MudAlert Severity="Severity.Warning" Class="mt-4">
                     @if (_troop?.IsLocked == true)
                     {
-                        <text>Avdelningen är låst. Ändringar kan inte göras.</text>
+                        <text>Avdelningen Ã¤r lÃ¥st. Ã„ndringar kan inte gÃ¶ras.</text>
                     }
                     else
                     {
-                        <text>Terminen är låst. Ändringar kan inte göras.</text>
+                        <text>Terminen Ã¤r lÃ¥st. Ã„ndringar kan inte gÃ¶ras.</text>
                     }
                 </MudAlert>
             }
@@ -147,11 +147,11 @@ else
     <MudDivider Class="my-6" />
     
     <MudPaper Elevation="2" Class="pa-6">
-        <MudText Typo="Typo.h6" Class="mb-4">Närvarande (@_attendees.Count personer)</MudText>
+        <MudText Typo="Typo.h6" Class="mb-4">NÃ¤rvarande (@_attendees.Count personer)</MudText>
         
         @if (_attendees.Count == 0)
         {
-            <MudText Color="Color.Secondary">Ingen närvaro registrerad för detta möte.</MudText>
+            <MudText Color="Color.Secondary">Ingen nÃ¤rvaro registrerad fÃ¶r detta mÃ¶te.</MudText>
         }
         else
         {
@@ -252,11 +252,11 @@ else
                         : new TimeOnly(18, 30);
 
                     await MeetingRepository.UpdateAsync(_meeting);
-                    Snackbar.Add("Mötet har sparats!", Severity.Success);
+                    Snackbar.Add("MÃ¶tet har sparats!", Severity.Success);
                 }
                 catch (Exception ex)
                 {
-                    Snackbar.Add($"Kunde inte spara mötet: {ex.Message}", Severity.Error);
+                    Snackbar.Add($"Kunde inte spara mÃ¶tet: {ex.Message}", Severity.Error);
                 }
             }
         }
@@ -267,8 +267,8 @@ else
         if (!_hasAccess || _meeting == null) return;
 
         var result = await DialogService.ShowMessageBox(
-            "Ta bort möte",
-            $"Är du säker på att du vill ta bort mötet '{_meeting.Name}'? Detta går inte att ångra.",
+            "Ta bort mÃ¶te",
+            $"Ã„r du sÃ¤ker pÃ¥ att du vill ta bort mÃ¶tet '{_meeting.Name}'? Detta gÃ¥r inte att Ã¥ngra.",
             yesText: "Ta bort",
             cancelText: "Avbryt");
 
@@ -284,12 +284,12 @@ else
                 // Broadcast meeting deleted to other components
                 await NotificationService.NotifyMeetingChangedAsync(troopId, meetingId, MeetingChangeType.Deleted, _instanceId);
                 
-                Snackbar.Add("Mötet har tagits bort!", Severity.Success);
+                Snackbar.Add("MÃ¶tet har tagits bort!", Severity.Success);
                 GoBack();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Kunde inte ta bort mötet: {ex.Message}", Severity.Error);
+                Snackbar.Add($"Kunde inte ta bort mÃ¶tet: {ex.Message}", Severity.Error);
             }
         }
     }

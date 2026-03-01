@@ -6,7 +6,7 @@ namespace Skojjt.Core.Exports;
 public class DakComparisonResult
 {
     /// <summary>
-    /// Changes in metadata (föreningsnamn, kommun-ID, etc.).
+    /// Changes in metadata (fÃ¶reningsnamn, kommun-ID, etc.).
     /// </summary>
     public List<DakFieldChange> MetadataChanges { get; init; } = [];
 

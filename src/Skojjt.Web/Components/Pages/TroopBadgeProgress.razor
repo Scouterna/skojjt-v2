@@ -17,7 +17,7 @@
 @inject ISnackbar Snackbar
 @implements IDisposable
 
-<PageTitle>@(_badge?.Name ?? "Märke") - @(_troop?.Name ?? "Avdelning") - Skojjt</PageTitle>
+<PageTitle>@(_badge?.Name ?? "MÃ¤rke") - @(_troop?.Name ?? "Avdelning") - Skojjt</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-8">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
@@ -28,11 +28,11 @@
     }
     else if (!_hasAccess)
     {
-        <MudAlert Severity="Severity.Error">Du har inte behörighet att visa denna avdelning.</MudAlert>
+        <MudAlert Severity="Severity.Error">Du har inte behÃ¶righet att visa denna avdelning.</MudAlert>
     }
     else if (_badge == null || _troop == null)
     {
-        <MudAlert Severity="Severity.Error">Märket eller avdelningen kunde inte hittas.</MudAlert>
+        <MudAlert Severity="Severity.Error">MÃ¤rket eller avdelningen kunde inte hittas.</MudAlert>
     }
     else
     {
@@ -59,7 +59,7 @@
             <MudButton Variant="Variant.Outlined" Size="Size.Small"
                        StartIcon="@Icons.Material.Filled.Info"
                        Href="@($"/sk/{ScoutGroupId}/badges/{BadgeId}")">
-                Märkesinfo
+                MÃ¤rkesinfo
             </MudButton>
         </div>
 
@@ -256,7 +256,7 @@
         _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
         if (!_hasAccess)
         {
-            _breadcrumbs = [new("Scoutkårer", href: "/sk"), new("Ingen behörighet", href: null, disabled: true)];
+            _breadcrumbs = [new("ScoutkÃ¥rer", href: "/sk"), new("Ingen behÃ¶righet", href: null, disabled: true)];
             _loading = false;
             return;
         }
@@ -282,11 +282,11 @@
 
             _breadcrumbs =
             [
-                new("Scoutkårer", href: "/sk"),
-                new(_scoutGroup?.Name ?? "Kår", href: $"/sk/{ScoutGroupId}"),
+                new("ScoutkÃ¥rer", href: "/sk"),
+                new(_scoutGroup?.Name ?? "KÃ¥r", href: $"/sk/{ScoutGroupId}"),
                 new(_semester?.DisplayName ?? "Termin", href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
                 new(_troop?.Name ?? "Avdelning", href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}"),
-                new(_badge?.Name ?? "Märke", href: null, disabled: true)
+                new(_badge?.Name ?? "MÃ¤rke", href: null, disabled: true)
             ];
         }
         finally
@@ -299,7 +299,7 @@
     {
         try
         {
-            var examiner = CurrentUserService.DisplayName ?? CurrentUserService.Email ?? "Okänd";
+            var examiner = CurrentUserService.DisplayName ?? CurrentUserService.Email ?? "OkÃ¤nd";
             var result = await BadgeService.TogglePartAsync(BadgeId, badgePartId, personId, examiner);
 
             // Update local state immediately
@@ -318,7 +318,7 @@
 
             if (result.BadgeCompleted)
             {
-                Snackbar.Add($"?? Märke klart!", Severity.Success);
+                Snackbar.Add($"?? MÃ¤rke klart!", Severity.Success);
             }
 
             // Broadcast to other circuits
