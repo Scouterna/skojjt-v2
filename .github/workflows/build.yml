@@ -17,6 +17,8 @@ jobs:
           POSTGRES_USER: skojjt
           POSTGRES_PASSWORD: test_password
           POSTGRES_DB: skojjt_test
+          POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C.UTF-8 --lc-ctype=C.UTF-8"
+          LANG: C.UTF-8
         ports:
           - 5432:5432
         options: >-
@@ -44,4 +46,4 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release --verbosity normal
         env:
-          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=skojjt_test;Username=skojjt;Password=test_password"
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=skojjt_test;Username=skojjt;Password=test_password;Client Encoding=UTF8"
