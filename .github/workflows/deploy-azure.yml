@@ -33,7 +33,7 @@ jobs:
         run: dotnet test --configuration Release --no-build --verbosity normal
 
       - name: Publish
-        run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --no-build --output ./publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --output ./publish
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -59,3 +59,4 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./publish
+          startup-command: 'dotnet Skojjt.Web.dll'
