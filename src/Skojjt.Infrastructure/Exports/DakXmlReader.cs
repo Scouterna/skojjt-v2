@@ -251,7 +251,7 @@ public static class DakXmlReader
         if (!string.IsNullOrEmpty(narvarokortNummer) && !int.TryParse(narvarokortNummer, out _))
         {
             issues.Add(Issue(DakIssueSeverity.Error, lineInfo, pathStack,
-                $"NaervarokortNummer '{narvarokortNummer}' är inte ett giltigt heltal (int32). Softadmin kräver ett heltalsvärde.",
+                $"NaervarokortNummer '{narvarokortNummer}' är inte ett giltigt heltal (int32).",
                 actualValue: narvarokortNummer, expectedValue: "heltal (max 2 147 483 647)"));
         }
 
@@ -357,11 +357,11 @@ public static class DakXmlReader
                     actualValue: kod, expectedValue: "minst 3 tecken"));
             }
 
-            if (!int.TryParse(kod, out _))
+            if (kod.Length > 50)
             {
                 issues.Add(Issue(DakIssueSeverity.Error, lineInfo, pathStack,
-                    $"Kod '{kod}' är inte ett giltigt heltal (int32). Softadmin kräver att kod är ett heltal.",
-                    actualValue: kod, expectedValue: "heltal (max 2 147 483 647)"));
+                    $"Kod '{kod}' är för lång (max 50 tecken lång)",
+                    actualValue: kod, expectedValue: "String max 50 tecken lång"));
             }
 
             if (!seenKoder.Add(kod))

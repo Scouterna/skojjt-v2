@@ -104,12 +104,12 @@ public record DakParseIssue
 /// </summary>
 public enum DakIssueSeverity
 {
-    /// <summary>Information only  data is valid but noteworthy.</summary>
+    /// <summary>Information only.</summary>
     Info,
 
-    /// <summary>Potential problem  Softadmin may reject or misinterpret the data.</summary>
+    /// <summary>Potential problem.</summary>
     Warning,
 
-    /// <summary>Invalid data  Softadmin will reject the import or the file is malformed.</summary>
+    /// <summary>Invalid data.</summary>
     Error
 }
