@@ -276,6 +276,16 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Apply pending EF Core migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SkojjtDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Applying pending database migrations...");
+    await db.Database.MigrateAsync();
+    logger.LogInformation("Database migrations applied successfully.");
+}
+
 // Log that configuration and DI completed successfully
 app.Logger.LogInformation("Application built successfully. Configuring middleware pipeline...");
 

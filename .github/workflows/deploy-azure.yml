@@ -70,3 +70,12 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./publish
+
+      - name: Wait for application to restart
+        run: |
+          echo "Waiting for application to restart..."
+          sleep 15
+          curl --fail --retry 10 --retry-delay 10 --retry-all-errors \
+            https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/healthz \
+            && echo "Application is healthy" \
+            || echo "Health check did not return 200, check Azure logs"

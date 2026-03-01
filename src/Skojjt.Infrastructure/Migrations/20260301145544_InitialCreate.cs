@@ -55,9 +55,7 @@ namespace Skojjt.Infrastructure.Migrations
                     street = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     zip_code = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     zip_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    group_roles = table.Column<string>(type: "text", nullable: true),
                     member_years = table.Column<int[]>(type: "integer[]", nullable: false),
-                    not_in_scoutnet = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     removed = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
@@ -75,7 +73,7 @@ namespace Skojjt.Infrastructure.Migrations
                     name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     organisation_number = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     association_id = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    municipality_id = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false, defaultValue: "1480"),
+                    municipality_id = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
                     api_key_waitinglist = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     api_key_all_members = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     bank_account = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
@@ -83,11 +81,13 @@ namespace Skojjt.Infrastructure.Migrations
                     postal_address = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     phone = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    default_location = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
+                    default_camp_location = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
+                    default_meeting_location = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
                     signatory = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
                     signatory_phone = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     signatory_email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     attendance_min_year = table.Column<int>(type: "integer", nullable: false, defaultValue: 10),
+                    AttendanceMinSemester = table.Column<int>(type: "integer", nullable: false),
                     attendance_incl_hike = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
@@ -112,12 +112,31 @@ namespace Skojjt.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "users",
+                columns: table => new
+                {
+                    id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    display_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    active_semester_id = table.Column<int>(type: "integer", nullable: true),
+                    last_login_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_users", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "badges",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     scout_group_id = table.Column<int>(type: "integer", nullable: false),
+                    template_id = table.Column<int>(type: "integer", nullable: true),
                     name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     description = table.Column<string>(type: "text", nullable: true),
                     parts_scout_short = table.Column<string[]>(type: "text[]", nullable: false),
@@ -125,12 +144,19 @@ namespace Skojjt.Infrastructure.Migrations
                     parts_admin_short = table.Column<string[]>(type: "text[]", nullable: false),
                     parts_admin_long = table.Column<string[]>(type: "text[]", nullable: false),
                     image_url = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    is_archived = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_badges", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_badges_badge_templates_template_id",
+                        column: x => x.template_id,
+                        principalTable: "badge_templates",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_badges_scout_groups_scout_group_id",
                         column: x => x.scout_group_id,
@@ -145,7 +171,10 @@ namespace Skojjt.Infrastructure.Migrations
                 {
                     person_id = table.Column<int>(type: "integer", nullable: false),
                     scout_group_id = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
+                    not_in_scoutnet = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    group_roles = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
                 },
                 constraints: table =>
                 {
@@ -176,6 +205,7 @@ namespace Skojjt.Infrastructure.Migrations
                     name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     default_start_time = table.Column<TimeOnly>(type: "time without time zone", nullable: false, defaultValue: new TimeOnly(18, 30, 0)),
                     default_duration_minutes = table.Column<int>(type: "integer", nullable: false, defaultValue: 90),
+                    default_meeting_location = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     is_locked = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
                 },
                 constraints: table =>
@@ -196,62 +226,36 @@ namespace Skojjt.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "users",
+                name: "badge_parts",
                 columns: table => new
                 {
-                    id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    scout_group_id = table.Column<int>(type: "integer", nullable: true),
-                    active_semester_id = table.Column<int>(type: "integer", nullable: true),
-                    has_access = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    is_admin = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    badge_id = table.Column<int>(type: "integer", nullable: true),
+                    badge_template_id = table.Column<int>(type: "integer", nullable: true),
+                    sort_order = table.Column<int>(type: "integer", nullable: false),
+                    is_admin_part = table.Column<bool>(type: "boolean", nullable: false),
+                    short_description = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    long_description = table.Column<string>(type: "text", nullable: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_users", x => x.id);
+                    table.PrimaryKey("PK_badge_parts", x => x.id);
+                    table.CheckConstraint("ck_badge_parts_owner", "(badge_id IS NOT NULL AND badge_template_id IS NULL) OR (badge_id IS NULL AND badge_template_id IS NOT NULL)");
                     table.ForeignKey(
-                        name: "FK_users_scout_groups_scout_group_id",
-                        column: x => x.scout_group_id,
-                        principalTable: "scout_groups",
+                        name: "FK_badge_parts_badge_templates_badge_template_id",
+                        column: x => x.badge_template_id,
+                        principalTable: "badge_templates",
                         principalColumn: "id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_users_semesters_active_semester_id",
-                        column: x => x.active_semester_id,
-                        principalTable: "semesters",
-                        principalColumn: "id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "badge_parts_done",
-                columns: table => new
-                {
-                    person_id = table.Column<int>(type: "integer", nullable: false),
-                    badge_id = table.Column<int>(type: "integer", nullable: false),
-                    part_index = table.Column<int>(type: "integer", nullable: false),
-                    is_scout_part = table.Column<bool>(type: "boolean", nullable: false),
-                    examiner_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    completed_date = table.Column<DateOnly>(type: "date", nullable: false, defaultValueSql: "CURRENT_DATE"),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_badge_parts_done", x => new { x.person_id, x.badge_id, x.part_index, x.is_scout_part });
-                    table.ForeignKey(
-                        name: "FK_badge_parts_done_badges_badge_id",
+                        name: "FK_badge_parts_badges_badge_id",
                         column: x => x.badge_id,
                         principalTable: "badges",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_badge_parts_done_persons_person_id",
-                        column: x => x.person_id,
-                        principalTable: "persons",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -360,6 +364,43 @@ namespace Skojjt.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "badge_parts_done",
+                columns: table => new
+                {
+                    person_id = table.Column<int>(type: "integer", nullable: false),
+                    badge_id = table.Column<int>(type: "integer", nullable: false),
+                    part_index = table.Column<int>(type: "integer", nullable: false),
+                    is_scout_part = table.Column<bool>(type: "boolean", nullable: false),
+                    badge_part_id = table.Column<int>(type: "integer", nullable: true),
+                    examiner_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    completed_date = table.Column<DateOnly>(type: "date", nullable: false, defaultValueSql: "CURRENT_DATE"),
+                    undone_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_badge_parts_done", x => new { x.person_id, x.badge_id, x.part_index, x.is_scout_part });
+                    table.ForeignKey(
+                        name: "FK_badge_parts_done_badge_parts_badge_part_id",
+                        column: x => x.badge_part_id,
+                        principalTable: "badge_parts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_badge_parts_done_badges_badge_id",
+                        column: x => x.badge_id,
+                        principalTable: "badges",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_badge_parts_done_persons_person_id",
+                        column: x => x.person_id,
+                        principalTable: "persons",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "meeting_attendances",
                 columns: table => new
                 {
@@ -384,9 +425,24 @@ namespace Skojjt.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "idx_badge_parts_badge_sort",
+                table: "badge_parts",
+                columns: new[] { "badge_id", "sort_order" });
+
+            migrationBuilder.CreateIndex(
+                name: "idx_badge_parts_template_sort",
+                table: "badge_parts",
+                columns: new[] { "badge_template_id", "sort_order" });
+
+            migrationBuilder.CreateIndex(
                 name: "idx_badge_parts_done_badge",
                 table: "badge_parts_done",
                 column: "badge_id");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_badge_parts_done_badge_part",
+                table: "badge_parts_done",
+                column: "badge_part_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_badge_templates_name",
@@ -398,6 +454,11 @@ namespace Skojjt.Infrastructure.Migrations
                 name: "idx_badges_scout_group",
                 table: "badges",
                 column: "scout_group_id");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_badges_template",
+                table: "badges",
+                column: "template_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_badges_scout_group_id_name",
@@ -427,6 +488,11 @@ namespace Skojjt.Infrastructure.Migrations
                 column: "scout_group_id");
 
             migrationBuilder.CreateIndex(
+                name: "idx_scout_group_persons_not_in_scoutnet",
+                table: "scout_group_persons",
+                column: "not_in_scoutnet");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_troop_badges_badge_id",
                 table: "troop_badges",
                 column: "badge_id");
@@ -453,20 +519,10 @@ namespace Skojjt.Infrastructure.Migrations
                 column: "semester_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_users_active_semester_id",
-                table: "users",
-                column: "active_semester_id");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_users_email",
                 table: "users",
                 column: "email",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_users_scout_group_id",
-                table: "users",
-                column: "scout_group_id");
         }
 
         /// <inheritdoc />
@@ -474,9 +530,6 @@ namespace Skojjt.Infrastructure.Migrations
         {
             migrationBuilder.DropTable(
                 name: "badge_parts_done");
-
-            migrationBuilder.DropTable(
-                name: "badge_templates");
 
             migrationBuilder.DropTable(
                 name: "badges_completed");
@@ -497,16 +550,22 @@ namespace Skojjt.Infrastructure.Migrations
                 name: "users");
 
             migrationBuilder.DropTable(
-                name: "meetings");
+                name: "badge_parts");
 
             migrationBuilder.DropTable(
-                name: "badges");
+                name: "meetings");
 
             migrationBuilder.DropTable(
                 name: "persons");
 
             migrationBuilder.DropTable(
+                name: "badges");
+
+            migrationBuilder.DropTable(
                 name: "troops");
+
+            migrationBuilder.DropTable(
+                name: "badge_templates");
 
             migrationBuilder.DropTable(
                 name: "scout_groups");

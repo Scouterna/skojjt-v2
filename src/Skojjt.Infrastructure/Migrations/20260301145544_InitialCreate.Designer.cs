@@ -12,8 +12,8 @@ using Skojjt.Infrastructure.Data;
 namespace Skojjt.Infrastructure.Migrations
 {
     [DbContext(typeof(SkojjtDbContext))]
-    [Migration("20260216194503_Update260216")]
-    partial class Update260216
+    [Migration("20260301145544_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
