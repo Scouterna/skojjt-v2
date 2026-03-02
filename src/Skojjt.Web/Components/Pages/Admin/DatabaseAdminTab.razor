@@ -1,0 +1,322 @@
+@using Microsoft.EntityFrameworkCore
+@using Skojjt.Infrastructure.Data
+@inject IDbContextFactory<SkojjtDbContext> DbContextFactory
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h6" Class="mb-4">Databas</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        @* Server info *@
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle1" Class="mb-2"><b>Serverinfo</b></MudText>
+                <MudSimpleTable Dense="true" Hover="true">
+                    <tbody>
+                        <tr><td>Server</td><td>@_dataSource</td></tr>
+                        <tr><td>Databas</td><td>@_database</td></tr>
+                        <tr><td>Version</td><td>@_serverVersion</td></tr>
+                        <tr>
+                            <td>Status</td>
+                            <td>
+                                <MudChip T="string" Color="@(_canConnect ? Color.Success : Color.Error)" Size="Size.Small">
+                                    @(_canConnect ? "Ansluten" : "Ej ansluten")
+                                </MudChip>
+                            </td>
+                        </tr>
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        </MudItem>
+
+        @* Migrations *@
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle1" Class="mb-2"><b>Migreringar</b></MudText>
+                @if (_pendingMigrations.Count > 0)
+                {
+                    <MudAlert Severity="Severity.Warning" Class="mb-2">
+                        @_pendingMigrations.Count väntande migrering(ar)
+                    </MudAlert>
+                    foreach (var m in _pendingMigrations)
+                    {
+                        <MudText Typo="Typo.body2">⏳ @m</MudText>
+                    }
+                    <MudButton Variant="Variant.Filled" Color="Color.Warning" Class="mt-2"
+                               OnClick="ApplyMigrations" Disabled="_applyingMigrations">
+                        @if (_applyingMigrations)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        }
+                        Applicera migreringar
+                    </MudButton>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Success">Databasen är uppdaterad</MudAlert>
+                }
+                <MudText Typo="Typo.caption" Class="mt-2">
+                    Senaste: @(_appliedMigrations.LastOrDefault() ?? "Inga")
+                </MudText>
+            </MudPaper>
+        </MudItem>
+
+        @* Table statistics *@
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle1" Class="mb-2"><b>Tabeller</b></MudText>
+                <MudSimpleTable Dense="true" Hover="true">
+                    <thead>
+                        <tr>
+                            <th>Tabell</th>
+                            <th style="text-align:right">Rader</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var table in _tables.OrderByDescending(t => t.Value))
+                        {
+                            <tr>
+                                <td>@table.Key</td>
+                                <td style="text-align:right">@table.Value.ToString("N0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        </MudItem>
+
+        @* SQL query tool *@
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle1" Class="mb-2"><b>SQL-fråga</b></MudText>
+                <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                    Endast SELECT-frågor tillåtna. Max 1 000 rader returneras.
+                </MudAlert>
+                <MudTextField @bind-Value="_sqlQuery"
+                              Label="SQL"
+                              Variant="Variant.Outlined"
+                              Lines="4"
+                              Placeholder="SELECT * FROM persons LIMIT 10"
+                              Class="mb-2"
+                              Style="font-family: monospace;" />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           OnClick="ExecuteQuery" Disabled="_executingQuery"
+                           StartIcon="@Icons.Material.Filled.PlayArrow">
+                    @if (_executingQuery)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    }
+                    Kör fråga
+                </MudButton>
+
+                @if (_queryError is not null)
+                {
+                    <MudAlert Severity="Severity.Error" Class="mt-2">@_queryError</MudAlert>
+                }
+
+                @if (_queryColumns.Count > 0)
+                {
+                    <MudText Typo="Typo.caption" Class="mt-2 mb-1">
+                        @_queryRows.Count rad(er)@(_queryTruncated ? " (trunkerad vid 1 000)" : "")
+                    </MudText>
+                    <div style="overflow-x:auto;">
+                        <MudSimpleTable Dense="true" Hover="true" Style="font-size:0.85rem;">
+                            <thead>
+                                <tr>
+                                    @foreach (var col in _queryColumns)
+                                    {
+                                        <th>@col</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in _queryRows)
+                                {
+                                    <tr>
+                                        @foreach (var col in _queryColumns)
+                                        {
+                                            <td style="white-space:nowrap;">@(row.TryGetValue(col, out var val) ? val?.ToString() ?? "NULL" : "")</td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    </div>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _canConnect;
+    private string? _serverVersion;
+    private string? _database;
+    private string? _dataSource;
+    private List<string> _appliedMigrations = [];
+    private List<string> _pendingMigrations = [];
+    private Dictionary<string, long> _tables = [];
+    private bool _applyingMigrations;
+
+    private string _sqlQuery = "";
+    private bool _executingQuery;
+    private string? _queryError;
+    private List<string> _queryColumns = [];
+    private List<Dictionary<string, object?>> _queryRows = [];
+    private bool _queryTruncated;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStatus();
+    }
+
+    private async Task LoadStatus()
+    {
+        _loading = true;
+        try
+        {
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+
+            _canConnect = await context.Database.CanConnectAsync();
+            if (!_canConnect) return;
+
+            var connection = context.Database.GetDbConnection();
+            _database = connection.Database;
+            _dataSource = connection.DataSource;
+
+            _appliedMigrations = (await context.Database.GetAppliedMigrationsAsync()).ToList();
+            _pendingMigrations = (await context.Database.GetPendingMigrationsAsync()).ToList();
+
+            // Table row counts (requires open connection)
+            _tables = [];
+            await connection.OpenAsync();
+            try
+            {
+                _serverVersion = connection.ServerVersion;
+                using var command = connection.CreateCommand();
+                command.CommandText = """
+                    SELECT schemaname || '.' || relname AS table_name,
+                           n_live_tup AS row_count
+                    FROM pg_stat_user_tables
+                    ORDER BY n_live_tup DESC;
+                    """;
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    _tables[reader.GetString(0)] = reader.GetInt64(1);
+                }
+            }
+            finally
+            {
+                await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte hämta databasstatus: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ApplyMigrations()
+    {
+        _applyingMigrations = true;
+        try
+        {
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+            var pending = (await context.Database.GetPendingMigrationsAsync()).ToList();
+            if (pending.Count == 0)
+            {
+                Snackbar.Add("Inga väntande migreringar.", Severity.Info);
+                return;
+            }
+
+            await context.Database.MigrateAsync();
+            Snackbar.Add($"{pending.Count} migrering(ar) applicerade.", Severity.Success);
+            await LoadStatus();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Migrering misslyckades: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _applyingMigrations = false;
+        }
+    }
+
+    private async Task ExecuteQuery()
+    {
+        _queryError = null;
+        _queryColumns = [];
+        _queryRows = [];
+        _queryTruncated = false;
+
+        if (string.IsNullOrWhiteSpace(_sqlQuery))
+        {
+            _queryError = "Ange en SQL-fråga.";
+            return;
+        }
+
+        var trimmed = _sqlQuery.TrimStart();
+        if (!trimmed.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
+        {
+            _queryError = "Endast SELECT-frågor är tillåtna.";
+            return;
+        }
+
+        _executingQuery = true;
+        try
+        {
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+            var connection = context.Database.GetDbConnection();
+            await connection.OpenAsync();
+            try
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = _sqlQuery;
+                command.CommandTimeout = 30;
+                using var reader = await command.ExecuteReaderAsync();
+
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    _queryColumns.Add(reader.GetName(i));
+                }
+
+                const int maxRows = 1000;
+                while (await reader.ReadAsync() && _queryRows.Count < maxRows)
+                {
+                    var row = new Dictionary<string, object?>();
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        row[_queryColumns[i]] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                    }
+                    _queryRows.Add(row);
+                }
+
+                _queryTruncated = _queryRows.Count >= maxRows;
+            }
+            finally
+            {
+                await connection.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _queryError = ex.Message;
+        }
+        finally
+        {
+            _executingQuery = false;
+        }
+    }
+}
