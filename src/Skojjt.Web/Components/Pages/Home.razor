@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 
 <PageTitle>Skojjt - Hem</PageTitle>
 
@@ -49,40 +49,28 @@
                             Avdelningar
                         </MudButton>
                     </MudItem>
-                            </MudGrid>
-
-                            <MudDivider Class="my-4" />
-
-                            <MudButton Variant="Variant.Text" 
-                                       Color="Color.Default" 
-                                       Size="Size.Large" 
-                                       FullWidth="true"
-                                       Href="/auth/signout"
-                                       StartIcon="@Icons.Material.Filled.Logout">
-                                Logga ut
-                            </MudButton>
-                        </Authorized>
-                        <NotAuthorized>
-                            <MudButton Variant="Variant.Filled" 
-                                       Color="Color.Primary" 
-                                       Size="Size.Large" 
-                                       FullWidth="true"
-                                       Href="/login"
-                                       StartIcon="@Icons.Material.Filled.Login">
-                                Logga in med ScoutID
-                            </MudButton>
-                        </NotAuthorized>
-                    </AuthorizeView>
-
+                    </MudGrid>
                     <MudDivider Class="my-4" />
 
-                    <MudButton Variant="Variant.Outlined" 
-                               Color="Color.Primary" 
-                               Size="Size.Large" 
-                               FullWidth="true"
-                               Href="/dak-analys"
-                               StartIcon="@Icons.Material.Filled.FactCheck">
-                        DAK-analys
-                    </MudButton>
+                        <MudButton Variant="Variant.Text" 
+                                    Color="Color.Default" 
+                                    Size="Size.Large" 
+                                    FullWidth="true"
+                                    Href="/auth/signout"
+                                    StartIcon="@Icons.Material.Filled.Logout">
+                            Logga ut
+                        </MudButton>
+                    </Authorized>
+                    <NotAuthorized>
+                        <MudButton Variant="Variant.Filled" 
+                                    Color="Color.Primary" 
+                                    Size="Size.Large" 
+                                    FullWidth="true"
+                                    Href="/login"
+                                    StartIcon="@Icons.Material.Filled.Login">
+                            Logga in med ScoutID
+                        </MudButton>
+                    </NotAuthorized>
+                </AuthorizeView>
     </MudPaper>
 </MudContainer>

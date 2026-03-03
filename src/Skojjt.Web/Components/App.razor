@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="sv">
 
 <head>
@@ -13,6 +13,26 @@
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />
     <title>Skojjt - Närvarosystem för scouter</title>
+    <script>
+        try {
+            if (localStorage.getItem('darkMode') === 'True') {
+                document.documentElement.classList.add('dark-preload');
+            }
+        } catch (e) { }
+    </script>
+    <style>
+        .dark-preload,
+        .dark-preload body,
+        .dark-preload div,
+        .dark-preload header,
+        .dark-preload nav,
+        .dark-preload aside,
+        .dark-preload main,
+        .dark-preload section {
+            background-color: #121212 !important;
+            color: #E0E0E0 !important;
+        }
+    </style>
 </head>
 
 <body>

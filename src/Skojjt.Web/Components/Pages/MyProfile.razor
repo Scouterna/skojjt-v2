@@ -14,6 +14,23 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
 
+    <div class="d-flex flex-wrap align-center gap-4 mb-6">
+        <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
+            Inloggad användare: @(CurrentUserService.DisplayName ?? ""). @(CurrentUserService.Email ?? "") (@(CurrentUserService.UserId ?? ""))
+        </MudText>
+        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
+            Har access till scoutkår id: @(string.Join(",", CurrentUserService.GetAccessibleGroupIds())).
+        </MudText>
+        @if (CurrentUserService.IsAdmin)
+        {
+            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
+                Administrator
+            </MudText>
+        }
+    </div>
+
+    <MudDivider Class="my-4" />
+
     @if (_loading)
     {
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" />

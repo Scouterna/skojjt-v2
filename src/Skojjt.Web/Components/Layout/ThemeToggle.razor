@@ -1,6 +1,7 @@
 @using Microsoft.JSInterop
 @using Skojjt.Web.Services
 @inject ThemeService ThemeService
+@inject IJSRuntime JS
 @implements IDisposable
 
 <MudTooltip Text="@(_isDarkMode ? "Ljust läge" : "Mörkt läge")">
@@ -19,9 +20,14 @@
         ThemeService.OnThemeChanged += OnThemeChanged;
     }
 
-    private void ToggleTheme()
+    private async Task ToggleTheme()
     {
         ThemeService.ToggleTheme();
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "darkMode", ThemeService.IsDarkMode.ToString());
+        }
+        catch (JSDisconnectedException) { }
     }
 
     private async void OnThemeChanged()

@@ -1,4 +1,4 @@
-﻿@rendermode InteractiveServer
+@rendermode InteractiveServer
 @using Microsoft.JSInterop
 @using Skojjt.Web.Services
 @using Skojjt.Web.Theme
@@ -21,15 +21,55 @@
     </Found>
 </Router>
 
+@inject IJSRuntime JS
+
 @code {
     private bool _isDarkMode;
     private bool _disposed;
+    private bool _removePreloadOnNextRender;
 
     protected override void OnInitialized()
     {
         _isDarkMode = ThemeService.IsDarkMode;
         ThemeService.OnThemeChanged += OnThemeChanged;
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var stored = await JS.InvokeAsync<string?>("localStorage.getItem", "darkMode");
+                if (stored is not null && bool.TryParse(stored, out var darkMode) && darkMode != _isDarkMode)
+                {
+                    // Setting IsDarkMode triggers OnThemeChanged -> StateHasChanged -> another render.
+                    // Defer class removal to that next render so MudBlazor's dark styles are applied first.
+                    _removePreloadOnNextRender = true;
+                    ThemeService.IsDarkMode = darkMode;
+                }
+                else
+                {
+                    await RemovePreloadClass();
+                }
+            }
+            catch (JSDisconnectedException) { }
+            catch (InvalidOperationException) { }
+        }
+        else if (_removePreloadOnNextRender)
+        {
+            _removePreloadOnNextRender = false;
+            try
+            {
+                await RemovePreloadClass();
+            }
+            catch (JSDisconnectedException) { }
+            catch (InvalidOperationException) { }
+        }
+    }
+
+    private ValueTask RemovePreloadClass() =>
+        JS.InvokeVoidAsync("eval", "document.documentElement.classList.remove('dark-preload')");
 
     private async void OnThemeChanged()
     {
