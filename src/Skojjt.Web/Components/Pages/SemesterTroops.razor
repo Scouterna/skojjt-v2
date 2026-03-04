@@ -211,8 +211,8 @@
             <MudTextField @bind-Value="_lagerbidragContactEmail" Label="E-post" Variant="Variant.Outlined" />
             <MudTextField @bind-Value="_lagerbidragContactPhone" Label="Telefon" Variant="Variant.Outlined" />
             <MudTextField @bind-Value="_lagerbidragSite" Label="Lägerplats" Variant="Variant.Outlined" Required="true" />
-            <MudDatePicker @bind-Date="_lagerbidragFromDate" Label="Från datum" Variant="Variant.Outlined" Required="true" />
-            <MudDatePicker @bind-Date="_lagerbidragToDate" Label="Till datum" Variant="Variant.Outlined" Required="true" />
+            <MudDatePicker @bind-Date="_lagerbidragFromDate" Label="Från datum" DateFormat="yyyy-MM-dd" Variant="Variant.Outlined" Required="true" />
+            <MudDatePicker @bind-Date="_lagerbidragToDate" Label="Till datum" DateFormat="yyyy-MM-dd" Variant="Variant.Outlined" Required="true" />
             <MudCheckBox @bind-Value="_lagerbidragDuringBreak" Label="Läger under lov" Color="Color.Primary" />
         </MudForm>
     </DialogContent>

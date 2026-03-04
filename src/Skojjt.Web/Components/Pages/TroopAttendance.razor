@@ -317,6 +317,7 @@
         <MudForm @ref="_meetingForm">
             <MudTextField @bind-Value="_newMeetingName" Label="Namn" Variant="Variant.Outlined" Required="true" MaxLength="50" />
             <MudDatePicker @bind-Date="_newMeetingDate" Label="Datum" Variant="Variant.Outlined" Required="true"
+                           DateFormat="yyyy-MM-dd"
                            Validation="@((DateOnly? date) => ValidateMeetingDate(date))" />
             <MudTimePicker @bind-Time="_newMeetingTime" Label="Starttid" Variant="Variant.Outlined" />
             <MudNumericField @bind-Value="_newMeetingDuration" Label="Längd (minuter)" Variant="Variant.Outlined" Min="1" MaxLength="1440"/>
