@@ -1,6 +1,8 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -29,6 +31,18 @@ startupLogger.LogInformation("ScoutId Authority: {Authority}", builder.Configura
 // Add MudBlazor services with Swedish localization
 builder.Services.AddMudServices();
 builder.Services.AddTransient<MudLocalizer, SwedishMudLocalizer>();
+
+// Configure request localization to prevent CultureNotFoundException from malformed
+// Accept-Language headers (e.g. bots/scanners sending binary garbage).
+// This ensures all requests use a known-good culture before reaching Blazor's
+// ServerComponentSerializer, which would otherwise crash on invalid culture names.
+var supportedCultures = new[] { new CultureInfo("sv-SE"), new CultureInfo("en") };
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    options.DefaultRequestCulture = new RequestCulture("sv-SE");
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+});
 
 // Add Razor components with interactive server rendering
 builder.Services.AddRazorComponents()
@@ -326,6 +340,11 @@ app.UseResponseCompression();
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// Normalize request culture before Blazor rendering. Malformed Accept-Language headers
+// (from bots/scanners) would otherwise cause CultureNotFoundException in
+// ServerComponentSerializer, crashing the entire request including the error handler.
+app.UseRequestLocalization();
 
 app.UseAuthentication();
 app.UseAuthorization();
