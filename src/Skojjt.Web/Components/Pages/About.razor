@@ -1,0 +1,29 @@
+@page "/about"
+@using System.Reflection
+@rendermode InteractiveServer
+@inject ISnackbar Snackbar
+
+<PageTitle>Om Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
+    <MudText Typo="Typo.h4" Class="mb-2">DAK XML-analys</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        Närvarohantering för scouter i Sverige.
+    </MudText>
+    <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Center">
+        Version @AppVersion
+    </MudText>
+</MudContainer>
+
+@code {
+    // TODO: move this to a utility class if needed elsewhere (it is duplocated in the login screen)
+    private string AppVersion
+    {
+        get
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var version = assembly.GetName().Version;
+            return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "0.0.0";
+        }
+    }
+}

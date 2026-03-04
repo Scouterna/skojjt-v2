@@ -209,9 +209,13 @@
                                     {
                                         <MudChip T="string" Size="Size.Small" Color="Color.Warning">Simulerad</MudChip>
                                     }
+                                    else if (UseSamlAuth)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success">SAML 2.0</MudChip>
+                                    }
                                     else
                                     {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Success">Konfigurerad</MudChip>
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success">OIDC</MudChip>
                                     }
                                 </td>
                                 <td><code>@ScoutIdAuthority</code></td>
@@ -249,11 +253,16 @@
 
     private bool IsDevMode => Environment.IsDevelopment();
 
+    private bool UseSamlAuth =>
+        Configuration.GetValue<bool>("ScoutIdSaml:Enabled");
+
     private bool UseSimulatedAuth =>
-        string.IsNullOrEmpty(Configuration["ScoutId:ClientId"]);
+        string.IsNullOrEmpty(Configuration["ScoutId:ClientId"]) && !UseSamlAuth;
 
     private string ScoutIdAuthority =>
-        UseSimulatedAuth ? "(simulerad)" : (Configuration["ScoutId:Authority"] ?? "—");
+        UseSimulatedAuth ? "(simulerad)" 
+        : UseSamlAuth ? (Configuration["ScoutIdSaml:IdpEntityId"] ?? "—")
+        : (Configuration["ScoutId:Authority"] ?? "—");
 
     private string ScoutnetBaseUrl =>
         ScoutnetOptions.Value.BaseUrl;

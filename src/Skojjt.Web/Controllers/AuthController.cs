@@ -4,13 +4,14 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Skojjt.Core.Authentication;
+using Skojjt.Infrastructure.Authentication;
 using System.Security.Claims;
 
 namespace Skojjt.Web.Controllers;
 
 /// <summary>
 /// Controller for authentication endpoints (login, logout, challenge).
-/// Used for production ScoutID OIDC authentication.
+/// Supports both OIDC (Keycloak) and SAML 2.0 (SimpleSAML) ScoutID authentication.
 /// </summary>
 [Route("auth")]
 public class AuthController : Controller
@@ -27,8 +28,8 @@ public class AuthController : Controller
     }
 
     /// <summary>
-    /// Initiates the OIDC authentication challenge.
-    /// Redirects to ScoutID for login.
+    /// Initiates the authentication challenge.
+    /// Redirects to ScoutID for login via OIDC or SAML depending on configuration.
     /// </summary>
     [HttpGet("challenge")]
     public IActionResult Challenge([FromQuery] string? returnUrl)
@@ -39,8 +40,10 @@ public class AuthController : Controller
             returnUrl = "/";
         }
 
-        // If ScoutID is not configured, redirect to unified login page
-        if (string.IsNullOrEmpty(_configuration["ScoutId:ClientId"]))
+        var useSaml = _configuration.GetValue<bool>("ScoutIdSaml:Enabled");
+
+        // If neither OIDC nor SAML is configured, redirect to unified login page
+        if (!useSaml && string.IsNullOrEmpty(_configuration["ScoutId:ClientId"]))
         {
             _logger.LogWarning("ScoutID not configured, redirecting to login page");
             return Redirect($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
@@ -52,11 +55,18 @@ public class AuthController : Controller
             IsPersistent = true
         };
 
-        return Challenge(properties, OpenIdConnectDefaults.AuthenticationScheme);
+        // Challenge with whichever scheme is configured
+        var scheme = useSaml
+            ? SamlAuthenticationExtensions.Saml2Scheme
+            : OpenIdConnectDefaults.AuthenticationScheme;
+
+        _logger.LogInformation("Initiating authentication challenge via {Scheme}", scheme);
+        return Challenge(properties, scheme);
     }
 
     /// <summary>
     /// Logs out the user from both the application and ScoutID.
+    /// Supports OIDC federated logout and SAML single logout.
     /// </summary>
     [HttpGet("logout")]
     [Authorize]
@@ -68,8 +78,10 @@ public class AuthController : Controller
             returnUrl = "/";
         }
 
-        // If ScoutID is not configured, just sign out of cookies
-        if (string.IsNullOrEmpty(_configuration["ScoutId:ClientId"]))
+        var useSaml = _configuration.GetValue<bool>("ScoutIdSaml:Enabled");
+
+        // If neither OIDC nor SAML is configured, just sign out of cookies
+        if (!useSaml && string.IsNullOrEmpty(_configuration["ScoutId:ClientId"]))
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return LocalRedirect(returnUrl);
@@ -78,12 +90,20 @@ public class AuthController : Controller
         var userName = User.Identity?.Name ?? "unknown";
         _logger.LogInformation("User {UserName} logging out", userName);
 
-        // Sign out of both cookie and OIDC
         var properties = new AuthenticationProperties
         {
             RedirectUri = returnUrl
         };
 
+        if (useSaml)
+        {
+            // Sign out of both cookie and SAML
+            return SignOut(properties,
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                SamlAuthenticationExtensions.Saml2Scheme);
+        }
+
+        // Sign out of both cookie and OIDC
         return SignOut(properties, 
             CookieAuthenticationDefaults.AuthenticationScheme, 
             OpenIdConnectDefaults.AuthenticationScheme);

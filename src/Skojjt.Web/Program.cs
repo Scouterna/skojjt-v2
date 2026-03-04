@@ -100,11 +100,13 @@ builder.Services.AddExportServices();
 // Register user sync service for syncing ScoutID users to database on login
 builder.Services.AddScoped<IUserSyncService, UserSyncService>();
 
-// Configure authentication based on environment
+// Configure authentication based on environment and configuration
 var useDevAuth = builder.Environment.IsDevelopment() && 
-    string.IsNullOrEmpty(builder.Configuration["ScoutId:ClientId"]);
+    string.IsNullOrEmpty(builder.Configuration["ScoutId:ClientId"]) &&
+    !builder.Configuration.GetValue<bool>("ScoutIdSaml:Enabled");
+var useSaml = builder.Configuration.GetValue<bool>("ScoutIdSaml:Enabled");
 
-// Enable detailed identity errors in development for debugging OIDC issues
+// Enable detailed identity errors in development for debugging OIDC/SAML issues
 if (builder.Environment.IsDevelopment())
 {
     Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
@@ -122,6 +124,22 @@ if (useDevAuth)
 
     // Register simulated ScoutID service for development
     builder.Services.AddSingleton<IScoutIdSimulator, FakeScoutIdService>();
+}
+else if (useSaml)
+{
+    // Configure SimpleSAML-based ScoutID authentication (SAML 2.0)
+    // This is the current production ScoutID version based on SimpleSAMLphp.
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = SamlAuthenticationExtensions.Saml2Scheme;
+    })
+    .AddCookie(options =>
+    {
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+    })
+    .AddScoutIdSaml(builder.Configuration, builder.Environment.IsDevelopment());
 }
 else
 {
