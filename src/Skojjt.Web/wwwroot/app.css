@@ -1,5 +1,5 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 a, .btn-link {
@@ -34,6 +34,38 @@ h1:focus {
 
 .validation-message {
     color: #e50000;
+}
+
+/* Smooth hover transitions for interactive cards */
+.hover-card {
+    transition: box-shadow 0.2s ease-in-out, transform 0.15s ease-in-out;
+}
+
+.hover-card:hover {
+    box-shadow: 0 6px 20px rgba(2, 58, 90, 0.20) !important;
+    transform: translateY(-2px);
+}
+
+/* Drawer visual separation */
+.mud-drawer {
+    border-right: 1px solid var(--mud-palette-divider);
+}
+
+/* Drawer active item accent */
+.mud-nav-link.active {
+    border-left: 3px solid var(--mud-palette-primary);
+    background-color: rgba(var(--mud-palette-primary-rgb), 0.08);
+    font-weight: 600;
+}
+
+/* Smooth page transitions */
+.mud-main-content {
+    transition: padding-left 0.2s ease;
+}
+
+/* Card elevation helper - visible border on light mode, glow on dark */
+.mud-paper {
+    border: 1px solid var(--mud-palette-divider);
 }
 
 .blazor-error-boundary {
@@ -165,14 +197,14 @@ h1:focus {
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
     #components-reconnect-modal .reconnect-dialog {
-        background: #1e1e1e;
+        background: #1A1E24;
     }
-    
+
     #components-reconnect-modal h4 {
-        color: #e0e0e0;
+        color: #E8EAED;
     }
-    
+
     #components-reconnect-modal p {
-        color: #b0b0b0;
+        color: #9AA0A6;
     }
 }
