@@ -129,8 +129,10 @@
                                     <th class="patrol-col d-none d-md-table-cell">Patrull</th>
                                     <th class="action-col d-none d-sm-table-cell"></th>
                                 }
-                                @foreach (var meeting in _meetings)
+                                @for (var i = 0; i < _meetings.Count; i++)
                                 {
+                                    var meeting = _meetings[i];
+                                    var meetingIndex = i;
                                     <th class="meeting-col @(meeting.IsHike ? "hike-meeting" : "")">
                                         <MudTooltip Text="@($"{meeting.Name} - {meeting.MeetingDate:yyyy-MM-dd}")">
                                             <a href="@($"/meetings/{meeting.Id}")" class="meeting-link">
@@ -141,6 +143,25 @@
                                                 }
                                             </a>
                                         </MudTooltip>
+                                        @if (!(_troop?.IsLocked ?? true))
+                                        {
+                                            <MudMenu Icon="@Icons.Material.Filled.MoreHoriz"
+                                                     Size="Size.Small"
+                                                     Dense="true"
+                                                     Color="Color.Primary"
+                                                     AnchorOrigin="Origin.BottomCenter"
+                                                     TransformOrigin="Origin.TopCenter"
+                                                     Class="meeting-menu">
+                                                <MudMenuItem OnClick="@(() => SelectAllForMeeting(meeting.Id))">Alla</MudMenuItem>
+                                                <MudMenuItem OnClick="@(() => SelectNoneForMeeting(meeting.Id))">Ingen</MudMenuItem>
+                                                @if (meetingIndex < _meetings.Count - 1)
+                                                {
+                                                    <MudMenuItem OnClick="@(() => CopyFromAdjacentMeeting(meeting.Id, _meetings[meetingIndex + 1].Id))">
+                                                        Som förra
+                                                    </MudMenuItem>
+                                                }
+                                            </MudMenu>
+                                        }
                                     </th>
                                 }
                                 @if (_meetings.Count > 0)
@@ -179,7 +200,11 @@
                         {
                             <tfoot>
                                 <tr class="footer-row">
-                                    <td class="sticky-col name-col"><strong>Totalt</strong></td>
+                                    <td class="sticky-col name-col">
+                                        <MudTooltip Text="Ledare / Deltagare">
+                                            <strong>Totalt</strong>
+                                        </MudTooltip>
+                                    </td>
                                     @if (_showExtraInfo)
                                     {
                                         <td class="d-none d-sm-table-cell"></td>
@@ -189,8 +214,9 @@
                                     }
                                     @foreach (var meeting in _meetings)
                                     {
+                                        var (leaders, scouts) = GetMeetingAttendanceSplit(meeting.Id);
                                         <td class="sum-col">
-                                            <strong>@GetMeetingAttendanceCount(meeting.Id)</strong>
+                                            <strong>@leaders/@scouts</strong>
                                         </td>
                                     }
                                     <td class="sum-col"></td>
@@ -199,22 +225,6 @@
                         }
                     </table>
                 </div>
-                
-                @if (!_troop.IsLocked && _meetings.Any())
-                {
-                    <MudDivider Class="my-4" />
-                    <div class="d-flex flex-wrap gap-2">
-                        <MudText Typo="Typo.caption" Class="align-self-center mr-2">
-                            Senaste mötet (@_meetings.First().MeetingDate.ToString("dd/MM")):
-                        </MudText>
-                        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="SelectAllForLastMeeting">Alla</MudButton>
-                        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="SelectNoneForLastMeeting">Ingen</MudButton>
-                        @if (_meetings.Count >= 2)
-                        {
-                            <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="CopyFromPreviousMeeting">Kopiera föregående</MudButton>
-                        }
-                    </div>
-                }
             }
         </MudPaper>
 
@@ -415,7 +425,10 @@
     .sticky-col { position: sticky; left: 0; background: var(--mud-palette-background); z-index: 5; }
     .attendance-grid thead th.sticky-col { z-index: 15; }
     .name-col { text-align: left !important; min-width: 150px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
-    .meeting-col { min-width: 60px; }
+    .meeting-col { min-width: 60px; white-space: normal; }
+    .meeting-menu { display: block; margin: 2px auto 0; }
+    .meeting-menu .mud-menu-activator .mud-button-root { padding: 2px !important; min-width: 0 !important; min-height: 0 !important; border-radius: 4px; }
+    .meeting-menu .mud-menu-activator .mud-button-root:hover { background: var(--mud-palette-action-default-hover); }
     .hike-meeting { background: var(--mud-palette-info-lighten) !important; }
     .check-col { padding: 0 !important; position: relative; z-index: 1; }
     .check-col .mud-input-control { margin: 0 auto; }
@@ -1100,7 +1113,12 @@
     };
 
     private int GetAttendanceCount(int personId) => _meetings.Count(m => IsAttending(personId, m.Id));
-    private int GetMeetingAttendanceCount(int meetingId) => _troopPersons.Count(tp => IsAttending(tp.PersonId, meetingId));
+    private (int Leaders, int Scouts) GetMeetingAttendanceSplit(int meetingId)
+    {
+        var leaders = _troopPersons.Count(tp => tp.IsLeader && IsAttending(tp.PersonId, meetingId));
+        var scouts = _troopPersons.Count(tp => !tp.IsLeader && IsAttending(tp.PersonId, meetingId));
+        return (leaders, scouts);
+    }
 
     private bool IsBirthdayToday(Person person)
     {
@@ -1160,33 +1178,24 @@
         }
     }
 
-    private void SelectAllForLastMeeting()
+    private void SelectAllForMeeting(int meetingId)
     {
-        var latestMeeting = _meetings.FirstOrDefault();
-        if (latestMeeting != null)
-            foreach (var tp in _troopPersons)
-                OnAttendanceChanged(tp.PersonId, latestMeeting.Id, true);
+        foreach (var tp in _troopPersons)
+            OnAttendanceChanged(tp.PersonId, meetingId, true);
     }
 
-    private void SelectNoneForLastMeeting()
+    private void SelectNoneForMeeting(int meetingId)
     {
-        var latestMeeting = _meetings.FirstOrDefault();
-        if (latestMeeting != null)
-            foreach (var tp in _troopPersons)
-                OnAttendanceChanged(tp.PersonId, latestMeeting.Id, false);
+        foreach (var tp in _troopPersons)
+            OnAttendanceChanged(tp.PersonId, meetingId, false);
     }
 
-    private void CopyFromPreviousMeeting()
+    private void CopyFromAdjacentMeeting(int targetMeetingId, int sourceMeetingId)
     {
-        if (_meetings.Count >= 2)
+        foreach (var tp in _troopPersons)
         {
-            var latestMeeting = _meetings[0];
-            var previousMeeting = _meetings[1];
-            foreach (var tp in _troopPersons)
-            {
-                var wasPresent = IsAttending(tp.PersonId, previousMeeting.Id);
-                OnAttendanceChanged(tp.PersonId, latestMeeting.Id, wasPresent);
-            }
+            var wasPresent = IsAttending(tp.PersonId, sourceMeetingId);
+            OnAttendanceChanged(tp.PersonId, targetMeetingId, wasPresent);
         }
     }
 
