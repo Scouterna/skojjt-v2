@@ -25,7 +25,7 @@
 
 <PageTitle>Närvaro - @(_troop?.Name ?? "Avdelning") - Skojjt</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-8">
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-2 mt-sm-4 mb-4 mb-sm-8">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
 
     @if (_loading)
@@ -414,7 +414,7 @@
     .attendance-grid thead th { background: var(--mud-palette-surface); position: sticky; top: 0; z-index: 10; }
     .sticky-col { position: sticky; left: 0; background: var(--mud-palette-background); z-index: 5; }
     .attendance-grid thead th.sticky-col { z-index: 15; }
-    .name-col { text-align: left !important; min-width: 150px; max-width: 200px; }
+    .name-col { text-align: left !important; min-width: 150px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
     .meeting-col { min-width: 60px; }
     .hike-meeting { background: var(--mud-palette-info-lighten) !important; }
     .check-col { padding: 0 !important; position: relative; z-index: 1; }
@@ -476,9 +476,13 @@
     .footer-row { background: var(--mud-palette-surface); }
     .footer-row .sticky-col { background: var(--mud-palette-surface); }
     @@media (max-width: 600px) {
-        .attendance-grid th, .attendance-grid td { padding: 2px 4px; font-size: 0.85rem; }
-        .name-col { min-width: 100px; }
-        .meeting-col { min-width: 45px; }
+        .attendance-grid { min-width: auto; }
+        .attendance-grid th, .attendance-grid td { padding: 2px 3px; font-size: 0.8rem; }
+        .name-col { min-width: 80px; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .name-col .mud-chip { display: none; }
+        .meeting-col { min-width: 40px; }
+        .check-col .mud-checkbox { padding: 2px; }
+        .sum-col { min-width: 30px; }
     }
 </style>
 

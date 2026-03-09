@@ -63,6 +63,14 @@ h1:focus {
     transition: padding-left 0.2s ease;
 }
 
+/* Reduce container padding on mobile for more usable space */
+@media (max-width: 600px) {
+    .mud-main-content .mud-container {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+}
+
 /* Card elevation helper - visible border on light mode, glow on dark */
 .mud-paper {
     border: 1px solid var(--mud-palette-divider);
