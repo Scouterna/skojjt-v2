@@ -149,16 +149,16 @@ public class DataMigrationService
         var stats = new Dictionary<string, int>();
 
 		// Import in dependency order
-		//stats["semesters"] = await ImportSemestersAsync(Path.Combine(importDirectory, "semesters.json"), cancellationToken);
-		//stats["scout_groups"] = await ImportScoutGroupsAsync(Path.Combine(importDirectory, "scout_groups.json"), cancellationToken);
-		//stats["persons"] = await ImportPersonsAsync(Path.Combine(importDirectory, "persons.json"), cancellationToken);
-		//stats["troops"] = await ImportTroopsAsync(Path.Combine(importDirectory, "troops.json"), cancellationToken);
-		//stats["troop_persons"] = await ImportTroopPersonsAsync(Path.Combine(importDirectory, "troop_persons.json"), cancellationToken);
-		//stats["meetings"] = await ImportMeetingsAsync(Path.Combine(importDirectory, "meetings.json"), cancellationToken);
-		//stats["meeting_attendances"] = await ImportMeetingAttendancesAsync(Path.Combine(importDirectory, "meeting_attendances.json"), cancellationToken);
-		//stats["users"] = await ImportUsersAsync(Path.Combine(importDirectory, "users.json"), cancellationToken);
-		//stats["badge_templates"] = await ImportBadgeTemplatesAsync(Path.Combine(importDirectory, "badge_templates.json"), cancellationToken);
-		stats["badges"] = await ImportBadgesAsync(Path.Combine(importDirectory, "badges.json"), cancellationToken);
+		stats["semesters"] = await ImportSemestersAsync(Path.Combine(importDirectory, "semesters.json"), cancellationToken);
+        stats["scout_groups"] = await ImportScoutGroupsAsync(Path.Combine(importDirectory, "scout_groups.json"), cancellationToken);
+        stats["persons"] = await ImportPersonsAsync(Path.Combine(importDirectory, "persons.json"), cancellationToken);
+        stats["troops"] = await ImportTroopsAsync(Path.Combine(importDirectory, "troops.json"), cancellationToken);
+        stats["troop_persons"] = await ImportTroopPersonsAsync(Path.Combine(importDirectory, "troop_persons.json"), cancellationToken);
+        stats["meetings"] = await ImportMeetingsAsync(Path.Combine(importDirectory, "meetings.json"), cancellationToken);
+        stats["meeting_attendances"] = await ImportMeetingAttendancesAsync(Path.Combine(importDirectory, "meeting_attendances.json"), cancellationToken);
+        stats["users"] = await ImportUsersAsync(Path.Combine(importDirectory, "users.json"), cancellationToken);
+        stats["badge_templates"] = await ImportBadgeTemplatesAsync(Path.Combine(importDirectory, "badge_templates.json"), cancellationToken);
+        stats["badges"] = await ImportBadgesAsync(Path.Combine(importDirectory, "badges.json"), cancellationToken);
 		stats["troop_badges"] = await ImportTroopBadgesAsync(Path.Combine(importDirectory, "troop_badges.json"), cancellationToken);
 		stats["badge_parts_done"] = await ImportBadgePartsDoneAsync(Path.Combine(importDirectory, "badge_parts_done.json"), cancellationToken);
 		stats["badges_completed"] = await ImportBadgesCompletedAsync(Path.Combine(importDirectory, "badges_completed.json"), cancellationToken);
