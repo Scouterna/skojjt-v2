@@ -124,10 +124,10 @@
                                 <th class="sticky-col name-col">Namn</th>
                                 @if (_showExtraInfo)
                                 {
-                                    <th class="age-col d-none d-sm-table-cell">Ålder</th>
-                                    <th class="leader-col d-none d-sm-table-cell">Ledare</th>
-                                    <th class="patrol-col d-none d-md-table-cell">Patrull</th>
-                                    <th class="action-col d-none d-sm-table-cell"></th>
+                                    <th class="age-col">Ålder</th>
+                                    <th class="leader-col">Ledare</th>
+                                    <th class="patrol-col">Patrull</th>
+                                    <th class="action-col"></th>
                                 }
                                 @for (var i = 0; i < _meetings.Count; i++)
                                 {
@@ -207,10 +207,10 @@
                                     </td>
                                     @if (_showExtraInfo)
                                     {
-                                        <td class="d-none d-sm-table-cell"></td>
-                                        <td class="d-none d-sm-table-cell"></td>
-                                        <td class="d-none d-md-table-cell"></td>
-                                        <td class="d-none d-sm-table-cell"></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
                                     }
                                     @foreach (var meeting in _meetings)
                                     {
@@ -1283,15 +1283,15 @@
             </td>
             @if (_showExtraInfo)
             {
-                <td class="age-col d-none d-sm-table-cell">@(tp.Person.Age > 0 ? $"{tp.Person.Age}" : "")</td>
-                <td class="leader-col d-none d-sm-table-cell">
+                <td class="age-col">@(tp.Person.Age > 0 ? $"{tp.Person.Age}" : "")</td>
+                <td class="leader-col">
                     <MudCheckBox T="bool" 
                                  Value="@tp.IsLeader"
                                  ValueChanged="@((bool val) => ToggleLeaderStatus(tp, val))"
                                  Color="Color.Primary"
                                  Dense="true" />
                 </td>
-                <td class="patrol-col d-none d-md-table-cell">
+                <td class="patrol-col">
                     @if (_editingPatrolPersonId == tp.PersonId)
                     {
                         <div class="d-flex align-center gap-1">
@@ -1328,7 +1328,7 @@
                         </div>
                     }
                 </td>
-                <td class="action-col d-none d-sm-table-cell">
+                <td class="action-col">
                     @if (_pendingRemovePersonId == tp.PersonId)
                     {
                         <div class="d-flex align-center gap-1">
