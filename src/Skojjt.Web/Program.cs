@@ -111,6 +111,7 @@ builder.Services.AddDbContextFactory<SkojjtDbContext>(options =>
 			maxRetryDelay: TimeSpan.FromSeconds(30),
 			errorCodesToAdd: null);
 		npgsqlOptions.CommandTimeout(180);  // 3 minutes for long import operations
+		npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
 	}
 	));
 
@@ -353,22 +354,29 @@ app.Logger.LogInformation("Application built successfully. Configuring middlewar
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
-    // Log unhandled exceptions before the exception handler swallows them.
-    // This ensures they appear in Application Insights even for non-Blazor requests.
-    app.Use(async (context, next) =>
+    // Serve a static HTML error page instead of re-executing through the Blazor pipeline.
+    // UseExceptionHandler("/Error") previously tried to render a Blazor component, which
+    // fails when the pipeline itself is broken (e.g. CultureNotFoundException in
+    // ServerComponentSerializer, BadImageFormatException from a corrupted deployment).
+    // A static file handler bypasses Blazor entirely and always produces a valid response.
+    app.UseExceptionHandler(new ExceptionHandlerOptions
     {
-        try
-        {
-            await next();
-        }
-        catch (Exception ex)
+        ExceptionHandler = async context =>
         {
             var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
-            throw; // Re-throw so UseExceptionHandler still handles it
+            logger.LogError("Serving static error page for {Method} {Path}",
+                context.Request.Method, context.Request.Path);
+
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.Response.ContentType = "text/html; charset=utf-8";
+
+            var errorPagePath = Path.Combine(app.Environment.WebRootPath, "error.html");
+            if (File.Exists(errorPagePath))
+            {
+                await context.Response.SendFileAsync(errorPagePath);
+            }
         }
     });
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
 
