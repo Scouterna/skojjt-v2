@@ -43,8 +43,8 @@ public class BadgeServiceTests : IDisposable
     {
         using var context = new SkojjtDbContext(_options);
 
-        context.ScoutGroups.Add(new ScoutGroup { Id = TestGroupId, Name = "TestscoutkÂren" });
-        context.Semesters.Add(new Semester { Id = TestSemesterId, Year = 2025, IsAutumn = true });
+        context.ScoutGroups.Add(new ScoutGroup { Id = TestGroupId, Name = "Testscoutk√•ren" });
+        context.Semesters.Add(new Semester (TestSemesterId, 2025, true));
         context.Troops.Add(new Troop { Id = TestTroopId, ScoutnetId = 1, ScoutGroupId = TestGroupId, SemesterId = TestSemesterId, Name = "Testpatrullen" });
         context.Persons.Add(new Person { Id = TestPerson1Id, FirstName = "Anna", LastName = "Svensson", BirthDate = new DateOnly(2010, 3, 15) });
         context.Persons.Add(new Person { Id = TestPerson2Id, FirstName = "Erik", LastName = "Johansson", BirthDate = new DateOnly(2011, 7, 22) });
@@ -53,13 +53,13 @@ public class BadgeServiceTests : IDisposable
         context.SaveChanges();
     }
 
-    private Badge CreateTestBadgeWithParts(SkojjtDbContext context, string name = "Eldm‰rket", int scoutParts = 2, int adminParts = 1)
+    private Badge CreateTestBadgeWithParts(SkojjtDbContext context, string name = "Eldm√§rket", int scoutParts = 2, int adminParts = 1)
     {
         var badge = new Badge
         {
             ScoutGroupId = TestGroupId,
             Name = name,
-            Description = "Testm‰rke"
+            Description = "Testm√§rke"
         };
         context.Badges.Add(badge);
         context.SaveChanges();
@@ -73,7 +73,7 @@ public class BadgeServiceTests : IDisposable
                 SortOrder = sortOrder++,
                 IsAdminPart = false,
                 ShortDescription = $"Scoutdel {i + 1}",
-                LongDescription = $"LÂng beskrivning scoutdel {i + 1}"
+                LongDescription = $"L√•ng beskrivning scoutdel {i + 1}"
             });
         }
         for (int i = 0; i < adminParts; i++)
@@ -84,7 +84,7 @@ public class BadgeServiceTests : IDisposable
                 SortOrder = sortOrder++,
                 IsAdminPart = true,
                 ShortDescription = $"Admindel {i + 1}",
-                LongDescription = $"LÂng beskrivning admindel {i + 1}"
+                LongDescription = $"L√•ng beskrivning admindel {i + 1}"
             });
         }
         context.SaveChanges();
@@ -307,7 +307,7 @@ public class BadgeServiceTests : IDisposable
         using var ctx = new SkojjtDbContext(_options);
         var template = new BadgeTemplate
         {
-            Name = "Friluftsm‰rket",
+            Name = "Friluftsm√§rket",
             Description = "Friluftsliv"
         };
         ctx.BadgeTemplates.Add(template);
@@ -317,21 +317,21 @@ public class BadgeServiceTests : IDisposable
             BadgeTemplateId = template.Id,
             SortOrder = 0,
             IsAdminPart = false,
-            ShortDescription = "T‰lta"
+            ShortDescription = "T√§lta"
         });
         ctx.BadgeParts.Add(new BadgePart
         {
             BadgeTemplateId = template.Id,
             SortOrder = 1,
             IsAdminPart = true,
-            ShortDescription = "Godk‰nd"
+            ShortDescription = "Godk√§nd"
         });
         ctx.SaveChanges();
 
         var badge = await _service.CreateFromTemplateAsync(template.Id, TestGroupId);
 
         Assert.IsNotNull(badge);
-        Assert.AreEqual("Friluftsm‰rket", badge.Name);
+        Assert.AreEqual("Friluftsm√§rket", badge.Name);
         Assert.AreEqual(template.Id, badge.TemplateId);
         Assert.AreEqual(TestGroupId, badge.ScoutGroupId);
 
@@ -343,9 +343,9 @@ public class BadgeServiceTests : IDisposable
             .ToListAsync();
 
         Assert.HasCount(2, parts);
-        Assert.AreEqual("T‰lta", parts[0].ShortDescription);
+        Assert.AreEqual("T√§lta", parts[0].ShortDescription);
         Assert.IsFalse(parts[0].IsAdminPart);
-        Assert.AreEqual("Godk‰nd", parts[1].ShortDescription);
+        Assert.AreEqual("Godk√§nd", parts[1].ShortDescription);
         Assert.IsTrue(parts[1].IsAdminPart);
     }
 
@@ -361,10 +361,10 @@ public class BadgeServiceTests : IDisposable
     [TestMethod]
     public async Task CreateBadgeAsync_CreatesEmptyBadge()
     {
-        var badge = await _service.CreateBadgeAsync(TestGroupId, "Nytt m‰rke", "Beskrivning", "/img/test.png");
+        var badge = await _service.CreateBadgeAsync(TestGroupId, "Nytt m√§rke", "Beskrivning", "/img/test.png");
 
         Assert.IsNotNull(badge);
-        Assert.AreEqual("Nytt m‰rke", badge.Name);
+        Assert.AreEqual("Nytt m√§rke", badge.Name);
         Assert.AreEqual(TestGroupId, badge.ScoutGroupId);
 
         using var verifyCtx = new SkojjtDbContext(_options);

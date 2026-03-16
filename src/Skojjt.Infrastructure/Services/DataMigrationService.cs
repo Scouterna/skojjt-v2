@@ -207,12 +207,7 @@ public class DataMigrationService
             if (await _context.Semesters.AnyAsync(s => s.Id == item.Id, cancellationToken))
                 continue;
 
-            await _context.Semesters.AddAsync(new Semester
-            {
-                Id = item.Id,
-                Year = item.Year,
-                IsAutumn = item.IsAutumn
-            });
+            await _context.Semesters.AddAsync(new Semester(item.Id, item.Year, item.IsAutumn));
             count++;
         }
 

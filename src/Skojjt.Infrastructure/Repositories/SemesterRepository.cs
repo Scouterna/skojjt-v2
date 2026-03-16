@@ -40,27 +40,13 @@ public class SemesterRepository : Repository<Semester, int>, ISemesterRepository
 
     public async Task<Semester> GetOrCreateCurrentSemesterAsync(CancellationToken cancellationToken = default)
     {
-        var now = DateTime.Now;
-        var isAutumn = now.Month >= 7; // July onwards is autumn semester (HT)
-        var year = now.Year;
-
-        var current = await GetByYearAndTermAsync(year, isAutumn, cancellationToken);
-        
-        if (current == null)
+        var current = Semester.GetCurrentSemester();
+        if (await GetByYearAndTermAsync(current.Year, current.IsAutumn, cancellationToken) == null)
         {
             await using var context = CreateContext();
-            // Create the semester
-            current = new Semester
-            {
-                Id = Semester.GenerateId(year, isAutumn),
-                Year = year,
-                IsAutumn = isAutumn
-            };
-            
             context.Set<Semester>().Add(current);
             await context.SaveChangesAsync(cancellationToken);
         }
-
         return current;
     }
 

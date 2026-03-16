@@ -55,12 +55,7 @@ public class SemestersController : ControllerBase
         if (await _semesterRepository.ExistsAsync(id))
             return Conflict("Semester already exists");
 
-        var semester = new Semester
-        {
-            Id = id,
-            Year = request.Year,
-            IsAutumn = request.IsAutumn
-        };
+        var semester = new Semester(id, request.Year, request.IsAutumn);
 
         await _semesterRepository.AddAsync(semester);
         await _unitOfWork.SaveChangesAsync();

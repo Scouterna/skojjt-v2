@@ -153,7 +153,7 @@ public class DakXmlExporterTests
             OrganisationNumber = "123456-7890"
         };
         
-        var semester = new Semester { Id = 20251, Year = 2025, IsAutumn = true };
+        var semester = new Semester(20251, 2025, true);
         
         var troop = new Troop 
         { 
@@ -197,7 +197,7 @@ public class DakXmlExporterTests
             IncludeHikeMeetings = true,
             TroopPersons = 
             [
-                new TroopPersonInfo { Person = person1, IsLeader = false, Patrol = "Örn" },
+                new TroopPersonInfo { Person = person1, IsLeader = false, Patrol = "Ã–rn" },
                 new TroopPersonInfo { Person = person2, IsLeader = true }
             ],
             Meetings = 

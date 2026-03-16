@@ -11,7 +11,7 @@ public class AttendanceReportDataTests
     public void AttendanceReportData_CanBeCreated_WithRequiredProperties()
     {
         var scoutGroup = new ScoutGroup { Id = 1, Name = "Test Group" };
-        var semester = new Semester { Id = 20251, Year = 2025, IsAutumn = true };
+        var semester = new Semester(20251, 2025, true);
         var troop = new Troop { Id = 1, ScoutnetId = 100, Name = "Test Troop", SemesterId = semester.Id };
         
         var data = new AttendanceReportData
@@ -34,7 +34,7 @@ public class AttendanceReportDataTests
     public void AttendanceReportData_DefaultValues_AreCorrect()
     {
         var scoutGroup = new ScoutGroup { Id = 1, Name = "Test Group" };
-        var semester = new Semester { Id = 20251, Year = 2025, IsAutumn = true };
+        var semester = new Semester(20251, 2025, true);
         var troop = new Troop { Id = 1, ScoutnetId = 100, Name = "Test Troop" };
         
         var data = new AttendanceReportData
@@ -59,12 +59,12 @@ public class AttendanceReportDataTests
         {
             Person = person,
             IsLeader = true,
-            Patrol = "Örn"
+            Patrol = "Ã–rn"
         };
         
         Assert.AreEqual(person, info.Person);
         Assert.IsTrue(info.IsLeader);
-        Assert.AreEqual("Örn", info.Patrol);
+        Assert.AreEqual("Ã–rn", info.Patrol);
     }
 
     [TestMethod]

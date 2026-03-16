@@ -16,7 +16,7 @@ public class ScoutnetImportServiceTests : IDisposable
     private readonly Mock<IScoutnetApiClient> _mockApiClient;
     private readonly ScoutnetImportService _service;
     private const int TestScoutGroupId = 9999;
-    private const string TestScoutGroupName = "Testscoutkåren";
+    private const string TestScoutGroupName = "TestscoutkÃ¥ren";
 
     public ScoutnetImportServiceTests()
     {
@@ -51,11 +51,11 @@ public class ScoutnetImportServiceTests : IDisposable
         _context.ScoutGroups.Add(scoutGroup);
 
         var semester = new Semester
-        {
-            Id = Semester.GenerateId(2025, true),
-            Year = 2025,
-            IsAutumn = true
-        };
+        (
+            Semester.GenerateId(2025, true),
+            2025,
+            true
+        );
         _context.Semesters.Add(semester);
 
         _context.SaveChanges();
@@ -268,7 +268,7 @@ public class ScoutnetImportServiceTests : IDisposable
         _context.ScoutGroups.Add(new ScoutGroup
         {
             Id = secondGroupId,
-            Name = "Andra Scoutkåren",
+            Name = "Andra ScoutkÃ¥ren",
             ApiKeyAllMembers = "test-api-key-2"
         });
         await _context.SaveChangesAsync();
@@ -281,7 +281,7 @@ public class ScoutnetImportServiceTests : IDisposable
         var memberId = 1000; // Same member ID as first group
         var response2 = new ScoutnetMemberListResponse();
         response2.Data[memberId.ToString()] = ScoutnetTestDataGenerator.CreateMember(
-            memberId, secondGroupId, "Andra Scoutkåren");
+            memberId, secondGroupId, "Andra ScoutkÃ¥ren");
 
         // Act - Import to second group
         var result = await _service.ImportFromResponseAsync(secondGroupId, Semester.GenerateId(2025, true), response2);
@@ -304,7 +304,7 @@ public class ScoutnetImportServiceTests : IDisposable
         _context.ScoutGroups.Add(new ScoutGroup
         {
             Id = secondGroupId,
-            Name = "Andra Scoutkåren",
+            Name = "Andra ScoutkÃ¥ren",
             ApiKeyAllMembers = "test-api-key-2"
         });
 

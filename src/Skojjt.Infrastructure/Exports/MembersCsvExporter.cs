@@ -46,9 +46,6 @@ public class MembersCsvExporter : IMembersCsvExporter
         if (semester == null)
             throw new InvalidOperationException($"Terminen kunde inte hittas: {input.SemesterId}");
 
-        // Get all troops for this scout group and semester
-        var troops = await _troopRepository.GetByScoutGroupAndSemesterAsync(input.ScoutGroupId, input.SemesterId, cancellationToken);
-        
         // Determine date range based on whether we're using semester or year minimum
         DateOnly fromDate, toDate;
         int minimumMeetings;
@@ -56,17 +53,7 @@ public class MembersCsvExporter : IMembersCsvExporter
 
         if (input.UseSemesterMinimum)
         {
-            // Semester-based: use semester dates
-            if (semester.IsAutumn)
-            {
-                fromDate = new DateOnly(semester.Year, 7, 1);
-                toDate = new DateOnly(semester.Year, 12, 31);
-            }
-            else
-            {
-                fromDate = new DateOnly(semester.Year, 1, 1);
-                toDate = new DateOnly(semester.Year, 6, 30);
-            }
+            (fromDate, toDate) = semester.GetStartAndEndDates();
             minimumMeetings = scoutGroup.AttendanceMinSemester;
             period = semester.DisplayName;
         }
@@ -83,34 +70,41 @@ public class MembersCsvExporter : IMembersCsvExporter
         var personMeetingCounts = new Dictionary<int, int>();
         var personsDict = new Dictionary<int, Person>();
 
-        foreach (var troop in troops)
+        var numberOfSemesters = input.UseSemesterMinimum ? 1 : 2;
+        for (int i = 0; i < numberOfSemesters; i++)
         {
-            // Get meetings with attendance for this troop within the date range
-            var meetings = await _meetingRepository.GetByTroopAndDateRangeAsync(troop.Id, fromDate, toDate, cancellationToken);
+            // Get all troops for this scout group and semester
+            var troops = await _troopRepository.GetByScoutGroupAndSemesterAsync(input.ScoutGroupId, semester.Id, cancellationToken);
 
-            foreach (var meeting in meetings)
+            foreach (var troop in troops)
             {
-                // Skip hike meetings if not included in attendance stats
-                if (!scoutGroup.AttendanceInclHike && meeting.IsHike)
-                    continue;
+                // Get meetings with attendance for this troop within the date range
+                var meetings = await _meetingRepository.GetByTroopAndDateRangeAsync(troop.Id, fromDate, toDate, cancellationToken);
 
-                foreach (var attendance in meeting.Attendances)
+                foreach (var meeting in meetings)
                 {
-                    var personId = attendance.PersonId;
+                    // Skip hike meetings if not included in attendance stats
+                    if (!scoutGroup.AttendanceInclHike && meeting.IsHike)
+                        continue;
 
-                    // Count meeting attendance
-                    personMeetingCounts.TryGetValue(personId, out var count);
-                    personMeetingCounts[personId] = count + 1;
-
-                    // Cache person if not already cached
-                    if (!personsDict.ContainsKey(personId) && attendance.Person != null)
+                    foreach (var attendance in meeting.Attendances)
                     {
-                        personsDict[personId] = attendance.Person;
+                        var personId = attendance.PersonId;
+
+                        // Count meeting attendance
+                        personMeetingCounts.TryGetValue(personId, out var count);
+                        personMeetingCounts[personId] = count + 1;
+
+                        // Cache person if not already cached
+                        if (!personsDict.ContainsKey(personId) && attendance.Person != null)
+                        {
+                            personsDict[personId] = attendance.Person;
+                        }
                     }
                 }
             }
+            semester = semester.GetOtherSemesterSameYear();
         }
-
         // Load persons that weren't included in the attendance navigation property
         var missingPersonIds = personMeetingCounts.Keys.Except(personsDict.Keys).ToList();
         if (missingPersonIds.Any())
@@ -133,7 +127,6 @@ public class MembersCsvExporter : IMembersCsvExporter
             .Where(kvp => personsDict.ContainsKey(kvp.Key))
             .Select(kvp => personsDict[kvp.Key])
             .Where(p => (!(p.PersonalNumber is null) && p.PersonalNumber.IsValid)) // Must have valid 12-digit personal number
-            .Where(p => semester.Year == GetYearFromMemberYears(p, semester.Year)) // Must be a member for the relevant year
             .OrderBy(p => p.FirstName)
             .ThenBy(p => p.LastName)
             .ToList();

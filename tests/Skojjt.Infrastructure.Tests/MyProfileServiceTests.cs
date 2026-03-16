@@ -42,12 +42,12 @@ public class MyProfileServiceTests : IDisposable
 
         context.Persons.Add(new Person { Id = TestPersonId, FirstName = "Anna", LastName = "Svensson", BirthDate = new DateOnly(2010, 3, 15) });
         context.Persons.Add(new Person { Id = TestPerson2Id, FirstName = "Erik", LastName = "Johansson", BirthDate = new DateOnly(2011, 7, 22) });
-        context.ScoutGroups.Add(new ScoutGroup { Id = TestGroupId1, Name = "Testscoutkåren" });
-        context.ScoutGroups.Add(new ScoutGroup { Id = TestGroupId2, Name = "Andrakåren" });
-        context.Semesters.Add(new Semester { Id = TestSemesterHt, Year = 2025, IsAutumn = true });
-        context.Semesters.Add(new Semester { Id = TestSemesterVt, Year = 2025, IsAutumn = false });
-        context.Troops.Add(new Troop { Id = TestTroop1Id, ScoutnetId = 1, ScoutGroupId = TestGroupId1, SemesterId = TestSemesterHt, Name = "Spårarna" });
-        context.Troops.Add(new Troop { Id = TestTroop2Id, ScoutnetId = 2, ScoutGroupId = TestGroupId1, SemesterId = TestSemesterVt, Name = "Upptäckarna" });
+        context.ScoutGroups.Add(new ScoutGroup { Id = TestGroupId1, Name = "TestscoutkÃ¥ren" });
+        context.ScoutGroups.Add(new ScoutGroup { Id = TestGroupId2, Name = "AndrakÃ¥ren" });
+        context.Semesters.Add(new Semester( TestSemesterHt, 2025, true));
+        context.Semesters.Add(new Semester( TestSemesterVt, 2025, false));
+        context.Troops.Add(new Troop { Id = TestTroop1Id, ScoutnetId = 1, ScoutGroupId = TestGroupId1, SemesterId = TestSemesterHt, Name = "SpÃ¥rarna" });
+        context.Troops.Add(new Troop { Id = TestTroop2Id, ScoutnetId = 2, ScoutGroupId = TestGroupId1, SemesterId = TestSemesterVt, Name = "UpptÃ¤ckarna" });
         context.SaveChanges();
     }
 
@@ -106,8 +106,8 @@ public class MyProfileServiceTests : IDisposable
         var groups = await _service.GetGroupMembershipsAsync(TestPersonId);
 
         Assert.HasCount(2, groups);
-        Assert.IsTrue(groups.Any(g => g.ScoutGroupId == TestGroupId1 && g.ScoutGroupName == "Testscoutkåren"));
-        Assert.IsTrue(groups.Any(g => g.ScoutGroupId == TestGroupId2 && g.ScoutGroupName == "Andrakåren"));
+        Assert.IsTrue(groups.Any(g => g.ScoutGroupId == TestGroupId1 && g.ScoutGroupName == "TestscoutkÃ¥ren"));
+        Assert.IsTrue(groups.Any(g => g.ScoutGroupId == TestGroupId2 && g.ScoutGroupName == "AndrakÃ¥ren"));
     }
 
     [TestMethod]
@@ -216,7 +216,7 @@ public class MyProfileServiceTests : IDisposable
                 Id = i,
                 TroopId = TestTroop1Id,
                 MeetingDate = new DateOnly(2025, 9, i),
-                Name = $"Möte {i}"
+                Name = $"MÃ¶te {i}"
             });
         }
         context.SaveChanges();
@@ -228,7 +228,7 @@ public class MyProfileServiceTests : IDisposable
         var summary = await _service.GetAttendanceSummaryAsync(TestPersonId);
 
         Assert.HasCount(1, summary);
-        Assert.AreEqual("Spårarna", summary[0].TroopName);
+        Assert.AreEqual("SpÃ¥rarna", summary[0].TroopName);
         Assert.AreEqual(2025, summary[0].Year);
         Assert.IsTrue(summary[0].IsAutumn);
         Assert.AreEqual(2, summary[0].AttendedMeetings);
@@ -298,7 +298,7 @@ public class MyProfileServiceTests : IDisposable
         using var context = new SkojjtDbContext(_options);
 
         // Add an older semester and troop
-        context.Semesters.Add(new Semester { Id = 20241, Year = 2024, IsAutumn = true });
+        context.Semesters.Add(new Semester(20241, 2024, true));
         context.Troops.Add(new Troop { Id = 400, ScoutnetId = 3, ScoutGroupId = TestGroupId1, SemesterId = 20241, Name = "Gamla avd" });
 
         context.Meetings.Add(new Meeting { Id = 30, TroopId = 400, MeetingDate = new DateOnly(2024, 10, 1), Name = "Old" });
