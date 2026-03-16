@@ -22,6 +22,9 @@ using Skojjt.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add Application Insights for production telemetry (exceptions, requests, dependencies)
+builder.Services.AddApplicationInsightsTelemetry();
+
 // Log startup diagnostics
 var startupLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("Startup");
 startupLogger.LogInformation("Starting Skojjt.Web, Environment: {Env}", builder.Environment.EnvironmentName);
@@ -46,13 +49,32 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 
 // Add Razor components with interactive server rendering
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(options =>
+    {
+        // Allow circuits to stay alive longer while the client reconnects.
+        // Default is 3 minutes; extend to 5 for unstable mobile/Wi-Fi connections.
+        options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(5);
+
+        // Show detailed errors in development for easier debugging.
+        options.DetailedErrors = true; // TODO: set to: builder.Environment.IsDevelopment();
+    });
 
 // Add API controllers
 builder.Services.AddControllers();
 
 // Add SignalR for real-time updates
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    // Send keep-alive pings every 15 seconds (default) to detect dead connections.
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+
+    // Allow clients 60 seconds (default 30) to respond to keep-alive before
+    // the server considers them disconnected. Helps on flaky mobile networks.
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+
+    // Allow larger payloads for batch attendance updates.
+    options.MaximumReceiveMessageSize = 128 * 1024; // 128 KB
+});
 
 // Add response compression for SignalR
 builder.Services.AddResponseCompression(opts =>
@@ -331,6 +353,21 @@ app.Logger.LogInformation("Application built successfully. Configuring middlewar
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
+    // Log unhandled exceptions before the exception handler swallows them.
+    // This ensures they appear in Application Insights even for non-Blazor requests.
+    app.Use(async (context, next) =>
+    {
+        try
+        {
+            await next();
+        }
+        catch (Exception ex)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
+            throw; // Re-throw so UseExceptionHandler still handles it
+        }
+    });
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }

@@ -87,17 +87,50 @@
                 <button onclick="location.reload()">Ladda om sidan</button>
             </div>
             <div class="reconnect-content show-rejected">
-                <div class="reconnect-icon">✕</div>
+                <div class="reconnect-icon">⟳</div>
                 <h4>Sessionen kunde inte återupptas</h4>
-                <p>Servern kunde inte återuppta sessionen. Ladda om sidan för att fortsätta.</p>
-                <button onclick="location.reload()">Ladda om sidan</button>
+                <p>Servern har uppdaterats. Sidan laddas om automatiskt...</p>
             </div>
         </div>
     </div>
     
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="js/export.js"></script>
-    <script src="_framework/blazor.web.js"></script>
+    <script src="_framework/blazor.web.js" autostart="false"></script>
+    <script>
+        // Configure Blazor Server reconnection with exponential backoff.
+        // Default behavior only retries ~8 times over ~40 seconds.
+        // This configuration retries for several minutes with increasing delays,
+        // giving mobile/Wi-Fi users time to recover from brief network drops.
+        Blazor.start({
+            circuit: {
+                reconnectionOptions: {
+                    maxRetries: 30,
+                    retryIntervalMilliseconds: (previousAttempts, maxRetries) => {
+                        // Exponential backoff: 1s, 2s, 4s, 8s... capped at 30s
+                        const baseDelay = 1000;
+                        const maxDelay = 30000;
+                        const delay = Math.min(baseDelay * Math.pow(2, previousAttempts), maxDelay);
+                        return delay;
+                    },
+                    dialogId: 'components-reconnect-modal'
+                }
+            }
+        });
+
+        // When the circuit is rejected (server restarted / deployed), auto-reload
+        // after a short delay instead of showing a dead-end dialog.
+        new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                if (m.target.classList.contains('components-reconnect-rejected')) {
+                    setTimeout(() => location.reload(), 2000);
+                    break;
+                }
+            }
+        }).observe(document.getElementById('components-reconnect-modal'), {
+            attributes: true, attributeFilter: ['class']
+        });
+    </script>
 </body>
 
 </html>
