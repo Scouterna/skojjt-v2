@@ -1,11 +1,9 @@
-using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Skojjt.Core.Authentication;
 using Skojjt.Infrastructure.Data;
 using System.Security.Claims;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Skojjt.Infrastructure.Authentication;
@@ -20,6 +18,7 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
 {
     private readonly IDbContextFactory<SkojjtDbContext> _contextFactory;
     private readonly ILogger<ScoutIdClaimsTransformation> _logger;
+    private static readonly Regex s_regexGroup = new Regex(@"group:(\d+):(.+)", RegexOptions.Compiled);
 
     public ScoutIdClaimsTransformation(
         IDbContextFactory<SkojjtDbContext> contextFactory,
@@ -50,7 +49,7 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
         }
 
         // Try to extract ScoutID attributes from OIDC claims
-		ExtractSignInAttributes(identity);
+        ExtractSignInAttributes(identity);
 
         return principal;
     }
@@ -58,154 +57,66 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
     private bool ExtractSignInAttributes(ClaimsIdentity identity)
     {
         var nameIdentifier = identity.FindFirst(ClaimTypes.NameIdentifier);
-		var emailClaim = identity.FindFirst(ClaimTypes.Email);
-		var nameClaim = identity.FindFirst("name");
-		
-		// Log what we found for debugging
-		_logger.LogDebug("ExtractSignInAttributes - nameIdentifier: {NameId}, email: {Email}, name: {Name}",
-			nameIdentifier?.Value, emailClaim?.Value, nameClaim?.Value);
-		
-		// Simplified check - don't rely on Subject.IsAuthenticated which may be null 
-		// when claims are deserialized from cookie
-		if (nameIdentifier == null || emailClaim == null || nameClaim == null)
-		{
-			_logger.LogWarning("Could not extract ScoutID attributes from claims - missing required claims");
-			return false;
-		}
-		var uid = nameIdentifier.Value;
-		var email = emailClaim.Value;
-		var name = nameClaim.Value;
+        var emailClaim = identity.FindFirst(ClaimTypes.Email);
+        var nameClaim = identity.FindFirst("name");
 
-		const string scoutIdAdmin = "organisation:692:scoutid_admin"; // TODO: move to appconfig
-		bool isAdmin = (identity.FindFirst(claim => claim.Value == scoutIdAdmin) != null);
-		_logger.LogDebug("Admin check: looking for '{AdminClaim}', found: {IsAdmin}", scoutIdAdmin, isAdmin);
-		var regexGroup = new Regex(@"group:(\d+):(.+)", RegexOptions.Compiled);
-		HashSet<string> accessibleGroups = new();
-		HashSet<string> memberRegistrarGroups = new();
-		foreach (var role in identity.FindAll(claim => claim.Type.EndsWith("role") && claim.Value != null))
-		{
-			var match = regexGroup.Match(role.Value);
-			if (match.Success)
-			{
-				// Extract group information from the role claim
-				var groupId = match.Groups[1].Value;
-				var roleName = match.Groups[2].Value;
-				if (roleName == "leader" || 
-					roleName == "assistant_leader" || 
-					roleName == "member_registrar")
-				{
-					accessibleGroups.Add(groupId);
-				} 
-				else if (roleName == "member_registrar")
-				{
-					memberRegistrarGroups.Add(groupId);
-				}
-			}
-		}
+        // Log what we found for debugging
+        _logger.LogDebug("ExtractSignInAttributes - nameIdentifier: {NameId}, email: {Email}, name: {Name}",
+            nameIdentifier?.Value, emailClaim?.Value, nameClaim?.Value);
 
-		// Add basic claims
-		identity.AddClaim(new Claim(ScoutIdClaimTypes.ScoutnetUid, uid));
-		identity.AddClaim(new Claim(ScoutIdClaimTypes.DisplayName, name));
-		//identity.AddClaim(new Claim(ScoutIdClaimTypes.GroupNo, groupNo));
-		//identity.AddClaim(new Claim(ScoutIdClaimTypes.GroupId, groupId.ToString()));
-
-		// Add role-based claims
-		identity.AddClaim(new Claim(ScoutIdClaimTypes.MemberRegistrarGroups,
-			string.Join(",", memberRegistrarGroups)));
-		identity.AddClaim(new Claim(ScoutIdClaimTypes.AccessibleGroups,
-			string.Join(",", accessibleGroups)));
-		//identity.AddClaim(new Claim(ScoutIdClaimTypes.GroupRoles,
-		//	JsonSerializer.Serialize(groupRoles)));
-
-		// Add role claims for authorization policies
-		//if (memberRegistrarGroups.Contains(groupId))
-		//{
-		//	identity.AddClaim(new Claim(ClaimTypes.Role, "MemberRegistrar"));
-		//}
-
-		// Check if user is a system administrator from the database
-		identity.AddClaim(new Claim(ScoutIdClaimTypes.Admin, isAdmin ? "true" : "false"));
-		if (isAdmin)
-		{
-			identity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
-		}
-		return true;
-	}
-
-    /// <summary>
-    /// Looks up the scout groups that a person belongs to from the database.
-    /// Uses the ScoutGroupPerson table which links persons to scout groups.
-    /// </summary>
-    private async Task<List<int>> LookupGroupsFromDatabaseAsync(int memberNo)
-    {
-        try
+        // Simplified check - don't rely on Subject.IsAuthenticated which may be null 
+        // when claims are deserialized from cookie
+        if (nameIdentifier == null || emailClaim == null || nameClaim == null)
         {
-            await using var context = await _contextFactory.CreateDbContextAsync();
-            
-            var groups = await context.ScoutGroupPersons
-                .Where(sgp => sgp.PersonId == memberNo && !sgp.NotInScoutnet)
-                .Select(sgp => sgp.ScoutGroupId)
-                .Distinct()
-                .ToListAsync();
-
-            return groups;
+            _logger.LogWarning("Could not extract ScoutID attributes from claims - missing required claims");
+            return false;
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to look up groups from database for member {MemberNo}", memberNo);
-            return [];
-        }
-    }
+        var uid = nameIdentifier.Value;
+        var email = emailClaim.Value;
+        var name = nameClaim.Value;
 
-    private void ProcessRoles(
-        JsonElement rolesElement, 
-        int primaryGroupId,
-        List<int> memberRegistrarGroups,
-        List<int> accessibleGroups,
-        Dictionary<string, List<string>> groupRoles)
-    {
-        _logger.LogDebug("Processing roles element: {Roles}", rolesElement.GetRawText());
-
-        if (rolesElement.TryGetProperty("group", out var groupRolesElement))
+        // For now I'm using scoutid admins as admins in skojjt.
+        const string scoutIdAdmin = "organisation:692:scoutid_admin"; // TODO: move to appconfig
+        bool isAdmin = (identity.FindFirst(claim => claim.Value == scoutIdAdmin) != null);
+        _logger.LogDebug("Admin check: looking for '{AdminClaim}', found: {IsAdmin}", scoutIdAdmin, isAdmin);
+        HashSet<string> accessibleGroups = new();
+        HashSet<string> memberRegistrarGroups = new();
+        foreach (var role in identity.FindAll(claim => claim.Type.EndsWith("role") && claim.Value != null))
         {
-            foreach (var groupEntry in groupRolesElement.EnumerateObject())
+            var match = s_regexGroup.Match(role.Value);
+            if (match.Success)
             {
-                if (!int.TryParse(groupEntry.Name, out var entryGroupId))
-                    continue;
-
-                accessibleGroups.Add(entryGroupId);
-                var roles = new List<string>();
-
-                if (groupEntry.Value.ValueKind == JsonValueKind.Array)
+                // Extract group information from the role claim
+                var groupId = match.Groups[1].Value;
+                var roleName = match.Groups[2].Value;
+                if (roleName is "leader" or "assistant_leader" or "member_registrar")
                 {
-                    foreach (var role in groupEntry.Value.EnumerateArray())
-                    {
-                        var roleStr = role.ToString();
-                        roles.Add(roleStr);
-
-                        if (roleStr == ScoutIdRoles.MemberRegistrar)
-                        {
-                            memberRegistrarGroups.Add(entryGroupId);
-                        }
-                    }
+                    accessibleGroups.Add(groupId);
                 }
 
-                groupRoles[groupEntry.Name] = roles;
+                if (roleName == "member_registrar")
+                {
+                    memberRegistrarGroups.Add(groupId);
+                }
             }
         }
-    }
 
-    private static string GetStringValue(Dictionary<string, object> dict, string key)
-    {
-        if (!dict.TryGetValue(key, out var value))
-            return "";
+        // Add basic claims
+        identity.AddClaim(new Claim(ScoutIdClaimTypes.ScoutnetUid, uid));
+        identity.AddClaim(new Claim(ScoutIdClaimTypes.DisplayName, name));
 
-        return value switch
+        // Add role-based claims
+        identity.AddClaim(new Claim(ScoutIdClaimTypes.MemberRegistrarGroups,
+            string.Join(",", memberRegistrarGroups)));
+        identity.AddClaim(new Claim(ScoutIdClaimTypes.AccessibleGroups,
+            string.Join(",", accessibleGroups)));
+
+        // Check if user is a system administrator from the database
+        identity.AddClaim(new Claim(ScoutIdClaimTypes.Admin, isAdmin ? "true" : "false"));
+        if (isAdmin)
         {
-            string s => s,
-            JsonElement { ValueKind: JsonValueKind.String } je => je.GetString() ?? "",
-            JsonElement { ValueKind: JsonValueKind.Number } je => je.GetRawText(),
-            _ => value?.ToString() ?? ""
-        };
+            identity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
+        }
+        return true;
     }
 }

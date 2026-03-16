@@ -254,25 +254,10 @@ else
                         logger.LogDebug("  Claim: {Type} = {Value}", claim.Type, claim.Value);
                     }
                     logger.LogDebug("=== End Claims ===");
-                    
-                    // Add Admin role if user has the scoutid_admin claim
-                    // This must be done here (during sign-in) so it persists in the cookie
-                    const string scoutIdAdminClaim = "organisation:692:scoutid_admin"; // TODO: move to config
-                    var identity = context.Principal.Identity as System.Security.Claims.ClaimsIdentity;
-                    if (identity != null)
-                    {
-                        var isAdmin = context.Principal.Claims.Any(c => c.Value == scoutIdAdminClaim);
-                        logger.LogInformation("Admin check for {Name}: looking for '{Claim}', found: {IsAdmin}", 
-                            name, scoutIdAdminClaim, isAdmin);
-                        
-                        if (isAdmin)
-                        {
-                            identity.AddClaim(new System.Security.Claims.Claim(
-                                System.Security.Claims.ClaimTypes.Role, "Admin"));
-                            logger.LogInformation("Added Admin role to {Name}", name);
-                        }
-                    }
                 }
+
+                // Admin role assignment is handled by ScoutIdClaimsTransformation
+                // which runs on every request via IClaimsTransformation.
 
                 // Sync user to database
                 try
