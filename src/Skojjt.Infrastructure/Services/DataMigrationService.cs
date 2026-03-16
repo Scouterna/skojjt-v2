@@ -137,38 +137,53 @@ public class DataMigrationService
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             Converters = { new StringOrArrayConverter(), new IntOrArrayConverter() }
         };
+
+        // Use a generous command timeout for large migration operations (10 minutes)
+        _context.Database.SetCommandTimeout(TimeSpan.FromMinutes(10));
     }
 
-    /// <summary>
-    /// Import all data from the specified directory.
-    /// </summary>
-    public async Task ImportAllAsync(string importDirectory, CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation("Starting data import from {Directory}", importDirectory);
-        
-        var stats = new Dictionary<string, int>();
+	/// <summary>
+	/// Import all data from the specified directory.
+	/// </summary>
+	public async Task ImportAllAsync(string importDirectory, CancellationToken cancellationToken = default)
+	{
+		_logger.LogInformation("Starting data import from {Directory}", importDirectory);
+
+		var stats = new Dictionary<string, int>();
+		var totalSw = System.Diagnostics.Stopwatch.StartNew();
 
 		// Import in dependency order
-		stats["semesters"] = await ImportSemestersAsync(Path.Combine(importDirectory, "semesters.json"), cancellationToken);
-        stats["scout_groups"] = await ImportScoutGroupsAsync(Path.Combine(importDirectory, "scout_groups.json"), cancellationToken);
-        stats["persons"] = await ImportPersonsAsync(Path.Combine(importDirectory, "persons.json"), cancellationToken);
-        stats["troops"] = await ImportTroopsAsync(Path.Combine(importDirectory, "troops.json"), cancellationToken);
-        stats["troop_persons"] = await ImportTroopPersonsAsync(Path.Combine(importDirectory, "troop_persons.json"), cancellationToken);
-        stats["meetings"] = await ImportMeetingsAsync(Path.Combine(importDirectory, "meetings.json"), cancellationToken);
-        stats["meeting_attendances"] = await ImportMeetingAttendancesAsync(Path.Combine(importDirectory, "meeting_attendances.json"), cancellationToken);
-        stats["users"] = await ImportUsersAsync(Path.Combine(importDirectory, "users.json"), cancellationToken);
-        stats["badge_templates"] = await ImportBadgeTemplatesAsync(Path.Combine(importDirectory, "badge_templates.json"), cancellationToken);
-        stats["badges"] = await ImportBadgesAsync(Path.Combine(importDirectory, "badges.json"), cancellationToken);
-		stats["troop_badges"] = await ImportTroopBadgesAsync(Path.Combine(importDirectory, "troop_badges.json"), cancellationToken);
-		stats["badge_parts_done"] = await ImportBadgePartsDoneAsync(Path.Combine(importDirectory, "badge_parts_done.json"), cancellationToken);
-		stats["badges_completed"] = await ImportBadgesCompletedAsync(Path.Combine(importDirectory, "badges_completed.json"), cancellationToken);
+		stats["semesters"] = await ImportStepAsync("semesters", () => ImportSemestersAsync(Path.Combine(importDirectory, "semesters.json"), cancellationToken));
+		stats["scout_groups"] = await ImportStepAsync("scout_groups", () => ImportScoutGroupsAsync(Path.Combine(importDirectory, "scout_groups.json"), cancellationToken));
+		stats["persons"] = await ImportStepAsync("persons", () => ImportPersonsAsync(Path.Combine(importDirectory, "persons.json"), cancellationToken));
+		stats["troops"] = await ImportStepAsync("troops", () => ImportTroopsAsync(Path.Combine(importDirectory, "troops.json"), cancellationToken));
+		stats["troop_persons"] = await ImportStepAsync("troop_persons", () => ImportTroopPersonsAsync(Path.Combine(importDirectory, "troop_persons.json"), cancellationToken));
+		stats["meetings"] = await ImportStepAsync("meetings", () => ImportMeetingsAsync(Path.Combine(importDirectory, "meetings.json"), cancellationToken));
+		stats["meeting_attendances"] = await ImportStepAsync("meeting_attendances", () => ImportMeetingAttendancesAsync(Path.Combine(importDirectory, "meeting_attendances.json"), cancellationToken));
+		stats["users"] = await ImportStepAsync("users", () => ImportUsersAsync(Path.Combine(importDirectory, "users.json"), cancellationToken));
+		stats["badge_templates"] = await ImportStepAsync("badge_templates", () => ImportBadgeTemplatesAsync(Path.Combine(importDirectory, "badge_templates.json"), cancellationToken));
+		stats["badges"] = await ImportStepAsync("badges", () => ImportBadgesAsync(Path.Combine(importDirectory, "badges.json"), cancellationToken));
+		stats["troop_badges"] = await ImportStepAsync("troop_badges", () => ImportTroopBadgesAsync(Path.Combine(importDirectory, "troop_badges.json"), cancellationToken));
+		stats["badge_parts_done"] = await ImportStepAsync("badge_parts_done", () => ImportBadgePartsDoneAsync(Path.Combine(importDirectory, "badge_parts_done.json"), cancellationToken));
+		stats["badges_completed"] = await ImportStepAsync("badges_completed", () => ImportBadgesCompletedAsync(Path.Combine(importDirectory, "badges_completed.json"), cancellationToken));
 
-		_logger.LogInformation("Data import complete!");
-        foreach (var (table, count) in stats)
-        {
-            _logger.LogInformation("  {Table}: {Count} records", table, count);
-        }
-    }
+		totalSw.Stop();
+		_logger.LogInformation("Data import complete in {Elapsed}!", totalSw.Elapsed);
+		foreach (var (table, count) in stats)
+		{
+			_logger.LogInformation("  {Table}: {Count} records", table, count);
+		}
+	}
+
+	private async Task<int> ImportStepAsync(string stepName, Func<Task<int>> importFunc)
+	{
+		var sw = System.Diagnostics.Stopwatch.StartNew();
+		_logger.LogInformation("Starting import step: {Step}...", stepName);
+		var count = await importFunc();
+		sw.Stop();
+		_logger.LogInformation("Completed {Step}: {Count} records in {Elapsed}", stepName, count, sw.Elapsed);
+		return count;
+	}
 
     private async Task<List<T>> LoadJsonFileAsync<T>(string filePath, CancellationToken cancellationToken)
     {
@@ -361,8 +376,8 @@ public class DataMigrationService
 
 		foreach (var item in items)
         {
-			if (await _context.Troops.AnyAsync(p => p.ScoutnetId == item.ScoutnetId && p.SemesterId == item.SemesterId, cancellationToken))
-				continue;
+			if (await _context.Troops.AnyAsync(p => p.ScoutnetId == item.ScoutnetId && p.ScoutGroupId == item.ScoutGroupId && p.SemesterId == item.SemesterId, cancellationToken))
+					continue;
 
 			// Validate foreign keys
 			if (item.ScoutnetId == null)

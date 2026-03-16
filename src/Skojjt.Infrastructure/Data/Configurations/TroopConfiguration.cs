@@ -59,8 +59,8 @@ public class TroopConfiguration : IEntityTypeConfiguration<Troop>
         builder.HasIndex(e => new { e.ScoutGroupId, e.SemesterId })
             .HasDatabaseName("idx_troops_scout_group_semester");
 
-        // Unique constraint: only one troop per scoutnet_id per semester
-        builder.HasIndex(e => new { e.ScoutnetId, e.SemesterId })
+        // Unique constraint: only one troop per scoutnet_id per scout group per semester
+        builder.HasIndex(e => new { e.ScoutnetId, e.ScoutGroupId, e.SemesterId })
             .IsUnique()
             .HasDatabaseName("idx_troops_natural_key");
     }
