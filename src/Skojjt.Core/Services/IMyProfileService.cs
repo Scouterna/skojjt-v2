@@ -42,5 +42,12 @@ public class MyAttendanceSummary
     public int Year { get; set; }
     public bool IsAutumn { get; set; }
     public int AttendedMeetings { get; set; }
+
+    /// <summary>
+    /// Number of camp nights (lägernätter) calculated from consecutive hike meeting dates.
+    /// N consecutive days = N-1 nights.
+    /// </summary>
+    public int CampNights { get; set; }
+
     public string SemesterDisplayName => $"{(IsAutumn ? "HT" : "VT")} {Year}";
 }

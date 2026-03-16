@@ -43,24 +43,50 @@ public class MyProfileService : IMyProfileService
     {
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
-        return await context.MeetingAttendances
+        var attendances = await context.MeetingAttendances
             .Where(ma => ma.PersonId == personId)
             .Select(ma => new
             {
-                ma.Meeting.Troop.Name,
+                TroopName = ma.Meeting.Troop.Name,
                 ma.Meeting.Troop.Semester.Year,
-                ma.Meeting.Troop.Semester.IsAutumn
+                ma.Meeting.Troop.Semester.IsAutumn,
+                ma.Meeting.MeetingDate,
+                ma.Meeting.IsHike
             })
-            .GroupBy(x => new { x.Name, x.Year, x.IsAutumn })
+            .ToListAsync(cancellationToken);
+
+        return attendances
+            .GroupBy(x => new { x.TroopName, x.Year, x.IsAutumn })
             .Select(g => new MyAttendanceSummary
             {
-                TroopName = g.Key.Name,
+                TroopName = g.Key.TroopName,
                 Year = g.Key.Year,
                 IsAutumn = g.Key.IsAutumn,
-                AttendedMeetings = g.Count()
+                AttendedMeetings = g.Count(),
+                CampNights = CalculateCampNights(g.Where(a => a.IsHike).Select(a => a.MeetingDate))
             })
             .OrderByDescending(r => r.Year)
             .ThenByDescending(r => r.IsAutumn)
-            .ToListAsync(cancellationToken);
+            .ToList();
+    }
+
+    /// <summary>
+    /// Calculates camp nights from a set of hike meeting dates.
+    /// Consecutive days form a camp stay: N consecutive days = N-1 nights.
+    /// </summary>
+    internal static int CalculateCampNights(IEnumerable<DateOnly> hikeDates)
+    {
+        var sorted = hikeDates.Distinct().OrderBy(d => d).ToList();
+        if (sorted.Count < 2)
+            return 0;
+
+        var nights = 0;
+        for (var i = 1; i < sorted.Count; i++)
+        {
+            if (sorted[i].DayNumber - sorted[i - 1].DayNumber == 1)
+                nights++;
+        }
+
+        return nights;
     }
 }

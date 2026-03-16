@@ -315,4 +315,149 @@ public class MyProfileServiceTests : IDisposable
         Assert.AreEqual(2025, summary[0].Year, "Newest semester should come first");
         Assert.AreEqual(2024, summary[1].Year, "Older semester should come second");
     }
+
+    // --- CampNights ---
+
+    [TestMethod]
+    public async Task GetAttendanceSummaryAsync_CalculatesCampNights_ForConsecutiveHikeDays()
+    {
+        SeedBaseData();
+        using var context = new SkojjtDbContext(_options);
+
+        // 3 consecutive hike days = 2 camp nights
+        context.Meetings.Add(new Meeting { Id = 40, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 8, 1), Name = "Läger dag 1", IsHike = true });
+        context.Meetings.Add(new Meeting { Id = 41, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 8, 2), Name = "Läger dag 2", IsHike = true });
+        context.Meetings.Add(new Meeting { Id = 42, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 8, 3), Name = "Läger dag 3", IsHike = true });
+        context.SaveChanges();
+
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 40, PersonId = TestPersonId });
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 41, PersonId = TestPersonId });
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 42, PersonId = TestPersonId });
+        context.SaveChanges();
+
+        var summary = await _service.GetAttendanceSummaryAsync(TestPersonId);
+
+        Assert.HasCount(1, summary);
+        Assert.AreEqual(3, summary[0].AttendedMeetings);
+        Assert.AreEqual(2, summary[0].CampNights);
+    }
+
+    [TestMethod]
+    public async Task GetAttendanceSummaryAsync_CampNights_ZeroForNonConsecutiveHikeDays()
+    {
+        SeedBaseData();
+        using var context = new SkojjtDbContext(_options);
+
+        // 2 non-consecutive hike days = 0 camp nights
+        context.Meetings.Add(new Meeting { Id = 50, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 9, 1), Name = "Vandring 1", IsHike = true });
+        context.Meetings.Add(new Meeting { Id = 51, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 9, 8), Name = "Vandring 2", IsHike = true });
+        context.SaveChanges();
+
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 50, PersonId = TestPersonId });
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 51, PersonId = TestPersonId });
+        context.SaveChanges();
+
+        var summary = await _service.GetAttendanceSummaryAsync(TestPersonId);
+
+        Assert.HasCount(1, summary);
+        Assert.AreEqual(0, summary[0].CampNights);
+    }
+
+    [TestMethod]
+    public async Task GetAttendanceSummaryAsync_CampNights_ZeroWhenNoHikeMeetings()
+    {
+        SeedBaseData();
+        using var context = new SkojjtDbContext(_options);
+
+        context.Meetings.Add(new Meeting { Id = 60, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 9, 1), Name = "Vanligt möte", IsHike = false });
+        context.Meetings.Add(new Meeting { Id = 61, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 9, 2), Name = "Vanligt möte 2", IsHike = false });
+        context.SaveChanges();
+
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 60, PersonId = TestPersonId });
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 61, PersonId = TestPersonId });
+        context.SaveChanges();
+
+        var summary = await _service.GetAttendanceSummaryAsync(TestPersonId);
+
+        Assert.HasCount(1, summary);
+        Assert.AreEqual(0, summary[0].CampNights);
+    }
+
+    [TestMethod]
+    public async Task GetAttendanceSummaryAsync_CampNights_MultipleCampStays()
+    {
+        SeedBaseData();
+        using var context = new SkojjtDbContext(_options);
+
+        // Two separate camp stays: 2 consecutive days (1 night) + 3 consecutive days (2 nights) = 3 nights total
+        context.Meetings.Add(new Meeting { Id = 70, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 8, 1), Name = "Läger 1 dag 1", IsHike = true });
+        context.Meetings.Add(new Meeting { Id = 71, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 8, 2), Name = "Läger 1 dag 2", IsHike = true });
+        // Gap
+        context.Meetings.Add(new Meeting { Id = 72, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 8, 10), Name = "Läger 2 dag 1", IsHike = true });
+        context.Meetings.Add(new Meeting { Id = 73, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 8, 11), Name = "Läger 2 dag 2", IsHike = true });
+        context.Meetings.Add(new Meeting { Id = 74, TroopId = TestTroop1Id, MeetingDate = new DateOnly(2025, 8, 12), Name = "Läger 2 dag 3", IsHike = true });
+        context.SaveChanges();
+
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 70, PersonId = TestPersonId });
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 71, PersonId = TestPersonId });
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 72, PersonId = TestPersonId });
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 73, PersonId = TestPersonId });
+        context.MeetingAttendances.Add(new MeetingAttendance { MeetingId = 74, PersonId = TestPersonId });
+        context.SaveChanges();
+
+        var summary = await _service.GetAttendanceSummaryAsync(TestPersonId);
+
+        Assert.HasCount(1, summary);
+        Assert.AreEqual(5, summary[0].AttendedMeetings);
+        Assert.AreEqual(3, summary[0].CampNights);
+    }
+
+    // --- CalculateCampNights unit tests ---
+
+    [TestMethod]
+    public void CalculateCampNights_EmptyDates_ReturnsZero()
+    {
+        Assert.AreEqual(0, MyProfileService.CalculateCampNights([]));
+    }
+
+    [TestMethod]
+    public void CalculateCampNights_SingleDate_ReturnsZero()
+    {
+        Assert.AreEqual(0, MyProfileService.CalculateCampNights([new DateOnly(2025, 8, 1)]));
+    }
+
+    [TestMethod]
+    public void CalculateCampNights_TwoConsecutiveDays_ReturnsOne()
+    {
+        Assert.AreEqual(1, MyProfileService.CalculateCampNights([new DateOnly(2025, 8, 1), new DateOnly(2025, 8, 2)]));
+    }
+
+    [TestMethod]
+    public void CalculateCampNights_FiveConsecutiveDays_ReturnsFour()
+    {
+        DateOnly[] dates = [new(2025, 7, 1), new(2025, 7, 2), new(2025, 7, 3), new(2025, 7, 4), new(2025, 7, 5)];
+        Assert.AreEqual(4, MyProfileService.CalculateCampNights(dates));
+    }
+
+    [TestMethod]
+    public void CalculateCampNights_TwoSeparateCamps_SumsNights()
+    {
+        // 2 consecutive (1 night) + gap + 3 consecutive (2 nights) = 3 nights
+        DateOnly[] dates = [new(2025, 8, 1), new(2025, 8, 2), new(2025, 8, 10), new(2025, 8, 11), new(2025, 8, 12)];
+        Assert.AreEqual(3, MyProfileService.CalculateCampNights(dates));
+    }
+
+    [TestMethod]
+    public void CalculateCampNights_DuplicateDates_IgnoresDuplicates()
+    {
+        DateOnly[] dates = [new(2025, 8, 1), new(2025, 8, 1), new(2025, 8, 2)];
+        Assert.AreEqual(1, MyProfileService.CalculateCampNights(dates));
+    }
+
+    [TestMethod]
+    public void CalculateCampNights_UnorderedDates_StillWorks()
+    {
+        DateOnly[] dates = [new(2025, 8, 3), new(2025, 8, 1), new(2025, 8, 2)];
+        Assert.AreEqual(2, MyProfileService.CalculateCampNights(dates));
+    }
 }
