@@ -63,7 +63,7 @@ public class ScoutnetImportService : IScoutnetImportService
         return value.Length <= maxLength ? value : value[..maxLength];
     }
 
-	public async Task<ScoutnetImportResult> ImportMembersAsync(
+    public async Task<ScoutnetImportResult> ImportMembersAsync(
         int scoutGroupId,
         int semesterId,
         IProgress<string>? progress = null,
@@ -94,16 +94,16 @@ public class ScoutnetImportService : IScoutnetImportService
 
             progress?.Report($"Fetching members from Scoutnet for {scoutGroup.Name}...");
 
-			var response = await _apiClient.GetMemberListAsync(
-                scoutGroupId, 
-                scoutGroup.ApiKeyAllMembers, 
+            var response = await _apiClient.GetMemberListAsync(
+                scoutGroupId,
+                scoutGroup.ApiKeyAllMembers,
                 cancellationToken);
 
             return await ImportFromResponseAsync(
-                scoutGroupId, 
-                semesterId, 
-                response, 
-                progress, 
+                scoutGroupId,
+                semesterId,
+                response,
+                progress,
                 cancellationToken);
         }
         catch (ScoutnetApiException ex)
@@ -157,8 +157,8 @@ public class ScoutnetImportService : IScoutnetImportService
                 .Where(id => id != 0)
                 .ToHashSet();
 
-			// Get existing persons globally (they may belong to other scout groups too)
-			var existingPersons = await _context.Persons
+            // Get existing persons globally (they may belong to other scout groups too)
+            var existingPersons = await _context.Persons
                 .Where(p => importPersonIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id, cancellationToken);
 
@@ -166,7 +166,7 @@ public class ScoutnetImportService : IScoutnetImportService
                 .Where(sgp => sgp.ScoutGroupId == scoutGroupId)
                 .ToDictionaryAsync(sgp => sgp.PersonId, cancellationToken);
 
-			var existingTroops = await _context.Troops
+            var existingTroops = await _context.Troops
                 .Where(t => t.ScoutGroupId == scoutGroupId && t.SemesterId == semesterId)
                 .ToDictionaryAsync(t => t.ScoutnetId, cancellationToken);
 
@@ -189,38 +189,38 @@ public class ScoutnetImportService : IScoutnetImportService
 
                 seenPersonIds.Add(personId);
 
-				var group = member.Group;
-				if (group == null || group.RawValue == null || group.Value == null)
-				{
-					_logger.LogError(result.ErrorMessage = $"Invalid group for member {memberId}");
-					return result;
-				}
+                var group = member.Group;
+                if (group == null || group.RawValue == null || group.Value == null)
+                {
+                    _logger.LogError(result.ErrorMessage = $"Invalid group for member {memberId}");
+                    return result;
+                }
 
-				int groupId = int.Parse(group.RawValue!);
-				if (groupId != scoutGroupId)
-				{
-					_logger.LogError(result.ErrorMessage = $"Invalid group {groupId} for member {memberId} than what was imported for {scoutGroupId}");
-					return result;
-				}
+                int groupId = int.Parse(group.RawValue!);
+                if (groupId != scoutGroupId)
+                {
+                    _logger.LogError(result.ErrorMessage = $"Invalid group {groupId} for member {memberId} than what was imported for {scoutGroupId}");
+                    return result;
+                }
 
-				ScoutGroup? scoutGroup = await _context.ScoutGroups.FirstOrDefaultAsync(sg => sg.Id == groupId, cancellationToken);
-				if (scoutGroup == null)
-				{
-					var groupName = group.Value;
-					progress?.Report($"Creating ScoutGroup {groupName}({groupId})...");
-					_logger.LogInformation($"Creating ScoutGroup {groupName}({groupId})...");
-					scoutGroup = new ScoutGroup
-					{
-						Id = groupId,
-						Name = groupName
-					};
-					_context.ScoutGroups.Add(scoutGroup);
-					result.ScoutGroupsCreated++;
-					result.CreatedScoutGroups.Add(new ImportedScoutGroup(groupId, groupName));
-				}
+                ScoutGroup? scoutGroup = await _context.ScoutGroups.FirstOrDefaultAsync(sg => sg.Id == groupId, cancellationToken);
+                if (scoutGroup == null)
+                {
+                    var groupName = group.Value;
+                    progress?.Report($"Creating ScoutGroup {groupName}({groupId})...");
+                    _logger.LogInformation($"Creating ScoutGroup {groupName}({groupId})...");
+                    scoutGroup = new ScoutGroup
+                    {
+                        Id = groupId,
+                        Name = groupName
+                    };
+                    _context.ScoutGroups.Add(scoutGroup);
+                    result.ScoutGroupsCreated++;
+                    result.CreatedScoutGroups.Add(new ImportedScoutGroup(groupId, groupName));
+                }
 
-				// Process person
-				Person person;
+                // Process person
+                Person person;
                 string? personTroopName = member.GetUnitName();
                 if (existingPersons.TryGetValue(personId, out var existingPerson))
                 {
@@ -239,6 +239,12 @@ public class ScoutnetImportService : IScoutnetImportService
                     person = newPerson;
                     result.PersonsCreated++;
                     result.CreatedPersons.Add(new ImportedPerson(personId, newPerson.FullName, personTroopName));
+                }
+
+                // Ensure the semester year is recorded in MemberYears
+                if (!person.MemberYears.Contains(semester.Year))
+                {
+                    person.MemberYears = [.. person.MemberYears, semester.Year];
                 }
 
                 // Process ScoutGroupPerson (for multi-group support)
@@ -300,7 +306,7 @@ public class ScoutnetImportService : IScoutnetImportService
 
                     // Ensure troop person membership
                     var existingMembership = existingTroopPersons
-                        .FirstOrDefault(tp => tp.PersonId == personId && 
+                        .FirstOrDefault(tp => tp.PersonId == personId &&
                             (tp.Troop == troop || tp.Troop?.ScoutnetId == unitId.Value));
 
                     if (existingMembership == null)
@@ -343,12 +349,12 @@ public class ScoutnetImportService : IScoutnetImportService
             {
                 // Find the troop
                 Troop? troop = null;
-                if (existingTroops.TryGetValue(troopScoutnetId, out troop) || 
+                if (existingTroops.TryGetValue(troopScoutnetId, out troop) ||
                     troopsToCreate.TryGetValue(troopScoutnetId, out troop))
                 {
                     // Find or create TroopPerson
                     var existingMembership = existingTroopPersons
-                        .FirstOrDefault(tp => tp.PersonId == personId && 
+                        .FirstOrDefault(tp => tp.PersonId == personId &&
                             (tp.Troop == troop || tp.Troop?.ScoutnetId == troopScoutnetId));
 
                     if (existingMembership != null)
@@ -409,13 +415,13 @@ public class ScoutnetImportService : IScoutnetImportService
             foreach (var createdTroop in result.CreatedTroops.ToList())
             {
                 var troopMembers = existingTroopPersons
-                    .Where(tp => tp.Troop?.ScoutnetId == createdTroop.ScoutnetId || 
+                    .Where(tp => tp.Troop?.ScoutnetId == createdTroop.ScoutnetId ||
                                  (troopsToCreate.TryGetValue(createdTroop.ScoutnetId, out var t) && tp.Troop == t))
                     .ToList();
-                
+
                 var memberCount = troopMembers.Count;
                 var leaderCount = troopMembers.Count(tp => tp.IsLeader);
-                
+
                 // Replace with updated counts
                 var index = result.CreatedTroops.FindIndex(t => t.ScoutnetId == createdTroop.ScoutnetId);
                 if (index >= 0)
@@ -505,7 +511,7 @@ public class ScoutnetImportService : IScoutnetImportService
         person.LastName = Truncate(member.GetLastName(), MaxLastNameLength);
         person.BirthDate = member.GetBirthDate();
         person.PersonalNumber = member.GetPersonalNumber().GetNullablePersonnummer();
-		person.Email = TruncateNullable(member.GetEmail(), MaxEmailLength);
+        person.Email = TruncateNullable(member.GetEmail(), MaxEmailLength);
         person.AltEmail = TruncateNullable(member.GetAltEmail(), MaxEmailLength);
         person.Mobile = TruncateNullable(member.GetMobile(), MaxMobileLength);
         person.Phone = TruncateNullable(member.GetPhone(), MaxPhoneLength);

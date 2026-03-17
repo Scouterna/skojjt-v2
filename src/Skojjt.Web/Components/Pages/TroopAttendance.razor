@@ -332,6 +332,10 @@
             <MudTimePicker @bind-Time="_newMeetingTime" Label="Starttid" Variant="Variant.Outlined" />
             <MudNumericField @bind-Value="_newMeetingDuration" Label="Längd (minuter)" Variant="Variant.Outlined" Min="1" MaxLength="1440"/>
             <MudCheckBox @bind-Value="_newMeetingIsHike" Label="Läger/vandring" Color="Color.Primary" />
+            @if (_newMeetingIsHike)
+            {
+                <MudNumericField @bind-Value="_newHikeDays" Label="Antal dagar" Variant="Variant.Outlined" Min="1" Max="30" />
+            }
             <MudTextField @bind-Value="_newMeetingLocation" Label="Plats" Variant="Variant.Outlined" MaxLength="50" />
         </MudForm>
     </DialogContent>
@@ -541,6 +545,7 @@
     private string _newMeetingName = "Möte";
     private int _newMeetingDuration = 90;
     private bool _newMeetingIsHike = false;
+    private int _newHikeDays = 1;
     private DateTime? _newMeetingDate = DateTime.Today;
     private TimeSpan? _newMeetingTime = new TimeSpan(18, 30, 0);
     private string? _newMeetingLocation = "";
@@ -1131,6 +1136,7 @@
     {
         _newMeetingName = "Läger";
         _newMeetingIsHike = true;
+        _newHikeDays = 1;
         _showNewMeetingDialog = true;
     }
 
@@ -1143,28 +1149,60 @@
             {
                 try
                 {
-                    var meeting = new Meeting
+                    var startDate = DateOnly.FromDateTime(_newMeetingDate.Value);
+                    var startTime = _newMeetingTime.HasValue ? TimeOnly.FromTimeSpan(_newMeetingTime.Value) : new TimeOnly(18, 30);
+                    var totalDays = _newMeetingIsHike ? Math.Max(1, _newHikeDays) : 1;
+                    var createdCount = 0;
+                    var skippedCount = 0;
+
+                    for (var day = 0; day < totalDays; day++)
                     {
-                        TroopId = TroopId,
-                        Name = _newMeetingName,
-                        MeetingDate = DateOnly.FromDateTime(_newMeetingDate.Value),
-                        StartTime = _newMeetingTime.HasValue ? TimeOnly.FromTimeSpan(_newMeetingTime.Value) : new TimeOnly(18, 30),
-                        DurationMinutes = _newMeetingDuration,
-                        Location = _newMeetingLocation ?? "",
-                        IsHike = _newMeetingIsHike
-                    };
-                    
-                    await MeetingRepository.AddAsync(meeting);
+                        var meetingDate = startDate.AddDays(day);
+
+                        if (_semester != null && !_semester.IsValidDate(meetingDate))
+                        {
+                            skippedCount++;
+                            continue;
+                        }
+
+                        var meeting = new Meeting
+                        {
+                            TroopId = TroopId,
+                            Name = totalDays > 1 ? $"{_newMeetingName} dag {day + 1}" : _newMeetingName,
+                            MeetingDate = meetingDate,
+                            StartTime = startTime,
+                            DurationMinutes = _newMeetingDuration,
+                            Location = _newMeetingLocation ?? "",
+                            IsHike = _newMeetingIsHike
+                        };
+
+                        await MeetingRepository.AddAsync(meeting);
+                        createdCount++;
+                    }
+
                     await UnitOfWork.SaveChangesAsync();
-                    
+
                     // Broadcast meeting added to other components
-                    await NotificationService.NotifyMeetingChangedAsync(TroopId, meeting.Id, MeetingChangeType.Added, _instanceId);
-                    
-                    Snackbar.Add($"Möte '{_newMeetingName}' skapat!", Severity.Success);
+                    await NotificationService.NotifyMeetingChangedAsync(TroopId, 0, MeetingChangeType.Added, _instanceId);
+
+                    if (skippedCount > 0)
+                    {
+                        Snackbar.Add($"{createdCount} lägerdagar skapade. {skippedCount} dag(ar) hoppades över (utanför terminen).", Severity.Warning);
+                    }
+                    else if (createdCount > 1)
+                    {
+                        Snackbar.Add($"{createdCount} lägerdagar skapade!", Severity.Success);
+                    }
+                    else
+                    {
+                        Snackbar.Add($"Möte '{_newMeetingName}' skapat!", Severity.Success);
+                    }
+
                     _showNewMeetingDialog = false;
                     _newMeetingName = "Möte";
                     _newMeetingDuration = _troop?.DefaultDurationMinutes ?? 90;
                     _newMeetingIsHike = false;
+                    _newHikeDays = 1;
                     _newMeetingDate = DateTime.Today;
                     _newMeetingTime = _troop?.DefaultStartTime.ToTimeSpan() ?? new TimeSpan(18, 30, 0);
                     _newMeetingLocation = _troop?.DefaultMeetingLocation;

@@ -14,7 +14,13 @@ public class GroupSummaryService : IGroupSummaryService
     private readonly IDbContextFactory<SkojjtDbContext> _contextFactory;
 
     // Roles that indicate board membership
-    private static readonly string[] BoardMemberRoles = ["Ordförande", "Kassör", "Sekreterare", "Styrelseledamot", "Styrelsesuppleant"];
+    private static readonly string[] BoardMemberRoles = [
+        "Kårkassör",
+        "Kårsekreterare",
+        "Kårstyrelseledamot",
+        "Kårordförande",
+        "Vice kårordförande",
+        ];
 
     public GroupSummaryService(IDbContextFactory<SkojjtDbContext> contextFactory)
     {
@@ -29,7 +35,7 @@ public class GroupSummaryService : IGroupSummaryService
         CancellationToken cancellationToken = default)
     {
         await using var context = _contextFactory.CreateDbContext();
-        
+
         // Define age groups as per the old implementation
         const int startAge = 7;
         const int endAge = 25;
@@ -39,12 +45,12 @@ public class GroupSummaryService : IGroupSummaryService
         {
             new() { AgeLabel = "0 - 6" }
         };
-        
+
         for (int i = startAge; i <= endAge; i++)
         {
             ageGroups.Add(new AgeGroupStats { AgeLabel = i.ToString() });
         }
-        
+
         ageGroups.Add(new AgeGroupStats { AgeLabel = "26 - 64" });
         ageGroups.Add(new AgeGroupStats { AgeLabel = "65 -" });
 
@@ -115,11 +121,11 @@ public class GroupSummaryService : IGroupSummaryService
                 emails.Add(person.Email);
             }
 
-			if (person.PersonalNumber is null)
-				continue; // Skip if personal number is missing, as we can't
+            if (person.PersonalNumber is null)
+                continue; // Skip if personal number is missing, as we can't
 
-			var age = person.BirthDate.HasValue 
-                ? year - person.BirthDate.Value.Year 
+            var age = person.BirthDate.HasValue
+                ? year - person.BirthDate.Value.Year
                 : 0;
 
             var isFemale = person.PersonalNumber.IsFemale;
@@ -206,7 +212,7 @@ public class GroupSummaryService : IGroupSummaryService
     {
         if (string.IsNullOrEmpty(personnummer) || personnummer.Length < 11)
             return false;
-        
+
         return int.TryParse(personnummer[^2].ToString(), out var digit) && (digit & 1) == 0;
     }
 
