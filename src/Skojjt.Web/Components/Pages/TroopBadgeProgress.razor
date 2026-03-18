@@ -39,7 +39,9 @@
         <div class="d-flex flex-wrap align-center gap-4 mb-4">
             @if (!string.IsNullOrEmpty(_badge.ImageUrl))
             {
-                <MudAvatar src="@_badge.ImageUrl" Size="Size.Large" />
+                <MudAvatar Size="Size.Large">
+                    <MudImage Src="@_badge.ImageUrl" Alt="@_badge.Name" />
+                </MudAvatar>
             }
             else
             {

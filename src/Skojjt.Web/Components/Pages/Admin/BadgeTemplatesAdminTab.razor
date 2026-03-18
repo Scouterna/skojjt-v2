@@ -43,7 +43,9 @@ else
                     <div class="d-flex align-center gap-2">
                         @if (!string.IsNullOrEmpty(context.ImageUrl))
                         {
-                            <MudAvatar src="@context.ImageUrl" Size="Size.Small" />
+                            <MudAvatar Size="Size.Small">
+                                <MudImage Src="@context.ImageUrl" Alt="@context.Name" />
+                            </MudAvatar>
                         }
                         <strong>@context.Name</strong>
                     </div>

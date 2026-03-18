@@ -67,7 +67,9 @@
                                 <CardHeaderAvatar>
                                     @if (!string.IsNullOrEmpty(badge.ImageUrl))
                                     {
-                                        <MudAvatar src="@badge.ImageUrl" Size="Size.Large" />
+                                        <MudAvatar Size="Size.Large">
+                                            <MudImage Src="@badge.ImageUrl" Alt="@badge.Name" />
+                                        </MudAvatar>
                                     }
                                     else
                                     {
