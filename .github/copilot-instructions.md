@@ -1,3 +1,4 @@
+.markdown
 # Copilot Instructions
 
 ## Project Overview
@@ -63,6 +64,9 @@ Skojjt is a **Blazor Server** attendance tracking system for Swedish scout group
 - The Sammankomst `kod` attribute must be a unique key for the meeting that fits into the DAK XML schema defining it as a string (minLength=3, maxLength=50). It does not have to be an int32 anymore.
 - For 2026, Göteborgs kommun aktivitetsbidrag rates are: Flickor/kvinnor = 9,89 kr per deltagare och sammankomst, Pojkar/män = 8,02 kr per deltagare och sammankomst.
 - Gender is determined from the second-to-last digit of the personnummer (even = female, odd = male).
+
+## MudBlazor Specifics
+- In the MudBlazor version used in this project, `MudAvatar` parameter casing should be lowercase `image` not `Image`.
 
 ## Domain Terminology (Swedish → English)
 | Swedish | English |
