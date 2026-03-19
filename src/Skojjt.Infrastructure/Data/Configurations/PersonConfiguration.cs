@@ -28,8 +28,7 @@ public class PersonConfiguration : IEntityTypeConfiguration<Person>
             .IsRequired();
 
         builder.Property(e => e.BirthDate)
-            .HasColumnName("birth_date")
-            .IsRequired();
+            .HasColumnName("birth_date");
 
         builder.Property(e => e.PersonalNumber)
             .HasColumnName("personal_number")

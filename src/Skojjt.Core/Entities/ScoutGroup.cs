@@ -58,6 +58,13 @@ public class ScoutGroup
 
     public bool AttendanceInclHike { get; set; } = true;
 
+    /// <summary>
+    /// Next available ScoutnetId for locally created troops (not from Scoutnet).
+    /// Reserved range starts at 250. Real Scoutnet IDs are auto-increment
+    /// starting well above 1000, so this range is safe from collisions.
+    /// </summary>
+    public int NextLocalTroopId { get; set; } = 250;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

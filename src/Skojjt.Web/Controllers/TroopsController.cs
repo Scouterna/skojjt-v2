@@ -96,9 +96,27 @@ public class TroopsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<TroopSummaryDto>> Create([FromBody] TroopCreateDto request, [FromQuery] int scoutGroupId)
     {
+        var scoutnetId = request.ScoutnetId;
+
+        // Local troop: allocate an ID from the scout group's reserved range.
+        // Uses a transaction so the NextLocalTroopId increment is atomic with troop creation.
+        if (scoutnetId <= 0)
+        {
+            var scoutGroup = await _unitOfWork.ScoutGroups.GetByIdAsync(scoutGroupId);
+            if (scoutGroup == null)
+                return NotFound($"Scout group {scoutGroupId} not found");
+
+            if (scoutGroup.NextLocalTroopId > 1000)
+                return Conflict("Local troop ID range (250-1000) exhausted for this scout group");
+
+            scoutnetId = scoutGroup.NextLocalTroopId;
+            scoutGroup.NextLocalTroopId++;
+            await _unitOfWork.ScoutGroups.UpdateAsync(scoutGroup);
+        }
+
         var troop = new Troop
         {
-            ScoutnetId = request.ScoutnetId,
+            ScoutnetId = scoutnetId,
             ScoutGroupId = scoutGroupId,
             SemesterId = request.SemesterId,
             Name = request.Name,

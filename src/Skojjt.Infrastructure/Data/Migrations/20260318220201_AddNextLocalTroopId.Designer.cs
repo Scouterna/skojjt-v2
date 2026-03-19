@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Skojjt.Infrastructure.Data;
 
 #nullable disable
 
-namespace Skojjt.Infrastructure.Migrations
+namespace Skojjt.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(SkojjtDbContext))]
-    partial class SkojjtDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260318220201_AddNextLocalTroopId")]
+    partial class AddNextLocalTroopId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -404,7 +407,7 @@ namespace Skojjt.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("alt_email");
 
-                    b.Property<DateOnly?>("BirthDate")
+                    b.Property<DateOnly>("BirthDate")
                         .HasColumnType("date")
                         .HasColumnName("birth_date");
 

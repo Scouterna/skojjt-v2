@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Skojjt.Infrastructure.Services;
@@ -16,6 +17,11 @@ public class AdminController : ControllerBase
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<AdminController> _logger;
 
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     public AdminController(
         DataMigrationService migrationService,
         IWebHostEnvironment environment,
@@ -28,37 +34,64 @@ public class AdminController : ControllerBase
 
     /// <summary>
     /// Import data from JSON files (development only).
+    /// Streams progress as Server-Sent Events (text/event-stream).
     /// </summary>
     [HttpPost("migrate")]
-    public async Task<IActionResult> MigrateData([FromBody] MigrateRequest request, CancellationToken cancellationToken)
+    public async Task MigrateData([FromBody] MigrateRequest? request = null, CancellationToken cancellationToken = default)
     {
         // Only allow in development
         if (!_environment.IsDevelopment())
         {
-            return Forbid("Migration is only available in development environment");
+            Response.StatusCode = 403;
+            return;
         }
 
-        if (string.IsNullOrEmpty(request.ImportDirectory))
+        var importDir = request?.ImportDirectory;
+        if (string.IsNullOrEmpty(importDir))
         {
-            return BadRequest("ImportDirectory is required");
+            // Default: scripts/migration/json_export relative to the solution root.
+            // ContentRootPath points at src/Skojjt.Web/, so go up two levels.
+            var solutionRoot = Path.GetFullPath(Path.Combine(_environment.ContentRootPath, "..", ".."));
+            importDir = Path.Combine(solutionRoot, "scripts", "migration", "json_export");
         }
 
-        if (!Directory.Exists(request.ImportDirectory))
+        if (!Path.IsPathRooted(importDir))
         {
-            return BadRequest($"Directory not found: {request.ImportDirectory}");
+            var solutionRoot = Path.GetFullPath(Path.Combine(_environment.ContentRootPath, "..", ".."));
+            importDir = Path.GetFullPath(Path.Combine(solutionRoot, importDir));
         }
 
-        _logger.LogInformation("Starting migration from {Directory}", request.ImportDirectory);
+        if (!Directory.Exists(importDir))
+        {
+            Response.StatusCode = 400;
+            Response.ContentType = "application/json";
+            await Response.WriteAsJsonAsync(new { error = $"Directory not found: {importDir}" }, cancellationToken);
+            return;
+        }
+
+        _logger.LogInformation("Starting migration from {Directory}", importDir);
+
+        // Stream progress as Server-Sent Events
+        Response.Headers.ContentType = "text/event-stream";
+        Response.Headers.CacheControl = "no-cache";
+
+        Func<MigrationProgress, Task> progress = async p =>
+        {
+            var json = JsonSerializer.Serialize(p, JsonOptions);
+            await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
+            await Response.Body.FlushAsync(cancellationToken);
+        };
 
         try
         {
-            await _migrationService.ImportAllAsync(request.ImportDirectory, cancellationToken);
-            return Ok(new { message = "Migration completed successfully" });
+            await _migrationService.ImportAllAsync(importDir, cancellationToken, progress);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Migration failed");
-            return StatusCode(500, new { error = ex.Message });
+            var errorJson = JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
+            await Response.WriteAsync($"event: error\ndata: {errorJson}\n\n", cancellationToken);
+            await Response.Body.FlushAsync(cancellationToken);
         }
     }
 
@@ -79,4 +112,4 @@ public class AdminController : ControllerBase
     }
 }
 
-public record MigrateRequest(string ImportDirectory);
+public record MigrateRequest(string? ImportDirectory = null);

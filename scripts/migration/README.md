@@ -32,15 +32,22 @@ Wait until you see: `Now listening on: http://localhost:5286`
 
 In a **separate terminal**:
 
-**PowerShell:**
-```powershell
-Invoke-RestMethod -Method Post -Uri "http://localhost:5286/api/v1/admin/migrate" -ContentType "application/json" -Body '{"importDirectory":"C:\\src\\skojjt-v2\\scripts\\migration\\json_export"}'
+**curl (recommended — shows live progress):**
+```bash
+curl -N -X POST "http://localhost:5286/api/v1/admin/migrate"
 ```
 
-**curl:**
-```bash
-curl -X POST "http://localhost:5286/api/v1/admin/migrate" -H "Content-Type: application/json" -d "{\"importDirectory\":\"C:\\\\src\\\\skojjt-v2\\\\scripts\\\\migration\\\\json_export\"}"
+**PowerShell:**
+```powershell
+Invoke-RestMethod -Method Post -Uri "http://localhost:5286/api/v1/admin/migrate"
 ```
+
+The endpoint streams progress as Server-Sent Events, so with `curl -N` you'll see each import step as it completes.
+
+> **Note:** The endpoint defaults to `scripts/migration/json_export` relative to the solution root. To specify a custom directory, pass it in the request body:
+> ```bash
+> curl -N -X POST "http://localhost:5286/api/v1/admin/migrate" -H "Content-Type: application/json" -d '{"importDirectory":"C:/path/to/json_export"}'
+> ```
 
 ### 5. Verify Import
 
@@ -73,13 +80,29 @@ Then follow Quick Start steps 1-5 above.
 
 ### Option B: Use Managed Datastore Export
 
+**Bash:**
 ```bash
-gsutil mb -l europe-north1 -p skojjt gs://skojjt-migration-export
-gcloud datastore export gs://skojjt-migration-export/$(date +%Y%m%d) --project=skojjt
-gsutil -m cp -r gs://skojjt-migration-export/YYYYMMDD ./datastore_export/
-python convert_export.py --export-dir ./datastore_export/YYYYMMDD --output-dir ./raw_export
+gcloud storage buckets create gs://skojjt-migration-export --location=europe-north1 --project=skojjt
+d=$(date +%Y%m%d)
+gcloud datastore export "gs://skojjt-migration-export/$d" --project=skojjt
+mkdir datastore_export
+gcloud storage cp --recursive "gs://skojjt-migration-export/$d" ./datastore_export/
+python convert_export.py --export-dir "./datastore_export/$d" --output-dir ./raw_export
 python transform_data.py --input-dir ./raw_export --output-dir ./json_export
 ```
+
+**PowerShell:**
+```powershell
+gcloud storage buckets create gs://skojjt-migration-export --location=europe-north1 --project=skojjt
+$d = $(Get-Date -Format 'yyyyMMdd')
+gcloud datastore export "gs://skojjt-migration-export/$d" --project=skojjt
+mkdir datastore_export
+gcloud storage cp --recursive gs://skojjt-migration-export/$d ./datastore_export/
+python convert_export.py --export-dir ./datastore_export/$d --output-dir ./raw_export
+python transform_data.py --input-dir ./raw_export --output-dir ./json_export
+```
+
+> **Note:** The variable `$d` contains the date for the export in the format `YYYYMMDD` (e.g., `20250715`).
 
 ---
 
@@ -91,6 +114,14 @@ python transform_data.py --input-dir ./raw_export --output-dir ./json_export
 | ScoutGroup | Scoutnet group ID (integer) | `12345` |
 | Troop | `{scoutnet_troop_id}/{scout_group_id}/{semester_id}` | `18309/12345/20201` |
 | Meeting | `{troop_id}-{YYYY-MM-DD}` | `18309/12345/20201-2020-10-15` |
+
+### Troop ID Resolution
+
+Old Datastore data sometimes has string-based troop IDs (from before Scoutnet integration). The transform script resolves these in three steps:
+
+1. **Numeric** — If the raw ID is already numeric, use it directly.
+2. **Name matching** — Find the same troop name in the same scout group from a different semester where it has a valid numeric Scoutnet ID.
+3. **Reserved range** — For the few troops that can't be resolved, assign an ID from the reserved range **250–1000**. Real Scoutnet IDs are auto-increment starting well above 1000, so this range is safe.
 
 ---
 

@@ -126,6 +126,11 @@ public class DataMigrationService
     private readonly ILogger<DataMigrationService> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
 
+    // Pre-loaded lookup caches shared across import steps.
+    // Not thread-safe — this service must be scoped (one instance per import operation).
+    private Dictionary<(int ScoutnetId, int ScoutGroupId, int SemesterId), int> _troopLookup = [];
+    private Dictionary<(int TroopId, DateOnly MeetingDate), int> _meetingLookup = [];
+
     public DataMigrationService(SkojjtDbContext context, ILogger<DataMigrationService> logger)
     {
         _context = context;
@@ -140,50 +145,90 @@ public class DataMigrationService
 
         // Use a generous command timeout for large migration operations (10 minutes)
         _context.Database.SetCommandTimeout(TimeSpan.FromMinutes(10));
+
+        // Disable auto-detect changes for bulk import performance
+        _context.ChangeTracker.AutoDetectChangesEnabled = false;
     }
 
-	/// <summary>
-	/// Import all data from the specified directory.
-	/// </summary>
-	public async Task ImportAllAsync(string importDirectory, CancellationToken cancellationToken = default)
-	{
-		_logger.LogInformation("Starting data import from {Directory}", importDirectory);
+    /// <summary>
+    /// Resolves a troop's database ID from its ScoutnetId, ScoutGroupId, and SemesterId using the cached lookup.
+    /// </summary>
+    private int? ResolveTroopId(int scoutnetId, int scoutGroupId, int semesterId)
+    {
+        return _troopLookup.TryGetValue((scoutnetId, scoutGroupId, semesterId), out var troopId) ? troopId : null;
+    }
 
-		var stats = new Dictionary<string, int>();
-		var totalSw = System.Diagnostics.Stopwatch.StartNew();
+    /// <summary>
+    /// Resolves a meeting's database ID from its TroopId and MeetingDate using the cached lookup.
+    /// </summary>
+    private int? ResolveMeetingId(int troopId, DateOnly meetingDate)
+    {
+        return _meetingLookup.TryGetValue((troopId, meetingDate), out var meetingId) ? meetingId : null;
+    }
 
-		// Import in dependency order
-		stats["semesters"] = await ImportStepAsync("semesters", () => ImportSemestersAsync(Path.Combine(importDirectory, "semesters.json"), cancellationToken));
-		stats["scout_groups"] = await ImportStepAsync("scout_groups", () => ImportScoutGroupsAsync(Path.Combine(importDirectory, "scout_groups.json"), cancellationToken));
-		stats["persons"] = await ImportStepAsync("persons", () => ImportPersonsAsync(Path.Combine(importDirectory, "persons.json"), cancellationToken));
-		stats["troops"] = await ImportStepAsync("troops", () => ImportTroopsAsync(Path.Combine(importDirectory, "troops.json"), cancellationToken));
-		stats["troop_persons"] = await ImportStepAsync("troop_persons", () => ImportTroopPersonsAsync(Path.Combine(importDirectory, "troop_persons.json"), cancellationToken));
-		stats["meetings"] = await ImportStepAsync("meetings", () => ImportMeetingsAsync(Path.Combine(importDirectory, "meetings.json"), cancellationToken));
-		stats["meeting_attendances"] = await ImportStepAsync("meeting_attendances", () => ImportMeetingAttendancesAsync(Path.Combine(importDirectory, "meeting_attendances.json"), cancellationToken));
-		stats["users"] = await ImportStepAsync("users", () => ImportUsersAsync(Path.Combine(importDirectory, "users.json"), cancellationToken));
-		stats["badge_templates"] = await ImportStepAsync("badge_templates", () => ImportBadgeTemplatesAsync(Path.Combine(importDirectory, "badge_templates.json"), cancellationToken));
-		stats["badges"] = await ImportStepAsync("badges", () => ImportBadgesAsync(Path.Combine(importDirectory, "badges.json"), cancellationToken));
-		stats["troop_badges"] = await ImportStepAsync("troop_badges", () => ImportTroopBadgesAsync(Path.Combine(importDirectory, "troop_badges.json"), cancellationToken));
-		stats["badge_parts_done"] = await ImportStepAsync("badge_parts_done", () => ImportBadgePartsDoneAsync(Path.Combine(importDirectory, "badge_parts_done.json"), cancellationToken));
-		stats["badges_completed"] = await ImportStepAsync("badges_completed", () => ImportBadgesCompletedAsync(Path.Combine(importDirectory, "badges_completed.json"), cancellationToken));
+    /// <summary>
+    /// Saves changes, clears the change tracker, and logs progress.
+    /// Clearing the tracker prevents slowdown as entities accumulate during bulk imports.
+    /// </summary>
+    private async Task SaveAndClearAsync(CancellationToken cancellationToken)
+    {
+        _context.ChangeTracker.DetectChanges();
+        await _context.SaveChangesAsync(cancellationToken);
+        _context.ChangeTracker.Clear();
+    }
 
-		totalSw.Stop();
-		_logger.LogInformation("Data import complete in {Elapsed}!", totalSw.Elapsed);
-		foreach (var (table, count) in stats)
-		{
-			_logger.LogInformation("  {Table}: {Count} records", table, count);
-		}
-	}
+    /// <summary>
+    /// Import all data from the specified directory.
+    /// </summary>
+    public async Task ImportAllAsync(string importDirectory, CancellationToken cancellationToken = default, Func<MigrationProgress, Task>? progress = null)
+    {
+        _logger.LogInformation("Starting data import from {Directory}", importDirectory);
 
-	private async Task<int> ImportStepAsync(string stepName, Func<Task<int>> importFunc)
-	{
-		var sw = System.Diagnostics.Stopwatch.StartNew();
-		_logger.LogInformation("Starting import step: {Step}...", stepName);
-		var count = await importFunc();
-		sw.Stop();
-		_logger.LogInformation("Completed {Step}: {Count} records in {Elapsed}", stepName, count, sw.Elapsed);
-		return count;
-	}
+        var stats = new Dictionary<string, int>();
+        var totalSw = System.Diagnostics.Stopwatch.StartNew();
+        var totalSteps = 13;
+        var currentStep = 0;
+
+        // Import in dependency order
+        stats["semesters"] = await ImportStepAsync("semesters", ++currentStep, totalSteps, progress, () => ImportSemestersAsync(Path.Combine(importDirectory, "semesters.json"), cancellationToken));
+        stats["scout_groups"] = await ImportStepAsync("scout_groups", ++currentStep, totalSteps, progress, () => ImportScoutGroupsAsync(Path.Combine(importDirectory, "scout_groups.json"), cancellationToken));
+        stats["persons"] = await ImportStepAsync("persons", ++currentStep, totalSteps, progress, () => ImportPersonsAsync(Path.Combine(importDirectory, "persons.json"), cancellationToken));
+        stats["troops"] = await ImportStepAsync("troops", ++currentStep, totalSteps, progress, () => ImportTroopsAsync(Path.Combine(importDirectory, "troops.json"), cancellationToken));
+        await UpdateNextLocalTroopIdsAsync(cancellationToken);
+        stats["troop_persons"] = await ImportStepAsync("troop_persons", ++currentStep, totalSteps, progress, () => ImportTroopPersonsAsync(Path.Combine(importDirectory, "troop_persons.json"), cancellationToken));
+        stats["meetings"] = await ImportStepAsync("meetings", ++currentStep, totalSteps, progress, () => ImportMeetingsAsync(Path.Combine(importDirectory, "meetings.json"), cancellationToken));
+        stats["meeting_attendances"] = await ImportStepAsync("meeting_attendances", ++currentStep, totalSteps, progress, () => ImportMeetingAttendancesAsync(Path.Combine(importDirectory, "meeting_attendances.json"), cancellationToken));
+        stats["users"] = await ImportStepAsync("users", ++currentStep, totalSteps, progress, () => ImportUsersAsync(Path.Combine(importDirectory, "users.json"), cancellationToken));
+        stats["badge_templates"] = await ImportStepAsync("badge_templates", ++currentStep, totalSteps, progress, () => ImportBadgeTemplatesAsync(Path.Combine(importDirectory, "badge_templates.json"), cancellationToken));
+        stats["badges"] = await ImportStepAsync("badges", ++currentStep, totalSteps, progress, () => ImportBadgesAsync(Path.Combine(importDirectory, "badges.json"), cancellationToken));
+        stats["troop_badges"] = await ImportStepAsync("troop_badges", ++currentStep, totalSteps, progress, () => ImportTroopBadgesAsync(Path.Combine(importDirectory, "troop_badges.json"), cancellationToken));
+        stats["badge_parts_done"] = await ImportStepAsync("badge_parts_done", ++currentStep, totalSteps, progress, () => ImportBadgePartsDoneAsync(Path.Combine(importDirectory, "badge_parts_done.json"), cancellationToken));
+        stats["badges_completed"] = await ImportStepAsync("badges_completed", ++currentStep, totalSteps, progress, () => ImportBadgesCompletedAsync(Path.Combine(importDirectory, "badges_completed.json"), cancellationToken));
+
+        totalSw.Stop();
+        _logger.LogInformation("Data import complete in {Elapsed}!", totalSw.Elapsed);
+        foreach (var (table, count) in stats)
+        {
+            _logger.LogInformation("  {Table}: {Count} records", table, count);
+        }
+
+        if (progress != null)
+            await progress(new MigrationProgress("done", totalSteps, totalSteps, 0, totalSw.Elapsed));
+    }
+
+    private async Task<int> ImportStepAsync(string stepName, int step, int totalSteps, Func<MigrationProgress, Task>? progress, Func<Task<int>> importFunc)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        _logger.LogInformation("Starting import step: {Step}...", stepName);
+        if (progress != null)
+            await progress(new MigrationProgress(stepName, step, totalSteps, 0, null));
+        var count = await importFunc();
+        sw.Stop();
+        _logger.LogInformation("Completed {Step}: {Count} records in {Elapsed}", stepName, count, sw.Elapsed);
+        if (progress != null)
+            await progress(new MigrationProgress(stepName, step, totalSteps, count, sw.Elapsed));
+        return count;
+    }
 
     private async Task<List<T>> LoadJsonFileAsync<T>(string filePath, CancellationToken cancellationToken)
     {
@@ -200,18 +245,19 @@ public class DataMigrationService
     private async Task<int> ImportSemestersAsync(string filePath, CancellationToken cancellationToken)
     {
         var items = await LoadJsonFileAsync<SemesterImport>(filePath, cancellationToken);
+        var existingIds = (await _context.Semesters.Select(s => s.Id).ToListAsync(cancellationToken)).ToHashSet();
         var count = 0;
 
         foreach (var item in items)
         {
-            if (await _context.Semesters.AnyAsync(s => s.Id == item.Id, cancellationToken))
+            if (!existingIds.Add(item.Id))
                 continue;
 
-            await _context.Semesters.AddAsync(new Semester(item.Id, item.Year, item.IsAutumn));
+            _context.Semesters.Add(new Semester(item.Id, item.Year, item.IsAutumn));
             count++;
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveAndClearAsync(cancellationToken);
         _logger.LogInformation("Imported {Count} semesters", count);
         return count;
     }
@@ -219,6 +265,7 @@ public class DataMigrationService
     private async Task<int> ImportScoutGroupsAsync(string filePath, CancellationToken cancellationToken)
     {
         var items = await LoadJsonFileAsync<ScoutGroupImport>(filePath, cancellationToken);
+        var existingIds = (await _context.ScoutGroups.Select(s => s.Id).ToListAsync(cancellationToken)).ToHashSet();
         var count = 0;
 
         foreach (var item in items)
@@ -226,7 +273,7 @@ public class DataMigrationService
             if (item.Id <= 0)
                 continue;
 
-            if (await _context.ScoutGroups.AnyAsync(s => s.Id == item.Id, cancellationToken))
+            if (!existingIds.Add(item.Id))
                 continue;
 
             _context.ScoutGroups.Add(new ScoutGroup
@@ -253,7 +300,7 @@ public class DataMigrationService
             count++;
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveAndClearAsync(cancellationToken);
         _logger.LogInformation("Imported {Count} scout groups", count);
         return count;
     }
@@ -262,12 +309,17 @@ public class DataMigrationService
     {
         var items = await LoadJsonFileAsync<PersonImport>(filePath, cancellationToken);
         var count = 0;
-        var validScoutGroups = await _context.ScoutGroups.Select(s => s.Id).ToListAsync(cancellationToken);
-		var validPersons = await _context.Persons.Select(s => s.Id).ToListAsync(cancellationToken);
+        var validScoutGroups = (await _context.ScoutGroups.Select(s => s.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var existingPersonIds = (await _context.Persons.Select(s => s.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var existingScoutGroupPersons = (await _context.ScoutGroupPersons
+            .Select(sgp => new { sgp.PersonId, sgp.ScoutGroupId })
+            .ToListAsync(cancellationToken))
+            .Select(sgp => (sgp.PersonId, sgp.ScoutGroupId))
+            .ToHashSet();
 
-		var scoutGroupPersonsToAdd = new List<ScoutGroupPerson>();
+        var scoutGroupPersonsToAdd = new List<ScoutGroupPerson>();
 
-		foreach (var item in items)
+        foreach (var item in items)
         {
             // Skip invalid or out-of-range IDs
             if (item.Id <= 0 || item.Id > int.MaxValue)
@@ -276,25 +328,24 @@ public class DataMigrationService
                 continue;
             }
 
-			var personId = (int)item.Id;
+            var personId = (int)item.Id;
 
-			if (item.ScoutGroupId != 0 && !validScoutGroups.Contains(item.ScoutGroupId))
-			{
-				scoutGroupPersonsToAdd.Add(new ScoutGroupPerson
-				{
-					PersonId = personId,
-					ScoutGroupId = item.ScoutGroupId
-				});
-			}
+            // Collect additional ScoutGroupPerson entries for persons that already exist
+            if (item.ScoutGroupId > 0 && validScoutGroups.Contains(item.ScoutGroupId)
+                && existingPersonIds.Contains(personId)
+                && !existingScoutGroupPersons.Contains((personId, item.ScoutGroupId)))
+            {
+                scoutGroupPersonsToAdd.Add(new ScoutGroupPerson
+                {
+                    PersonId = personId,
+                    ScoutGroupId = item.ScoutGroupId
+                });
+            }
 
-			if (validPersons.Contains(personId))
-				continue;
-
-            if (await _context.Persons.AnyAsync(p => p.Id == personId, cancellationToken))
+            if (!existingPersonIds.Add(personId))
                 continue;
 
-
-			_context.Persons.Add(new Person
+            _context.Persons.Add(new Person
             {
                 Id = personId,
                 FirstName = item.FirstName.Substring(0, Math.Min(item.FirstName.Length, 50)),
@@ -319,69 +370,74 @@ public class DataMigrationService
             });
 
             // Add scout group membership via junction table
-            _context.ScoutGroupPersons.Add(new ScoutGroupPerson
+            if (item.ScoutGroupId > 0 && validScoutGroups.Contains(item.ScoutGroupId))
             {
-                PersonId = personId,
-                ScoutGroupId = item.ScoutGroupId,
-				GroupRoles = item.GroupRoles != null ? string.Join(", ", item.GroupRoles.Select(r => r.Trim())) : null,
-				NotInScoutnet = item.NotInScoutnet ?? false
-			});
+                _context.ScoutGroupPersons.Add(new ScoutGroupPerson
+                {
+                    PersonId = personId,
+                    ScoutGroupId = item.ScoutGroupId,
+                    GroupRoles = item.GroupRoles != null ? string.Join(", ", item.GroupRoles.Select(r => r.Trim())) : null,
+                    NotInScoutnet = item.NotInScoutnet ?? false
+                });
+                existingScoutGroupPersons.Add((personId, item.ScoutGroupId));
+            }
+            else
+            {
+                _logger.LogWarning("Skipping ScoutGroupPerson for person {PersonId} - invalid scout_group_id: {ScoutGroupId}", personId, item.ScoutGroupId);
+            }
 
             count++;
 
             // Batch save to avoid memory issues
             if (count % 1000 == 0)
             {
-                await _context.SaveChangesAsync(cancellationToken);
+                await SaveAndClearAsync(cancellationToken);
                 _logger.LogInformation("  Imported {Count} persons so far...", count);
             }
         }
-		await _context.SaveChangesAsync(cancellationToken);
-		_logger.LogInformation("Imported {Count} persons", count);
+        await SaveAndClearAsync(cancellationToken);
+        _logger.LogInformation("Imported {Count} persons", count);
 
-		_logger.LogInformation("Importing scout group persons");
-		count = 0;
-		foreach (var scoutGroupPerson in scoutGroupPersonsToAdd)
-		{
-			if (await _context.ScoutGroupPersons.AnyAsync(
-				sgp => sgp.PersonId == scoutGroupPerson.PersonId && sgp.ScoutGroupId == scoutGroupPerson.ScoutGroupId, cancellationToken))
-			{
-				continue;
-			}
-			_context.ScoutGroupPersons.Add(scoutGroupPerson);
-			count++;
-			if (count % 1000 == 0)
-			{
-				await _context.SaveChangesAsync(cancellationToken);
-				_logger.LogInformation("  Imported {Count} scout group persons so far...", count);
-			}
-		}
-		await _context.SaveChangesAsync(cancellationToken);
-		_logger.LogInformation("Imported {Count} scout group persons", count);
+        _logger.LogInformation("Importing scout group persons");
+        var sgpCount = 0;
+        foreach (var scoutGroupPerson in scoutGroupPersonsToAdd)
+        {
+            _context.ScoutGroupPersons.Add(scoutGroupPerson);
+            sgpCount++;
+            if (sgpCount % 1000 == 0)
+            {
+                await SaveAndClearAsync(cancellationToken);
+                _logger.LogInformation("  Imported {Count} scout group persons so far...", sgpCount);
+            }
+        }
+        await SaveAndClearAsync(cancellationToken);
+        _logger.LogInformation("Imported {Count} scout group persons", sgpCount);
 
-		return count;
+        return count;
     }
 
     private async Task<int> ImportTroopsAsync(string filePath, CancellationToken cancellationToken)
     {
         var items = await LoadJsonFileAsync<TroopImport>(filePath, cancellationToken);
         var count = 0;
-        var validScoutGroups = await _context.ScoutGroups.Select(s => s.Id).ToListAsync(cancellationToken);
-        var validSemesters = await _context.Semesters.Select(s => s.Id).ToListAsync(cancellationToken);
+        var validScoutGroups = (await _context.ScoutGroups.Select(s => s.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var validSemesters = (await _context.Semesters.Select(s => s.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var existingTroops = (await _context.Troops
+            .Select(t => new { t.ScoutnetId, t.ScoutGroupId, t.SemesterId })
+            .ToListAsync(cancellationToken))
+            .Select(t => (t.ScoutnetId, t.ScoutGroupId, t.SemesterId))
+            .ToHashSet();
 
-		foreach (var item in items)
+        foreach (var item in items)
         {
-			if (await _context.Troops.AnyAsync(p => p.ScoutnetId == item.ScoutnetId && p.ScoutGroupId == item.ScoutGroupId && p.SemesterId == item.SemesterId, cancellationToken))
-					continue;
+            // Validate foreign keys
+            if (item.ScoutnetId == null)
+            {
+                _logger.LogWarning($"Skipping troop - no scoutnet_id. Scout group: {item.ScoutGroupId}, import record {item}");
+                continue;
+            }
 
-			// Validate foreign keys
-			if (item.ScoutnetId == null)
-			{
-				_logger.LogWarning($"Skipping troop - no scoutnet_id. Scout group: {item.ScoutGroupId}, import record {item}");
-				continue;
-			}
-
-			if (item.ScoutGroupId == null || !validScoutGroups.Contains(item.ScoutGroupId.Value))
+            if (item.ScoutGroupId == null || !validScoutGroups.Contains(item.ScoutGroupId.Value))
             {
                 _logger.LogWarning($"Skipping troop {item.ScoutnetId} - invalid scout_group_id: {item.ScoutGroupId}");
                 continue;
@@ -392,6 +448,9 @@ public class DataMigrationService
                 _logger.LogWarning($"Skipping troop {item.ScoutnetId} - invalid semester_id: {item.SemesterId}");
                 continue;
             }
+
+            if (!existingTroops.Add((item.ScoutnetId.Value, item.ScoutGroupId.Value, item.SemesterId.Value)))
+                continue;
 
             _context.Troops.Add(new Troop
             {
@@ -406,22 +465,64 @@ public class DataMigrationService
 
             if (count % 1000 == 0)
             {
-                await _context.SaveChangesAsync(cancellationToken);
+                await SaveAndClearAsync(cancellationToken);
                 _logger.LogInformation("  Imported {Count} troops so far...", count);
             }
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveAndClearAsync(cancellationToken);
         _logger.LogInformation("Imported {Count} troops", count);
+
+        // Build the shared troop lookup cache for subsequent import steps
+        _troopLookup = (await _context.Troops
+            .Select(t => new { t.Id, t.ScoutnetId, t.ScoutGroupId, t.SemesterId })
+            .ToListAsync(cancellationToken))
+            .ToDictionary(t => (t.ScoutnetId, t.ScoutGroupId, t.SemesterId), t => t.Id);
+        _logger.LogInformation("Built troop lookup cache with {Count} entries", _troopLookup.Count);
+
         return count;
+    }
+
+    /// <summary>
+    /// After importing troops, set each scout group's NextLocalTroopId to one past
+    /// the highest ScoutnetId in the reserved range (250-1000) used by that group.
+    /// </summary>
+    private async Task UpdateNextLocalTroopIdsAsync(CancellationToken cancellationToken)
+    {
+        const int rangeStart = 250;
+        const int rangeEnd = 1000;
+
+        var maxByGroup = await _context.Troops
+            .Where(t => t.ScoutnetId >= rangeStart && t.ScoutnetId <= rangeEnd)
+            .GroupBy(t => t.ScoutGroupId)
+            .Select(g => new { ScoutGroupId = g.Key, MaxId = g.Max(t => t.ScoutnetId) })
+            .ToListAsync(cancellationToken);
+
+        foreach (var entry in maxByGroup)
+        {
+            var scoutGroup = await _context.ScoutGroups.FindAsync([entry.ScoutGroupId], cancellationToken);
+            if (scoutGroup != null)
+            {
+                scoutGroup.NextLocalTroopId = entry.MaxId + 1;
+                _logger.LogInformation(
+                    "Set NextLocalTroopId={NextId} for scout group {GroupId}",
+                    scoutGroup.NextLocalTroopId, entry.ScoutGroupId);
+            }
+        }
+
+        await SaveAndClearAsync(cancellationToken);
     }
 
     private async Task<int> ImportTroopPersonsAsync(string filePath, CancellationToken cancellationToken)
     {
         var items = await LoadJsonFileAsync<TroopPersonImport>(filePath, cancellationToken);
         var count = 0;
-        var validTroops = await _context.Troops.Select(t => t.Id).ToListAsync(cancellationToken);
-        var validPersons = await _context.Persons.Select(p => p.Id).ToListAsync(cancellationToken);
+        var validPersons = (await _context.Persons.Select(p => p.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var existingMemberships = (await _context.TroopPersons
+            .Select(tp => new { tp.TroopId, tp.PersonId })
+            .ToListAsync(cancellationToken))
+            .Select(tp => (tp.TroopId, tp.PersonId))
+            .ToHashSet();
 
         foreach (var item in items)
         {
@@ -431,26 +532,25 @@ public class DataMigrationService
 
             var personId = (int)item.PersonId;
 
-			if (!validPersons.Contains(personId))
-			{
-				_logger.LogWarning("Skipping troop person - person not found {item}", item);
-				continue;
-			}
+            if (!validPersons.Contains(personId))
+            {
+                _logger.LogWarning("Skipping troop person - person not found {item}", item);
+                continue;
+            }
 
-			var troop = await _context.Troops.FirstOrDefaultAsync(tp => tp.ScoutnetId == item.ScoutnetTroopId && tp.SemesterId == item.SemesterId, cancellationToken);
-			if (troop == null)
-			{
-				_logger.LogWarning($"Skipping troop person - no troop found. Import record {item}");
-				continue;
-			}
+            var troopId = ResolveTroopId(item.ScoutnetTroopId, item.ScoutGroupId, item.SemesterId);
+            if (troopId == null)
+            {
+                _logger.LogWarning($"Skipping troop person - no troop found. Import record {item}");
+                continue;
+            }
 
-            if (await _context.Set<TroopPerson>().AnyAsync(
-                tp => tp.PersonId == personId && tp.TroopId == troop.Id, cancellationToken))
+            if (!existingMemberships.Add((troopId.Value, personId)))
                 continue;
 
-            _context.Set<TroopPerson>().Add(new TroopPerson
+            _context.TroopPersons.Add(new TroopPerson
             {
-                TroopId = troop.Id,
+                TroopId = troopId.Value,
                 PersonId = personId,
                 IsLeader = item.IsLeader ?? false
             });
@@ -458,12 +558,12 @@ public class DataMigrationService
 
             if (count % 1000 == 0)
             {
-                await _context.SaveChangesAsync(cancellationToken);
+                await SaveAndClearAsync(cancellationToken);
                 _logger.LogInformation("  Imported {Count} troop persons so far...", count);
             }
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveAndClearAsync(cancellationToken);
         _logger.LogInformation("Imported {Count} troop persons", count);
         return count;
     }
@@ -473,54 +573,48 @@ public class DataMigrationService
         var items = await LoadJsonFileAsync<MeetingImport>(filePath, cancellationToken);
         var count = 0;
         var skipped = 0;
-		var validTroops = await _context.Troops.Select(t => t.Id).ToListAsync(cancellationToken);
-		var meetingSet = new HashSet<string>();
+        var existingMeetings = (await _context.Meetings
+            .Select(m => new { m.TroopId, m.MeetingDate })
+            .ToListAsync(cancellationToken))
+            .Select(m => (m.TroopId, m.MeetingDate))
+            .ToHashSet();
 
-		foreach (var item in items)
+        foreach (var item in items)
         {
-			var troop = await _context.Troops.Where(t => t.ScoutnetId == item.ScoutnetTroopId && t.SemesterId == item.SemesterId).FirstOrDefaultAsync(cancellationToken);
-			if (troop == null)
-			{
-				_logger.LogWarning($"Skipping meeting - no troop found. Import record {item}");
-				skipped++;
-				continue;
-			}
-
-			if (item.MeetingDate == null)
-			{
-				_logger.LogWarning($"Skipping meeting - no meeting_date. Import record {item}");
-				skipped++;
-				continue;
-			}
-
-			DateOnly meetingDate = (DateOnly)ParseDate(item.MeetingDate)!;
-			TimeOnly startTime = (TimeOnly)ParseTime(item.StartTime)!;
-
-			var meetingId = $"{troop.Id}+{item.MeetingDate}";
-			if (meetingSet.Contains(meetingId))
-			{
-				_logger.LogWarning("Duplicate meeting {item}", item);
-				skipped++;
-				continue;
-			}
-			meetingSet.Add(meetingId);
-
-			if (await _context.Meetings.AnyAsync(
-				m => m.TroopId == troop.Id && m.MeetingDate == meetingDate, cancellationToken))
-			{
-				skipped++;
-				continue;
-			}
-
-			var meetingName = item.Name;
-			if (meetingName.Length > 50)
-			{
-				meetingName = meetingName.Substring(0, 50);
-			}
-
-			_context.Meetings.Add(new Meeting
+            var troopId = ResolveTroopId(item.ScoutnetTroopId, item.GroupId, item.SemesterId);
+            if (troopId == null)
             {
-                TroopId = troop.Id,
+                _logger.LogWarning($"Skipping meeting - no troop found. Import record {item}");
+                skipped++;
+                continue;
+            }
+
+            if (item.MeetingDate == null)
+            {
+                _logger.LogWarning($"Skipping meeting - no meeting_date. Import record {item}");
+                skipped++;
+                continue;
+            }
+
+            DateOnly meetingDate = (DateOnly)ParseDate(item.MeetingDate)!;
+            TimeOnly startTime = (TimeOnly)ParseTime(item.StartTime)!;
+
+            if (!existingMeetings.Add((troopId.Value, meetingDate)))
+            {
+                _logger.LogWarning("Duplicate meeting {item}", item);
+                skipped++;
+                continue;
+            }
+
+            var meetingName = item.Name;
+            if (meetingName.Length > 50)
+            {
+                meetingName = meetingName.Substring(0, 50);
+            }
+
+            _context.Meetings.Add(new Meeting
+            {
+                TroopId = troopId.Value,
                 MeetingDate = meetingDate,
                 StartTime = startTime,
                 Name = meetingName,
@@ -531,13 +625,21 @@ public class DataMigrationService
 
             if (count % 1000 == 0)
             {
-                await _context.SaveChangesAsync(cancellationToken);
+                await SaveAndClearAsync(cancellationToken);
                 _logger.LogInformation("  Imported {Count} meetings so far...", count);
             }
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveAndClearAsync(cancellationToken);
         _logger.LogInformation("Imported {Count} meetings (skipped {Skipped} invalid)", count, skipped);
+
+        // Build the shared meeting lookup cache for attendance import
+        _meetingLookup = (await _context.Meetings
+            .Select(m => new { m.Id, m.TroopId, m.MeetingDate })
+            .ToListAsync(cancellationToken))
+            .ToDictionary(m => (m.TroopId, m.MeetingDate), m => m.Id);
+        _logger.LogInformation("Built meeting lookup cache with {Count} entries", _meetingLookup.Count);
+
         return count;
     }
 
@@ -546,8 +648,12 @@ public class DataMigrationService
         var items = await LoadJsonFileAsync<MeetingAttendanceImport>(filePath, cancellationToken);
         var count = 0;
         var skipped = 0;
-        var validMeetings = await _context.Meetings.Select(m => m.Id).ToListAsync(cancellationToken);
-        var validPersons = await _context.Persons.Select(p => p.Id).ToListAsync(cancellationToken);
+        var validPersons = (await _context.Persons.Select(p => p.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var existingAttendances = (await _context.Set<MeetingAttendance>()
+            .Select(ma => new { ma.MeetingId, ma.PersonId })
+            .ToListAsync(cancellationToken))
+            .Select(ma => (ma.MeetingId, ma.PersonId))
+            .ToHashSet();
 
         foreach (var item in items)
         {
@@ -558,42 +664,51 @@ public class DataMigrationService
                 continue;
             }
 
-			var personId = (int)item.PersonId;
+            var personId = (int)item.PersonId;
 
             if (!validPersons.Contains(personId))
             {
                 skipped++;
                 continue;
             }
-			var troop = await _context.Troops.Where(t => t.ScoutnetId == item.TroopScoutnetId && t.SemesterId == item.SemesterId).FirstOrDefaultAsync(cancellationToken);
-			if (troop == null)
-			{
-				skipped++;
-				continue;
-			}
-			var meetingDate = DateOnly.Parse(item.MeetingDate);
-			var meeting = await _context.Meetings.Where(m => m.TroopId == troop.Id && m.MeetingDate == meetingDate).FirstOrDefaultAsync(cancellationToken);
-            if (meeting == null)
+
+            var troopId = ResolveTroopId((int)item.TroopScoutnetId, (int)item.GroupId, item.SemesterId);
+            if (troopId == null)
             {
                 skipped++;
                 continue;
-			}
-			_context.Set<MeetingAttendance>().Add(new MeetingAttendance
+            }
+
+            var meetingDate = DateOnly.Parse(item.MeetingDate);
+            var meetingId = ResolveMeetingId(troopId.Value, meetingDate);
+            if (meetingId == null)
             {
-                MeetingId = meeting.Id,
+                skipped++;
+                continue;
+            }
+
+            if (!existingAttendances.Add((meetingId.Value, personId)))
+            {
+                skipped++;
+                continue;
+            }
+
+            _context.Set<MeetingAttendance>().Add(new MeetingAttendance
+            {
+                MeetingId = meetingId.Value,
                 PersonId = personId
             });
             count++;
 
             if (count % 5000 == 0)
             {
-                await _context.SaveChangesAsync(cancellationToken);
+                await SaveAndClearAsync(cancellationToken);
                 _logger.LogInformation("  Imported {Count} meeting attendances so far...", count);
             }
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Imported {Count} meeting attendances", count);
+        await SaveAndClearAsync(cancellationToken);
+        _logger.LogInformation("Imported {Count} meeting attendances (skipped {Skipped})", count, skipped);
         return count;
     }
 
@@ -601,14 +716,14 @@ public class DataMigrationService
     {
         var items = await LoadJsonFileAsync<UserImport>(filePath, cancellationToken);
         var count = 0;
-        //var validScoutGroups = await _context.ScoutGroups.Select(s => s.Id).ToListAsync(cancellationToken);
+        var existingEmails = (await _context.Users.Select(u => u.Email).ToListAsync(cancellationToken)).ToHashSet();
 
         foreach (var item in items)
         {
             if (string.IsNullOrEmpty(item.Id) || string.IsNullOrEmpty(item.Email))
                 continue;
 
-            if (await _context.Users.AnyAsync(u => u.Email == item.Email, cancellationToken))
+            if (!existingEmails.Add(item.Email))
                 continue;
 
             _context.Users.Add(new User
@@ -616,15 +731,11 @@ public class DataMigrationService
                 Id = item.Id,
                 Email = item.Email,
                 Name = item.Name,
-                //ScoutGroupId = item.ScoutGroupId.HasValue && validScoutGroups.Contains(item.ScoutGroupId.Value) ? item.ScoutGroupId : null,
-                //ActiveSemesterId = null, // Will be set by user
-                //HasAccess = item.HasAccess ?? false,
-                //IsAdmin = item.IsAdmin ?? false
             });
             count++;
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveAndClearAsync(cancellationToken);
         _logger.LogInformation("Imported {Count} users", count);
         return count;
     }
@@ -641,9 +752,11 @@ public class DataMigrationService
                 "ALTER SEQUENCE badge_templates_id_seq RESTART WITH 1", cancellationToken);
         }
 
+        var existingNames = (await _context.BadgeTemplates.Select(bt => bt.Name).ToListAsync(cancellationToken)).ToHashSet();
+
         foreach (var item in items)
         {
-            if (await _context.BadgeTemplates.AnyAsync(bt => bt.Name == item.Name, cancellationToken))
+            if (!existingNames.Add(item.Name ?? ""))
                 continue;
 
             _context.BadgeTemplates.Add(new BadgeTemplate
@@ -659,7 +772,7 @@ public class DataMigrationService
             count++;
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveAndClearAsync(cancellationToken);
         _logger.LogInformation("Imported {Count} badge templates", count);
         return count;
     }
@@ -668,7 +781,7 @@ public class DataMigrationService
     {
         var items = await LoadJsonFileAsync<BadgeImport>(filePath, cancellationToken);
         var count = 0;
-        var validScoutGroups = await _context.ScoutGroups.Select(s => s.Id).ToListAsync(cancellationToken);
+        var existingBadgeIds = (await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken)).ToHashSet();
 
         // Use explicit IDs from the import to maintain mapping
         foreach (var item in items)
@@ -682,7 +795,7 @@ public class DataMigrationService
                 continue;
             }
 
-            if (await _context.Badges.AnyAsync(b => b.Id == item.Id, cancellationToken))
+            if (!existingBadgeIds.Add(item.Id))
                 continue;
 
             // Use raw SQL to insert with explicit ID
@@ -718,37 +831,40 @@ public class DataMigrationService
     {
         var items = await LoadJsonFileAsync<TroopBadgeImport>(filePath, cancellationToken);
         var count = 0;
-		var skipped = 0;
-		var validTroops = await _context.Troops.Select(t => t.Id).ToListAsync(cancellationToken);
-        var validBadges = await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken);
+        var skipped = 0;
+        var validBadges = (await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken)).ToHashSet();
 
         foreach (var item in items)
         {
-			//if (string.IsNullOrEmpty(item.TroopId) || !validTroops.Contains(item.TroopId) || !validBadges.Contains(item.BadgeId))
-			//    continue;
-
-			//if (await _context.Set<TroopBadge>().AnyAsync(
-			//    tb => tb.TroopId == item.TroopId && tb.BadgeId == item.BadgeId, cancellationToken))
-			//    continue;
-
-			var troop = await _context.Troops.Where(t => t.ScoutnetId == item.ScoutnetTroopId && t.SemesterId == item.SemesterId).FirstOrDefaultAsync(cancellationToken);
-			if (troop == null)
-			{
-				skipped++;
-				continue;
-			}
-
-			_context.Set<TroopBadge>().Add(new TroopBadge
+            var troopId = ResolveTroopId(item.ScoutnetTroopId, item.ScoutGroupId, item.SemesterId);
+            if (troopId == null)
             {
-                Troop = troop,
+                skipped++;
+                continue;
+            }
+
+            if (!validBadges.Contains(item.BadgeId))
+            {
+                skipped++;
+                continue;
+            }
+
+            _context.Set<TroopBadge>().Add(new TroopBadge
+            {
+                TroopId = troopId.Value,
                 BadgeId = item.BadgeId,
                 SortOrder = item.SortOrder
             });
             count++;
+
+            if (count % 1000 == 0)
+            {
+                await SaveAndClearAsync(cancellationToken);
+            }
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Imported {Count} troop badges", count);
+        await SaveAndClearAsync(cancellationToken);
+        _logger.LogInformation("Imported {Count} troop badges (skipped {Skipped})", count, skipped);
         return count;
     }
 
@@ -756,8 +872,13 @@ public class DataMigrationService
     {
         var items = await LoadJsonFileAsync<BadgePartDoneImport>(filePath, cancellationToken);
         var count = 0;
-        var validPersons = await _context.Persons.Select(p => p.Id).ToListAsync(cancellationToken);
-        var validBadges = await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken);
+        var validPersons = (await _context.Persons.Select(p => p.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var validBadges = (await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var existingParts = (await _context.Set<BadgePartDone>()
+            .Select(bp => new { bp.PersonId, bp.BadgeId, bp.PartIndex, bp.IsScoutPart })
+            .ToListAsync(cancellationToken))
+            .Select(bp => (bp.PersonId, bp.BadgeId, bp.PartIndex, bp.IsScoutPart))
+            .ToHashSet();
 
         foreach (var item in items)
         {
@@ -770,9 +891,8 @@ public class DataMigrationService
             if (!validPersons.Contains(personId) || !validBadges.Contains(item.BadgeId))
                 continue;
 
-            if (await _context.Set<BadgePartDone>().AnyAsync(
-                bp => bp.PersonId == personId && bp.BadgeId == item.BadgeId && 
-                      bp.PartIndex == item.PartIndex && bp.IsScoutPart == item.IsScoutPart, cancellationToken))
+            var isScoutPart = item.IsScoutPart ?? true;
+            if (!existingParts.Add((personId, item.BadgeId, item.PartIndex, isScoutPart)))
                 continue;
 
             _context.Set<BadgePartDone>().Add(new BadgePartDone
@@ -780,7 +900,7 @@ public class DataMigrationService
                 PersonId = personId,
                 BadgeId = item.BadgeId,
                 PartIndex = item.PartIndex,
-                IsScoutPart = item.IsScoutPart ?? true,
+                IsScoutPart = isScoutPart,
                 ExaminerName = item.ExaminerName,
                 CompletedDate = ParseDate(item.CompletedDate) ?? DateOnly.FromDateTime(DateTime.Now)
             });
@@ -788,11 +908,11 @@ public class DataMigrationService
 
             if (count % 1000 == 0)
             {
-                await _context.SaveChangesAsync(cancellationToken);
+                await SaveAndClearAsync(cancellationToken);
             }
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveAndClearAsync(cancellationToken);
         _logger.LogInformation("Imported {Count} badge parts done", count);
         return count;
     }
@@ -801,8 +921,13 @@ public class DataMigrationService
     {
         var items = await LoadJsonFileAsync<BadgeCompletedImport>(filePath, cancellationToken);
         var count = 0;
-        var validPersons = await _context.Persons.Select(p => p.Id).ToListAsync(cancellationToken);
-        var validBadges = await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken);
+        var validPersons = (await _context.Persons.Select(p => p.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var validBadges = (await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var existingCompleted = (await _context.Set<BadgeCompleted>()
+            .Select(bc => new { bc.PersonId, bc.BadgeId })
+            .ToListAsync(cancellationToken))
+            .Select(bc => (bc.PersonId, bc.BadgeId))
+            .ToHashSet();
 
         foreach (var item in items)
         {
@@ -815,8 +940,7 @@ public class DataMigrationService
             if (!validPersons.Contains(personId) || !validBadges.Contains(item.BadgeId))
                 continue;
 
-            if (await _context.Set<BadgeCompleted>().AnyAsync(
-                bc => bc.PersonId == personId && bc.BadgeId == item.BadgeId, cancellationToken))
+            if (!existingCompleted.Add((personId, item.BadgeId)))
                 continue;
 
             _context.Set<BadgeCompleted>().Add(new BadgeCompleted
@@ -829,7 +953,7 @@ public class DataMigrationService
             count++;
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveAndClearAsync(cancellationToken);
         _logger.LogInformation("Imported {Count} badges completed", count);
         return count;
     }
@@ -853,13 +977,23 @@ public class DataMigrationService
     {
         if (string.IsNullOrEmpty(timeStr))
             return null;
-        
+
         if (TimeOnly.TryParse(timeStr, out var time))
             return time;
-        
+
         return null;
     }
 }
+
+/// <summary>
+/// Progress report from a migration step.
+/// </summary>
+/// <param name="Step">Current step name (e.g. "persons"), or "done" when complete.</param>
+/// <param name="Current">Current step number (1-based).</param>
+/// <param name="Total">Total number of steps.</param>
+/// <param name="Records">Number of records imported in this step (0 while in progress).</param>
+/// <param name="Elapsed">Time taken for this step (null while in progress).</param>
+public record MigrationProgress(string Step, int Current, int Total, int Records, TimeSpan? Elapsed);
 
 #region Import DTOs
 
@@ -890,54 +1024,54 @@ public record ScoutGroupImport(
 );
 
 public record PersonImport(
-	[property: JsonPropertyName("id")] long Id,
-	[property: JsonPropertyName("scout_group_id")] int ScoutGroupId,
-	[property: JsonPropertyName("first_name")] string FirstName,
-	[property: JsonPropertyName("last_name")] string LastName,
-	[property: JsonPropertyName("birth_date")] string BirthDate,
-	[property: JsonPropertyName("personal_number")] string? PersonalNumber,
-	[property: JsonPropertyName("email")] string? Email,
-	[property: JsonPropertyName("phone")] string? Phone,
-	[property: JsonPropertyName("mobile")] string? Mobile,
-	[property: JsonPropertyName("alt_email")] string? AltEmail,
-	[property: JsonPropertyName("mum_name")] string? MumName,
-	[property: JsonPropertyName("mum_email")] string? MumEmail,
-	[property: JsonPropertyName("mum_mobile")] string? MumMobile,
-	[property: JsonPropertyName("dad_name")] string? DadName,
-	[property: JsonPropertyName("dad_email")] string? DadEmail,
-	[property: JsonPropertyName("dad_mobile")] string? DadMobile,
-	[property: JsonPropertyName("street")] string? Street,
-	[property: JsonPropertyName("zip_code")] string? ZipCode,
-	[property: JsonPropertyName("zip_name")] string? ZipName,
+    [property: JsonPropertyName("id")] long Id,
+    [property: JsonPropertyName("scout_group_id")] int ScoutGroupId,
+    [property: JsonPropertyName("first_name")] string FirstName,
+    [property: JsonPropertyName("last_name")] string LastName,
+    [property: JsonPropertyName("birth_date")] string BirthDate,
+    [property: JsonPropertyName("personal_number")] string? PersonalNumber,
+    [property: JsonPropertyName("email")] string? Email,
+    [property: JsonPropertyName("phone")] string? Phone,
+    [property: JsonPropertyName("mobile")] string? Mobile,
+    [property: JsonPropertyName("alt_email")] string? AltEmail,
+    [property: JsonPropertyName("mum_name")] string? MumName,
+    [property: JsonPropertyName("mum_email")] string? MumEmail,
+    [property: JsonPropertyName("mum_mobile")] string? MumMobile,
+    [property: JsonPropertyName("dad_name")] string? DadName,
+    [property: JsonPropertyName("dad_email")] string? DadEmail,
+    [property: JsonPropertyName("dad_mobile")] string? DadMobile,
+    [property: JsonPropertyName("street")] string? Street,
+    [property: JsonPropertyName("zip_code")] string? ZipCode,
+    [property: JsonPropertyName("zip_name")] string? ZipName,
     [property: JsonConverter(typeof(StringOrArrayConverter))] List<string>? GroupRoles,
     [property: JsonConverter(typeof(IntOrArrayConverter))] List<int>? MemberYears,
     [property: JsonPropertyName("not_in_scoutnet")] bool? NotInScoutnet,
-	[property: JsonPropertyName("removed")] bool? Removed
+    [property: JsonPropertyName("removed")] bool? Removed
 );
 
 public record TroopImport(
-	[property: JsonPropertyName("scoutnet_id")] int? ScoutnetId,
-	[property: JsonPropertyName("scout_group_id")] int? ScoutGroupId,
-	[property: JsonPropertyName("semester_id")] int? SemesterId,
-	[property: JsonPropertyName("name")] string? Name,
-	[property: JsonPropertyName("default_start_time")] string? DefaultStartTime,
-	[property: JsonPropertyName("default_duration_minutes")] int? DefaultDurationMinutes
+    [property: JsonPropertyName("scoutnet_id")] int? ScoutnetId,
+    [property: JsonPropertyName("scout_group_id")] int? ScoutGroupId,
+    [property: JsonPropertyName("semester_id")] int? SemesterId,
+    [property: JsonPropertyName("name")] string? Name,
+    [property: JsonPropertyName("default_start_time")] string? DefaultStartTime,
+    [property: JsonPropertyName("default_duration_minutes")] int? DefaultDurationMinutes
 );
 
 public record TroopPersonImport(
-	[property: JsonPropertyName("troop_id")] string TroopId,
-	[property: JsonPropertyName("scoutnet_id")] int ScoutnetTroopId,
-	[property: JsonPropertyName("scout_group_id")] int ScoutGroupId,
-	[property: JsonPropertyName("semester_id")] int SemesterId,
-	[property: JsonPropertyName("person_id")] int PersonId,
-	[property: JsonPropertyName("is_leader")] bool? IsLeader);
+    [property: JsonPropertyName("troop_id")] string TroopId,
+    [property: JsonPropertyName("scoutnet_id")] int ScoutnetTroopId,
+    [property: JsonPropertyName("scout_group_id")] int ScoutGroupId,
+    [property: JsonPropertyName("semester_id")] int SemesterId,
+    [property: JsonPropertyName("person_id")] int PersonId,
+    [property: JsonPropertyName("is_leader")] bool? IsLeader);
 
 
 public record MeetingImport(
     int ScoutnetTroopId,
-	int GroupId,
-	int SemesterId,
-	string MeetingDate,
+    int GroupId,
+    int SemesterId,
+    string MeetingDate,
     string StartTime,
     string Name,
     int DurationMinutes,
@@ -980,12 +1114,12 @@ public record BadgeImport(
 );
 
 public record TroopBadgeImport(
-	int ScoutnetTroopId, 
-	int ScoutGroupId, 
-	int SemesterId, 
-	int BadgeId, 
-	int? SortOrder
-	);
+    int ScoutnetTroopId, 
+    int ScoutGroupId, 
+    int SemesterId, 
+    int BadgeId, 
+    int? SortOrder
+    );
 
 public record BadgePartDoneImport(
     int PersonId,

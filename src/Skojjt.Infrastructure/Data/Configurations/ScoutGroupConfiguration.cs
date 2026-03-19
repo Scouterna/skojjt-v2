@@ -90,6 +90,10 @@ public class ScoutGroupConfiguration : IEntityTypeConfiguration<ScoutGroup>
             .HasColumnName("attendance_incl_hike")
             .HasDefaultValue(true);
 
+        builder.Property(e => e.NextLocalTroopId)
+            .HasColumnName("next_local_troop_id")
+            .HasDefaultValue(250);
+
         builder.Property(e => e.CreatedAt)
             .HasColumnName("created_at")
             .HasDefaultValueSql("NOW()");

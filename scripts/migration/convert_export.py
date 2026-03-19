@@ -16,11 +16,12 @@ HAS_PROTOBUF = True  # We'll do manual parsing
 
 class DatastoreExportConverter:
     """Converts Datastore LevelDB export files to JSON."""
-    
+
     def __init__(self, export_dir: str, output_dir: str):
         self.export_dir = export_dir
         self.output_dir = output_dir
         self.stats = {}
+        self._all_kinds_cache = None  # Lazy cache for all_kinds entities grouped by kind
     
     @staticmethod
     def read_varint(data: bytes, pos: int) -> tuple:
@@ -533,29 +534,81 @@ class DatastoreExportConverter:
         
         return entity
     
-    def convert_kind(self, kind_name: str) -> List[Dict]:
-        """Convert all export files for a single entity kind."""
-        kind_dir = os.path.join(self.export_dir, 'all_namespaces', f'kind_{kind_name}')
-        
-        if not os.path.exists(kind_dir):
-            print(f"Warning: Kind directory not found: {kind_dir}")
-            return []
-        
-        entities = []
-        output_files = sorted([f for f in os.listdir(kind_dir) if f.startswith('output-')])
-        
+    def _load_all_kinds(self) -> Dict[str, List[Dict]]:
+        """Parse all entities from the all_kinds directory, grouped by kind.
+
+        Cached after first call since parsing 1000+ LevelDB files is slow.
+        """
+        if self._all_kinds_cache is not None:
+            return self._all_kinds_cache
+
+        all_kinds_dir = os.path.join(self.export_dir, 'all_namespaces', 'all_kinds')
+        if not os.path.exists(all_kinds_dir):
+            print(f"Warning: all_kinds directory not found: {all_kinds_dir}")
+            self._all_kinds_cache = {}
+            return self._all_kinds_cache
+
+        print(f"  Parsing all_kinds directory (this may take a while)...")
+        by_kind: Dict[str, List[Dict]] = {}
+        output_files = sorted([f for f in os.listdir(all_kinds_dir) if f.startswith('output-')])
+        parsed = 0
+
         for filename in output_files:
-            file_path = os.path.join(kind_dir, filename)
+            file_path = os.path.join(all_kinds_dir, filename)
             records = self.read_leveldb_records(file_path)
-            
             for record in records:
                 try:
                     entity = self.parse_entity_record(record)
-                    if entity.get("_key"):
-                        entities.append(entity)
-                except Exception as e:
+                    key = entity.get('_key', {})
+                    kind = None
+                    if isinstance(key, dict):
+                        path = key.get('path', [])
+                        if path:
+                            kind = path[-1].get('kind')
+                    if kind and entity.get('_key'):
+                        by_kind.setdefault(kind, []).append(entity)
+                        parsed += 1
+                except Exception:
                     pass
-        
+
+        print(f"  Parsed {parsed} total entities across {len(by_kind)} kinds")
+        for kind, entities in sorted(by_kind.items()):
+            print(f"    {kind}: {len(entities)}")
+
+        self._all_kinds_cache = by_kind
+        return self._all_kinds_cache
+
+    def convert_kind(self, kind_name: str) -> List[Dict]:
+        """Convert all export files for a single entity kind.
+
+        First looks for a per-kind directory (kind_<Name>). If not found,
+        falls back to the all_kinds directory used by managed exports.
+        """
+        kind_dir = os.path.join(self.export_dir, 'all_namespaces', f'kind_{kind_name}')
+
+        if os.path.exists(kind_dir):
+            entities = []
+            output_files = sorted([f for f in os.listdir(kind_dir) if f.startswith('output-')])
+
+            for filename in output_files:
+                file_path = os.path.join(kind_dir, filename)
+                records = self.read_leveldb_records(file_path)
+
+                for record in records:
+                    try:
+                        entity = self.parse_entity_record(record)
+                        if entity.get("_key"):
+                            entities.append(entity)
+                    except Exception:
+                        pass
+
+            return entities
+
+        # Fall back to all_kinds directory (managed export without --kinds)
+        all_kinds = self._load_all_kinds()
+        entities = all_kinds.get(kind_name, [])
+        if not entities:
+            print(f"Warning: No entities found for kind '{kind_name}'")
         return entities
     
     def save_json(self, filename: str, data):

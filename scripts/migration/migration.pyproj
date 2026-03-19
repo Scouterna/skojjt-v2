@@ -30,6 +30,7 @@
     <Compile Include="export_live.py" />
     <Compile Include="migration.py" />
     <Compile Include="transform_data.py" />
+    <Compile Include="_patch_convert.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="json_export\" />
@@ -55,8 +56,8 @@
   <ItemGroup>
     <Interpreter Include="env\">
       <Id>env</Id>
-      <Version>3.11</Version>
-      <Description>env (Python 3.11 (64-bit))</Description>
+      <Version>3.14</Version>
+      <Description>env (Python 3.14.3)</Description>
       <InterpreterPath>Scripts\python.exe</InterpreterPath>
       <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
       <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>

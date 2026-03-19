@@ -50,6 +50,11 @@ var host = Host.CreateDefaultBuilder()
         logging.ClearProviders();
         logging.AddConsole();
         logging.SetMinimumLevel(LogLevel.Information);
+        // Suppress verbose EF Core / Npgsql SQL logging
+        logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+        logging.AddFilter("Microsoft.EntityFrameworkCore.Infrastructure", LogLevel.Warning);
+        logging.AddFilter("Microsoft.EntityFrameworkCore.Update", LogLevel.Warning);
+        logging.AddFilter("Npgsql", LogLevel.Warning);
     })
     .Build();
 
@@ -62,10 +67,29 @@ try
 {
     Console.WriteLine("Starting import...");
     Console.WriteLine();
-    
+
     var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-    
-    await migrationService.ImportAllAsync(importDirectory);
+
+    Func<MigrationProgress, Task> progress = p =>
+    {
+        if (p.Step == "done")
+        {
+            Console.WriteLine();
+            Console.WriteLine($"  Import complete in {p.Elapsed}");
+        }
+        else if (p.Elapsed is not null)
+        {
+            Console.WriteLine($"  [{p.Current}/{p.Total}] {p.Step}: {p.Records} records ({p.Elapsed.Value.TotalSeconds:F1}s)");
+        }
+        else
+        {
+            Console.Write($"  [{p.Current}/{p.Total}] Importing {p.Step}...");
+            Console.SetCursorPosition(0, Console.CursorTop);
+        }
+        return Task.CompletedTask;
+    };
+
+    await migrationService.ImportAllAsync(importDirectory, default, progress);
     
     stopwatch.Stop();
     

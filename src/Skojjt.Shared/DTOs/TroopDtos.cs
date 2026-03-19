@@ -41,6 +41,8 @@ public record TroopMemberDto(
 
 /// <summary>
 /// DTO for creating a new troop.
+/// When ScoutnetId is 0 or omitted, the server assigns a local ID from the
+/// scout group's reserved range (250-1000).
 /// </summary>
 public record TroopCreateDto(
     int ScoutnetId,
