@@ -1028,27 +1028,47 @@ public class DataMigrationService
         string[] partsScoutShort, string[] partsScoutLong,
         string[] partsAdminShort, string[] partsAdminLong)
     {
+        const int maxShortLength = 255;
         var parts = new List<BadgePart>();
 
         for (var i = 0; i < partsScoutShort.Length; i++)
         {
+            var shortDesc = partsScoutShort[i];
+            var longDesc = i < partsScoutLong.Length ? partsScoutLong[i] : null;
+
+            // If short description exceeds column limit, move full text to long description
+            if (shortDesc.Length > maxShortLength)
+            {
+                longDesc ??= shortDesc;
+                shortDesc = shortDesc[..maxShortLength];
+            }
+
             parts.Add(new BadgePart
             {
                 SortOrder = i,
                 IsAdminPart = false,
-                ShortDescription = partsScoutShort[i],
-                LongDescription = i < partsScoutLong.Length ? partsScoutLong[i] : null
+                ShortDescription = shortDesc,
+                LongDescription = longDesc
             });
         }
 
         for (var i = 0; i < partsAdminShort.Length; i++)
         {
+            var shortDesc = partsAdminShort[i];
+            var longDesc = i < partsAdminLong.Length ? partsAdminLong[i] : null;
+
+            if (shortDesc.Length > maxShortLength)
+            {
+                longDesc ??= shortDesc;
+                shortDesc = shortDesc[..maxShortLength];
+            }
+
             parts.Add(new BadgePart
             {
                 SortOrder = 100 + i,
                 IsAdminPart = true,
-                ShortDescription = partsAdminShort[i],
-                LongDescription = i < partsAdminLong.Length ? partsAdminLong[i] : null
+                ShortDescription = shortDesc,
+                LongDescription = longDesc
             });
         }
 
