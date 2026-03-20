@@ -214,12 +214,12 @@
 
     private static string FormatSize(long bytes)
     {
-        return bytes switch
-        {
-            < 1024 => $"{bytes} B",
-            < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
-            _ => $"{bytes / (1024.0 * 1024.0):F1} MB"
-        };
+        const long kb = 1024;
+        const long mb = kb * 1024;
+
+        if (bytes < kb) return $"{bytes} B";
+        if (bytes < mb) return $"{bytes / (double)kb:F1} KB";
+        return $"{bytes / (double)mb:F1} MB";
     }
 
     public void Dispose()
