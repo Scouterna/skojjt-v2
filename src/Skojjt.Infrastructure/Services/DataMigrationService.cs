@@ -265,16 +265,31 @@ public class DataMigrationService
     private async Task<int> ImportScoutGroupsAsync(string filePath, CancellationToken cancellationToken)
     {
         var items = await LoadJsonFileAsync<ScoutGroupImport>(filePath, cancellationToken);
-        var existingIds = (await _context.ScoutGroups.Select(s => s.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var existingGroups = await _context.ScoutGroups.ToDictionaryAsync(s => s.Id, cancellationToken);
         var count = 0;
+        var updated = 0;
 
         foreach (var item in items)
         {
             if (item.Id <= 0)
                 continue;
 
-            if (!existingIds.Add(item.Id))
+            if (existingGroups.TryGetValue(item.Id, out var existing))
+            {
+                // Update fields that may have been missing from a previous import
+                existing.OrganisationNumber ??= item.OrganisationNumber;
+                existing.AssociationId ??= item.AssociationId;
+                existing.MunicipalityId ??= item.MunicipalityId ?? "1480";
+                existing.ApiKeyWaitinglist ??= item.ApiKeyWaitinglist;
+                existing.ApiKeyAllMembers ??= item.ApiKeyAllMembers;
+                existing.BankAccount ??= item.BankAccount;
+                existing.PostalAddress ??= item.PostalAddress;
+                existing.DefaultCampLocation ??= item.DefaultLocation;
+                existing.SignatoryPhone ??= item.SignatoryPhone;
+                existing.SignatoryEmail ??= item.SignatoryEmail;
+                updated++;
                 continue;
+            }
 
             _context.ScoutGroups.Add(new ScoutGroup
             {
@@ -301,8 +316,8 @@ public class DataMigrationService
         }
 
         await SaveAndClearAsync(cancellationToken);
-        _logger.LogInformation("Imported {Count} scout groups", count);
-        return count;
+        _logger.LogInformation("Imported {Count} scout groups, updated {Updated} existing", count, updated);
+        return count + updated;
     }
 
     private async Task<int> ImportPersonsAsync(string filePath, CancellationToken cancellationToken)
@@ -1094,24 +1109,24 @@ public record SemesterImport(
     [property: JsonPropertyName("is_autumn")] bool IsAutumn);
 
 public record ScoutGroupImport(
-    int Id,
-    string? Name,
-    string? OrganisationNumber,
-    string? AssociationId,
-    string? MunicipalityId,
-    string? ApiKeyWaitinglist,
-    string? ApiKeyAllMembers,
-    string? BankAccount,
-    string? Address,
-    string? PostalAddress,
-    string? Email,
-    string? Phone,
-    string? DefaultLocation,
-    string? Signatory,
-    string? SignatoryPhone,
-    string? SignatoryEmail,
-    int? AttendanceMinYear,
-    bool? AttendanceInclHike
+    [property: JsonPropertyName("id")] int Id,
+    [property: JsonPropertyName("name")] string? Name,
+    [property: JsonPropertyName("organisation_number")] string? OrganisationNumber,
+    [property: JsonPropertyName("association_id")] string? AssociationId,
+    [property: JsonPropertyName("municipality_id")] string? MunicipalityId,
+    [property: JsonPropertyName("api_key_waitinglist")] string? ApiKeyWaitinglist,
+    [property: JsonPropertyName("api_key_all_members")] string? ApiKeyAllMembers,
+    [property: JsonPropertyName("bank_account")] string? BankAccount,
+    [property: JsonPropertyName("address")] string? Address,
+    [property: JsonPropertyName("postal_address")] string? PostalAddress,
+    [property: JsonPropertyName("email")] string? Email,
+    [property: JsonPropertyName("phone")] string? Phone,
+    [property: JsonPropertyName("default_location")] string? DefaultLocation,
+    [property: JsonPropertyName("signatory")] string? Signatory,
+    [property: JsonPropertyName("signatory_phone")] string? SignatoryPhone,
+    [property: JsonPropertyName("signatory_email")] string? SignatoryEmail,
+    [property: JsonPropertyName("attendance_min_year")] int? AttendanceMinYear,
+    [property: JsonPropertyName("attendance_incl_hike")] bool? AttendanceInclHike
 );
 
 public record PersonImport(
