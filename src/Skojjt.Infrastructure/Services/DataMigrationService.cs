@@ -279,7 +279,6 @@ public class DataMigrationService
                 // Update fields that may have been missing from a previous import
                 existing.OrganisationNumber ??= item.OrganisationNumber;
                 existing.AssociationId ??= item.AssociationId;
-                existing.MunicipalityId ??= item.MunicipalityId ?? "1480";
                 existing.ApiKeyWaitinglist ??= item.ApiKeyWaitinglist;
                 existing.ApiKeyAllMembers ??= item.ApiKeyAllMembers;
                 existing.BankAccount ??= item.BankAccount;
@@ -287,6 +286,16 @@ public class DataMigrationService
                 existing.DefaultCampLocation ??= item.DefaultLocation;
                 existing.SignatoryPhone ??= item.SignatoryPhone;
                 existing.SignatoryEmail ??= item.SignatoryEmail;
+
+                // These fields had non-null defaults applied during the broken import,
+                // so ??= won't overwrite them. Always set from import data when available.
+                if (item.MunicipalityId != null)
+                    existing.MunicipalityId = item.MunicipalityId;
+                if (item.AttendanceMinYear != null)
+                    existing.AttendanceMinYear = item.AttendanceMinYear.Value;
+                if (item.AttendanceInclHike != null)
+                    existing.AttendanceInclHike = item.AttendanceInclHike.Value;
+
                 updated++;
                 continue;
             }
