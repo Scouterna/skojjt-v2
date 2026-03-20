@@ -2,15 +2,17 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Skojjt.Infrastructure.Services;
+using Skojjt.Web.Authentication;
 
 namespace Skojjt.Web.Controllers;
 
 /// <summary>
 /// Admin controller for data migration and system administration.
-/// Only available in development environment.
+/// Requires Admin policy — authenticated via cookie (logged-in admin) or API key.
 /// </summary>
 [ApiController]
 [Route("api/v1/admin")]
+[Authorize(Policy = "Admin", AuthenticationSchemes = $"Cookies,{ApiKeyAuthenticationHandler.SchemeName}")]
 public class AdminController : ControllerBase
 {
     private readonly DataMigrationService _migrationService;
@@ -33,22 +35,27 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Import data from JSON files (development only).
+    /// Import data from JSON files.
     /// Streams progress as Server-Sent Events (text/event-stream).
+    /// In development, reads from the local filesystem.
+    /// In production, an import directory must be specified in the request body.
     /// </summary>
     [HttpPost("migrate")]
     public async Task MigrateData([FromBody] MigrateRequest? request = null, CancellationToken cancellationToken = default)
     {
-        // Only allow in development
-        if (!_environment.IsDevelopment())
-        {
-            Response.StatusCode = 403;
-            return;
-        }
-
         var importDir = request?.ImportDirectory;
         if (string.IsNullOrEmpty(importDir))
         {
+            if (!_environment.IsDevelopment())
+            {
+                Response.StatusCode = 400;
+                Response.ContentType = "application/json";
+                await Response.WriteAsJsonAsync(
+                    new { error = "importDirectory is required in non-development environments." },
+                    cancellationToken);
+                return;
+            }
+
             // Default: scripts/migration/json_export relative to the solution root.
             // ContentRootPath points at src/Skojjt.Web/, so go up two levels.
             var solutionRoot = Path.GetFullPath(Path.Combine(_environment.ContentRootPath, "..", ".."));
@@ -69,7 +76,8 @@ public class AdminController : ControllerBase
             return;
         }
 
-        _logger.LogInformation("Starting migration from {Directory}", importDir);
+        _logger.LogInformation("Starting migration from {Directory}, authenticated as {User}",
+            importDir, User.Identity?.Name ?? "unknown");
 
         // Stream progress as Server-Sent Events
         Response.Headers.ContentType = "text/event-stream";
@@ -99,14 +107,8 @@ public class AdminController : ControllerBase
     /// Get migration status and database statistics.
     /// </summary>
     [HttpGet("stats")]
-    public async Task<IActionResult> GetStats(CancellationToken cancellationToken)
+    public IActionResult GetStats()
     {
-        // Only allow in development
-        if (!_environment.IsDevelopment())
-        {
-            return Forbid("Stats endpoint is only available in development environment");
-        }
-
         // TODO: Return database statistics
         return Ok(new { status = "ok" });
     }

@@ -16,6 +16,7 @@ using Skojjt.Infrastructure.Authentication;
 using Skojjt.Infrastructure.Data;
 using Skojjt.Infrastructure.Repositories;
 using Skojjt.Infrastructure.Services;
+using Skojjt.Web.Authentication;
 using Skojjt.Web.Components;
 using Skojjt.Web.Hubs;
 using Skojjt.Web.Services;
@@ -61,6 +62,34 @@ builder.Services.AddRazorComponents()
 
 // Add API controllers
 builder.Services.AddControllers();
+
+// Add OpenAPI / Swagger for API documentation
+builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
+    {
+        Title = "Skojjt Admin API",
+        Version = "v1",
+        Description = "API för dataimport och administration av Skojjt."
+    });
+
+    // Add API key authentication support in Swagger UI
+    options.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.OpenApiSecurityScheme
+    {
+        Name = "X-Api-Key",
+        In = Microsoft.OpenApi.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.SecuritySchemeType.ApiKey,
+        Description = "API-nyckel genererad från admin-panelen."
+    });
+    options.AddSecurityRequirement(_ => new Microsoft.OpenApi.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.OpenApiSecuritySchemeReference("ApiKey"),
+            []
+        }
+    });
+});
 
 // Add SignalR for real-time updates
 builder.Services.AddSignalR(options =>
@@ -129,6 +158,7 @@ builder.Services.AddScoped<IBadgeTemplateRepository, BadgeTemplateRepository>();
 // Register services
 builder.Services.AddScoped<DataMigrationService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
 builder.Services.AddScoped<IBadgeService, BadgeService>();
 builder.Services.AddScoped<IMyProfileService, MyProfileService>();
 builder.Services.AddScoutnetServices(builder.Configuration);
@@ -290,6 +320,11 @@ else
     });
 }
 
+// Add API key authentication scheme (works alongside cookie/OIDC/SAML auth)
+builder.Services.AddAuthentication()
+    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+        ApiKeyAuthenticationHandler.SchemeName, _ => { });
+
 // Add claims transformation to convert ScoutID claims to application claims
 builder.Services.AddTransient<IClaimsTransformation, ScoutIdClaimsTransformation>();
 
@@ -298,14 +333,19 @@ builder.Services.AddAuthorization(options =>
     // Policy for users who can manage members (member registrars)
     options.AddPolicy("MemberRegistrar", policy =>
         policy.RequireRole("MemberRegistrar"));
-    
+
     // Policy for authenticated users with any group access
     options.AddPolicy("GroupAccess", policy =>
         policy.RequireAuthenticatedUser());
 
-    // Policy for system administrators
+    // Policy for system administrators — accepts cookie auth or API key
     options.AddPolicy("Admin", policy =>
-        policy.RequireRole("Admin"));
+    {
+        policy.AddAuthenticationSchemes(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            ApiKeyAuthenticationHandler.SchemeName);
+        policy.RequireRole("Admin");
+    });
 });
 
 builder.Services.AddCascadingAuthenticationState();
@@ -380,6 +420,16 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseAntiforgery();
+
+// Swagger UI for API documentation (available at /swagger in development only)
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Skojjt Admin API v1");
+    });
+}
 
 // Map health check endpoint (unauthenticated, for Azure monitoring)
 app.MapHealthChecks("/healthz");

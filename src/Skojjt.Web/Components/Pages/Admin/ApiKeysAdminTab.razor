@@ -1,0 +1,200 @@
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Services
+@inject IApiKeyService ApiKeyService
+@inject ICurrentUserService CurrentUserService
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h6" Class="mb-4">API-nycklar</MudText>
+
+<MudAlert Severity="Severity.Info" Class="mb-4">
+    API-nycklar används för att autentisera externa verktyg mot admin-API:et (t.ex. dataimport).
+    Nyckeln visas bara en gång vid skapande — kopiera och spara den säkert.
+</MudAlert>
+
+@* Create new key *@
+<MudPaper Class="pa-4 mb-4">
+    <MudText Typo="Typo.subtitle1" Class="mb-2"><b>Skapa ny nyckel</b></MudText>
+    <MudGrid>
+        <MudItem xs="12" md="5">
+            <MudTextField @bind-Value="_newKeyName"
+                          Label="Namn / beskrivning"
+                          Placeholder="T.ex. Import v1 data - Göteborg"
+                          Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudSelect @bind-Value="_expirationDays" Label="Giltighetstid" Variant="Variant.Outlined">
+                <MudSelectItem Value="1">1 dag</MudSelectItem>
+                <MudSelectItem Value="7">7 dagar</MudSelectItem>
+                <MudSelectItem Value="30">30 dagar</MudSelectItem>
+                <MudSelectItem Value="90">90 dagar</MudSelectItem>
+                <MudSelectItem Value="0">Ingen utgångstid</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="3" Class="d-flex align-end">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       OnClick="CreateKey" Disabled="@(string.IsNullOrWhiteSpace(_newKeyName) || _creating)"
+                       StartIcon="@Icons.Material.Filled.Key">
+                @if (_creating)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                Generera nyckel
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@* Show newly created key *@
+@if (_createdRawKey is not null)
+{
+    <MudAlert Severity="Severity.Warning" Class="mb-4" Icon="@Icons.Material.Filled.Warning">
+        <MudText Typo="Typo.subtitle2" Class="mb-1">
+            <b>Kopiera nyckeln nu — den visas inte igen!</b>
+        </MudText>
+        <MudTextField Value="@_createdRawKey" ReadOnly="true" Variant="Variant.Outlined"
+                      Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.ContentCopy"
+                      OnAdornmentClick="CopyKey"
+                      Style="font-family: monospace; font-size: 0.85rem;" />
+        <MudText Typo="Typo.caption" Class="mt-1">
+            Användning: <code>Invoke-RestMethod -Headers @@{"X-Api-Key"="@(_createdRawKey[..16])..."} -Uri "https://skojjt.azurewebsites.net/api/v1/admin/stats"</code>
+        </MudText>
+    </MudAlert>
+}
+
+@* Existing keys *@
+<MudPaper Class="pa-4">
+    <MudText Typo="Typo.subtitle1" Class="mb-2"><b>Befintliga nycklar</b></MudText>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_keys.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Inga API-nycklar har skapats ännu.</MudText>
+    }
+    else
+    {
+        <MudSimpleTable Dense="true" Hover="true">
+            <thead>
+                <tr>
+                    <th>Nyckelprefix</th>
+                    <th>Namn</th>
+                    <th>Skapad</th>
+                    <th>Utgår</th>
+                    <th>Senast använd</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var key in _keys)
+                {
+                    <tr>
+                        <td><code>@(key.KeyPrefix)...</code></td>
+                        <td>@key.Name</td>
+                        <td>@key.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@(key.ExpiresAt?.ToString("yyyy-MM-dd HH:mm") ?? "Aldrig")</td>
+                        <td>@(key.LastUsedAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</td>
+                        <td>
+                            @if (key.IsRevoked)
+                            {
+                                <MudChip T="string" Color="Color.Error" Size="Size.Small">Återkallad</MudChip>
+                            }
+                            else if (key.ExpiresAt != null && key.ExpiresAt <= DateTime.UtcNow)
+                            {
+                                <MudChip T="string" Color="Color.Warning" Size="Size.Small">Utgången</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Color="Color.Success" Size="Size.Small">Aktiv</MudChip>
+                            }
+                        </td>
+                        <td>
+                            @if (!key.IsRevoked && (key.ExpiresAt == null || key.ExpiresAt > DateTime.UtcNow))
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Block"
+                                               Color="Color.Error" Size="Size.Small"
+                                               title="Återkalla"
+                                               OnClick="@(() => RevokeKey(key))" />
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    }
+</MudPaper>
+
+@code {
+    private bool _loading = true;
+    private bool _creating;
+    private string _newKeyName = string.Empty;
+    private int _expirationDays = 30;
+    private string? _createdRawKey;
+    private List<ApiKey> _keys = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadKeys();
+    }
+
+    private async Task LoadKeys()
+    {
+        _loading = true;
+        try
+        {
+            _keys = await ApiKeyService.GetAllKeysAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CreateKey()
+    {
+        var user = CurrentUserService.GetCurrentUser();
+        if (user == null) return;
+
+        _creating = true;
+        _createdRawKey = null;
+        try
+        {
+            var expiresAt = _expirationDays > 0
+                ? DateTime.UtcNow.AddDays(_expirationDays)
+                : (DateTime?)null;
+
+            var result = await ApiKeyService.GenerateKeyAsync(_newKeyName, user.Uid, expiresAt);
+            _createdRawKey = result.RawKey;
+            _newKeyName = string.Empty;
+            Snackbar.Add("API-nyckel skapad! Kopiera den innan du lämnar sidan.", Severity.Success);
+            await LoadKeys();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte skapa nyckel: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+    private async Task RevokeKey(ApiKey key)
+    {
+        var revoked = await ApiKeyService.RevokeKeyAsync(key.Id);
+        if (revoked)
+        {
+            Snackbar.Add($"Nyckel \"{key.Name}\" återkallad.", Severity.Warning);
+            await LoadKeys();
+        }
+    }
+
+    private async Task CopyKey()
+    {
+        // Note: clipboard access requires JS interop; show a hint instead
+        Snackbar.Add("Markera och kopiera nyckeln manuellt (Ctrl+C).", Severity.Info);
+    }
+}

@@ -37,12 +37,20 @@ In a **separate terminal**:
 curl -N -X POST "http://localhost:5286/api/v1/admin/migrate"
 ```
 
-**PowerShell:**
+**PowerShell (live progress):**
+```powershell
+$response = Invoke-WebRequest -Method Post -Uri "http://localhost:5286/api/v1/admin/migrate" -Headers @{"Accept"="text/event-stream"} -HttpVersion 1.1 -TimeoutSec 600
+$response.Content -split "`n" | Where-Object { $_ -match "^data:" } | ForEach-Object { $_ -replace "^data: ", "" }
+```
+
+**PowerShell (simple — waits for completion):**
 ```powershell
 Invoke-RestMethod -Method Post -Uri "http://localhost:5286/api/v1/admin/migrate"
 ```
 
-The endpoint streams progress as Server-Sent Events, so with `curl -N` you'll see each import step as it completes.
+The endpoint streams progress as Server-Sent Events, so with `curl -N` or the `Invoke-WebRequest` variant you'll see each import step as it completes.
+
+> **Note:** `Invoke-RestMethod` buffers the entire response and only displays it after the migration finishes. Use `curl -N` or `Invoke-WebRequest` if you want live progress.
 
 > **Note:** The endpoint defaults to `scripts/migration/json_export` relative to the solution root. To specify a custom directory, pass it in the request body:
 > ```bash

@@ -28,6 +28,7 @@ public class SkojjtDbContext : DbContext
     public DbSet<BadgeCompleted> BadgesCompleted => Set<BadgeCompleted>();
     public DbSet<TroopBadge> TroopBadges => Set<TroopBadge>();
     public DbSet<BadgeTemplate> BadgeTemplates => Set<BadgeTemplate>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

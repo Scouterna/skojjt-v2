@@ -759,16 +759,29 @@ public class DataMigrationService
             if (!existingNames.Add(item.Name ?? ""))
                 continue;
 
-            _context.BadgeTemplates.Add(new BadgeTemplate
+            var scoutShort = item.PartsScoutShort?.ToArray() ?? Array.Empty<string>();
+            var scoutLong = item.PartsScoutLong?.ToArray() ?? Array.Empty<string>();
+            var adminShort = item.PartsAdminShort?.ToArray() ?? Array.Empty<string>();
+            var adminLong = item.PartsAdminLong?.ToArray() ?? Array.Empty<string>();
+
+            var template = new BadgeTemplate
             {
                 Name = item.Name ?? "",
                 Description = item.Description,
-                PartsScoutShort = item.PartsScoutShort?.ToArray() ?? Array.Empty<string>(),
-                PartsScoutLong = item.PartsScoutLong?.ToArray() ?? Array.Empty<string>(),
-                PartsAdminShort = item.PartsAdminShort?.ToArray() ?? Array.Empty<string>(),
-                PartsAdminLong = item.PartsAdminLong?.ToArray() ?? Array.Empty<string>(),
+                PartsScoutShort = scoutShort,
+                PartsScoutLong = scoutLong,
+                PartsAdminShort = adminShort,
+                PartsAdminLong = adminLong,
                 ImageUrl = item.ImageUrl
-            });
+            };
+
+            // Generate normalized BadgePart entities from legacy arrays
+            foreach (var part in CreatePartsFromLegacyArrays(scoutShort, scoutLong, adminShort, adminLong))
+            {
+                template.Parts.Add(part);
+            }
+
+            _context.BadgeTemplates.Add(template);
             count++;
         }
 
@@ -798,6 +811,11 @@ public class DataMigrationService
             if (!existingBadgeIds.Add(item.Id))
                 continue;
 
+            var scoutShort = item.PartsScoutShort?.ToArray() ?? Array.Empty<string>();
+            var scoutLong = item.PartsScoutLong?.ToArray() ?? Array.Empty<string>();
+            var adminShort = item.PartsAdminShort?.ToArray() ?? Array.Empty<string>();
+            var adminLong = item.PartsAdminLong?.ToArray() ?? Array.Empty<string>();
+
             // Use raw SQL to insert with explicit ID
             await _context.Database.ExecuteSqlRawAsync(
                 @"INSERT INTO badges (id, scout_group_id, name, description, parts_scout_short, parts_scout_long, parts_admin_short, parts_admin_long, image_url)
@@ -807,13 +825,28 @@ public class DataMigrationService
                 item.ScoutGroupId,
                 item.Name,
                 item.Description,
-                item.PartsScoutShort?.ToArray() ?? Array.Empty<string>(),
-                item.PartsScoutLong?.ToArray() ?? Array.Empty<string>(),
-                item.PartsAdminShort?.ToArray() ?? Array.Empty<string>(),
-                item.PartsAdminLong?.ToArray() ?? Array.Empty<string>(),
+                scoutShort,
+                scoutLong,
+                adminShort,
+                adminLong,
                 (object?)item.ImageUrl ?? DBNull.Value);
+
+            // Generate normalized BadgePart entities from legacy arrays
+            foreach (var part in CreatePartsFromLegacyArrays(scoutShort, scoutLong, adminShort, adminLong))
+            {
+                part.BadgeId = item.Id;
+                _context.BadgeParts.Add(part);
+            }
+
             count++;
+
+            if (count % 500 == 0)
+            {
+                await SaveAndClearAsync(cancellationToken);
+            }
         }
+
+        await SaveAndClearAsync(cancellationToken);
 
         // Update the sequence to be after the max ID
         if (items.Count > 0)
@@ -982,6 +1015,41 @@ public class DataMigrationService
             return time;
 
         return null;
+    }
+
+    /// <summary>
+    /// Creates normalized BadgePart entities from legacy PartsScout*/PartsAdmin* arrays.
+    /// Scout parts use SortOrder starting at 0, admin parts start at 100.
+    /// </summary>
+    private static List<BadgePart> CreatePartsFromLegacyArrays(
+        string[] partsScoutShort, string[] partsScoutLong,
+        string[] partsAdminShort, string[] partsAdminLong)
+    {
+        var parts = new List<BadgePart>();
+
+        for (var i = 0; i < partsScoutShort.Length; i++)
+        {
+            parts.Add(new BadgePart
+            {
+                SortOrder = i,
+                IsAdminPart = false,
+                ShortDescription = partsScoutShort[i],
+                LongDescription = i < partsScoutLong.Length ? partsScoutLong[i] : null
+            });
+        }
+
+        for (var i = 0; i < partsAdminShort.Length; i++)
+        {
+            parts.Add(new BadgePart
+            {
+                SortOrder = 100 + i,
+                IsAdminPart = true,
+                ShortDescription = partsAdminShort[i],
+                LongDescription = i < partsAdminLong.Length ? partsAdminLong[i] : null
+            });
+        }
+
+        return parts;
     }
 }
 
