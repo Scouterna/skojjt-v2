@@ -167,7 +167,7 @@
                     if (p.Elapsed is not null || p.Step == "done")
                     {
                         _progressEntries.Add(new ImportProgress(
-                            p.Step, p.Current, p.Total, p.Records, p.Elapsed?.ToString(@"m\:ss\.f")));
+                            p.Step, p.Current, p.Total, p.Records, p.Elapsed?.ToString("m\\:ss\\.f")));
                         _currentStep = null;
                     }
                     else
