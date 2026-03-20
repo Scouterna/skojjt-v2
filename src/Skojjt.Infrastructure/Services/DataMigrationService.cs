@@ -433,19 +433,19 @@ public class DataMigrationService
             // Validate foreign keys
             if (item.ScoutnetId == null)
             {
-                _logger.LogWarning($"Skipping troop - no scoutnet_id. Scout group: {item.ScoutGroupId}, import record {item}");
+                _logger.LogDebug("Skipping troop - no scoutnet_id. ScoutGroupId: {ScoutGroupId}", item.ScoutGroupId);
                 continue;
             }
 
             if (item.ScoutGroupId == null || !validScoutGroups.Contains(item.ScoutGroupId.Value))
             {
-                _logger.LogWarning($"Skipping troop {item.ScoutnetId} - invalid scout_group_id: {item.ScoutGroupId}");
+                _logger.LogDebug("Skipping troop {ScoutnetId} - invalid ScoutGroupId: {ScoutGroupId}", item.ScoutnetId, item.ScoutGroupId);
                 continue;
             }
 
             if (item.SemesterId == null || !validSemesters.Contains(item.SemesterId.Value))
             {
-                _logger.LogWarning($"Skipping troop {item.ScoutnetId} - invalid semester_id: {item.SemesterId}");
+                _logger.LogDebug("Skipping troop {ScoutnetId} - invalid SemesterId: {SemesterId}", item.ScoutnetId, item.SemesterId);
                 continue;
             }
 
@@ -533,17 +533,11 @@ public class DataMigrationService
             var personId = (int)item.PersonId;
 
             if (!validPersons.Contains(personId))
-            {
-                _logger.LogWarning("Skipping troop person - person not found {item}", item);
                 continue;
-            }
 
             var troopId = ResolveTroopId(item.ScoutnetTroopId, item.ScoutGroupId, item.SemesterId);
             if (troopId == null)
-            {
-                _logger.LogWarning($"Skipping troop person - no troop found. Import record {item}");
                 continue;
-            }
 
             if (!existingMemberships.Add((troopId.Value, personId)))
                 continue;
@@ -573,6 +567,7 @@ public class DataMigrationService
         var items = await LoadJsonFileAsync<MeetingImport>(filePath, cancellationToken);
         var count = 0;
         var skipped = 0;
+        var duplicates = 0;
         var existingMeetings = (await _context.Meetings
             .Select(m => new { m.TroopId, m.MeetingDate })
             .ToListAsync(cancellationToken))
@@ -584,14 +579,12 @@ public class DataMigrationService
             var troopId = ResolveTroopId(item.ScoutnetTroopId, item.GroupId, item.SemesterId);
             if (troopId == null)
             {
-                _logger.LogWarning($"Skipping meeting - no troop found. Import record {item}");
                 skipped++;
                 continue;
             }
 
             if (item.MeetingDate == null)
             {
-                _logger.LogWarning($"Skipping meeting - no meeting_date. Import record {item}");
                 skipped++;
                 continue;
             }
@@ -601,8 +594,7 @@ public class DataMigrationService
 
             if (!existingMeetings.Add((troopId.Value, meetingDate)))
             {
-                _logger.LogWarning("Duplicate meeting {item}", item);
-                skipped++;
+                duplicates++;
                 continue;
             }
 
@@ -631,7 +623,7 @@ public class DataMigrationService
         }
 
         await SaveAndClearAsync(cancellationToken);
-        _logger.LogInformation("Imported {Count} meetings (skipped {Skipped} invalid)", count, skipped);
+        _logger.LogInformation("Imported {Count} meetings (skipped {Skipped} invalid, {Duplicates} duplicates)", count, skipped, duplicates);
 
         // Build the shared meeting lookup cache for attendance import
         _meetingLookup = (await _context.Meetings
@@ -866,6 +858,11 @@ public class DataMigrationService
         var count = 0;
         var skipped = 0;
         var validBadges = (await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var existingTroopBadges = (await _context.Set<TroopBadge>()
+            .Select(tb => new { tb.TroopId, tb.BadgeId })
+            .ToListAsync(cancellationToken))
+            .Select(tb => (tb.TroopId, tb.BadgeId))
+            .ToHashSet();
 
         foreach (var item in items)
         {
@@ -877,6 +874,12 @@ public class DataMigrationService
             }
 
             if (!validBadges.Contains(item.BadgeId))
+            {
+                skipped++;
+                continue;
+            }
+
+            if (!existingTroopBadges.Add((troopId.Value, item.BadgeId)))
             {
                 skipped++;
                 continue;

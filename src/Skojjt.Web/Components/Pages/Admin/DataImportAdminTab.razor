@@ -1,0 +1,219 @@
+@using System.IO.Compression
+@using System.Text.Json
+@using Skojjt.Infrastructure.Services
+@inject DataMigrationService MigrationService
+@inject ISnackbar Snackbar
+@inject ILogger<DataImportAdminTab> Logger
+
+<MudText Typo="Typo.h6" Class="mb-4">Dataimport</MudText>
+
+<MudAlert Severity="Severity.Info" Class="mb-4">
+    Ladda upp en ZIP-fil med JSON-exportfiler från Skojjt v1 för att importera data.
+    ZIP-filen ska innehålla filerna direkt (t.ex. semesters.json, persons.json, etc.) eller i en undermapp.
+</MudAlert>
+
+<MudPaper Class="pa-4 mb-4">
+    <MudText Typo="Typo.subtitle1" Class="mb-3"><b>Ladda upp importfil</b></MudText>
+
+    <MudFileUpload T="IBrowserFile" Accept=".zip" MaximumFileCount="1"
+                   FilesChanged="OnFileSelected">
+        <ActivatorContent>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.CloudUpload"
+                       Disabled="_importing">
+                Välj ZIP-fil
+            </MudButton>
+        </ActivatorContent>
+    </MudFileUpload>
+
+    @if (_selectedFile is not null)
+    {
+        <MudText Typo="Typo.body2" Class="mt-2">
+            <b>Vald fil:</b> @_selectedFile.Name (@FormatSize(_selectedFile.Size))
+        </MudText>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3"
+                   OnClick="StartImport" Disabled="_importing"
+                   StartIcon="@Icons.Material.Filled.PlayArrow">
+            @if (_importing)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Starta import
+        </MudButton>
+    }
+</MudPaper>
+
+@* Progress display *@
+@if (_progressEntries.Count > 0 || _importing)
+{
+    <MudPaper Class="pa-4 mb-4">
+        <MudText Typo="Typo.subtitle1" Class="mb-2"><b>Importförlopp</b></MudText>
+
+        @if (_importing && _currentStep is not null)
+        {
+            <MudProgressLinear Color="Color.Primary"
+                               Value="@((_currentStep.Current / (double)_currentStep.Total) * 100)"
+                               Class="mb-2" />
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Importerar @_currentStep.Step... (@_currentStep.Current / @_currentStep.Total)
+            </MudText>
+        }
+
+        <MudSimpleTable Dense="true" Hover="true" Class="mt-3">
+            <thead>
+                <tr>
+                    <th>Steg</th>
+                    <th style="text-align:right">Poster</th>
+                    <th style="text-align:right">Tid</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var entry in _progressEntries)
+                {
+                    <tr>
+                        <td>
+                            @if (entry.Step == "done")
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" Class="mr-1" />
+                                <b>Klart!</b>
+                            }
+                            else
+                            {
+                                @entry.Step
+                            }
+                        </td>
+                        <td style="text-align:right">@(entry.Records > 0 ? entry.Records.ToString("N0") : "—")</td>
+                        <td style="text-align:right">@(entry.Elapsed ?? "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    </MudPaper>
+}
+
+@if (_errorMessage is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
+}
+
+@code {
+    private IBrowserFile? _selectedFile;
+    private bool _importing;
+    private string? _errorMessage;
+    private ImportProgress? _currentStep;
+    private List<ImportProgress> _progressEntries = [];
+
+    private void OnFileSelected(IBrowserFile file)
+    {
+        _selectedFile = file;
+        _errorMessage = null;
+        _progressEntries = [];
+        _currentStep = null;
+    }
+
+    private async Task StartImport()
+    {
+        if (_selectedFile is null) return;
+
+        _importing = true;
+        _errorMessage = null;
+        _progressEntries = [];
+        _currentStep = null;
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"skojjt-import-{Guid.NewGuid():N}");
+
+        try
+        {
+            Directory.CreateDirectory(tempDir);
+
+            // Copy the Blazor stream to a temp file first — IBrowserFile streams
+            // don't support synchronous reads required by ZipFile.ExtractToDirectory.
+            var maxSize = 512L * 1024 * 1024; // 512 MB
+            var tempZipPath = Path.Combine(tempDir, "upload.zip");
+            await using (var browserStream = _selectedFile.OpenReadStream(maxSize))
+            await using (var tempFile = File.Create(tempZipPath))
+            {
+                await browserStream.CopyToAsync(tempFile);
+            }
+
+            ZipFile.ExtractToDirectory(tempZipPath, tempDir);
+            File.Delete(tempZipPath);
+
+            // Check if files were extracted inside a subfolder
+            var importDir = tempDir;
+            var jsonFiles = Directory.GetFiles(importDir, "*.json");
+            if (jsonFiles.Length == 0)
+            {
+                var subdirs = Directory.GetDirectories(importDir);
+                if (subdirs.Length == 1 && Directory.GetFiles(subdirs[0], "*.json").Length > 0)
+                {
+                    importDir = subdirs[0];
+                }
+                else
+                {
+                    _errorMessage = "ZIP-filen innehåller inga JSON-filer.";
+                    return;
+                }
+            }
+
+            Logger.LogInformation("Extracted {Count} JSON files from uploaded ZIP, starting import...",
+                Directory.GetFiles(importDir, "*.json").Length);
+
+            Func<MigrationProgress, Task> progress = async p =>
+            {
+                await InvokeAsync(() =>
+                {
+                    if (p.Elapsed is not null || p.Step == "done")
+                    {
+                        _progressEntries.Add(new ImportProgress(
+                            p.Step, p.Current, p.Total, p.Records, p.Elapsed?.ToString(@"m\:ss\.f")));
+                        _currentStep = null;
+                    }
+                    else
+                    {
+                        _currentStep = new ImportProgress(p.Step, p.Current, p.Total, 0, null);
+                    }
+                    StateHasChanged();
+                });
+            };
+
+            await MigrationService.ImportAllAsync(importDir, default, progress);
+            Snackbar.Add("Import slutförd!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Import from uploaded ZIP failed");
+            _errorMessage = $"Import misslyckades: {ex.Message}";
+        }
+        finally
+        {
+            _importing = false;
+
+            // Clean up temp directory
+            try
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to clean up temp directory {TempDir}", tempDir);
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        return bytes switch
+        {
+            < 1024 => $"{bytes} B",
+            < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
+            _ => $"{bytes / (1024.0 * 1024.0):F1} MB"
+        };
+    }
+
+    private record ImportProgress(string Step, int Current, int Total, int Records, string? Elapsed);
+}

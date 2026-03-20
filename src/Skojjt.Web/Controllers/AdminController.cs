@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -111,6 +112,116 @@ public class AdminController : ControllerBase
     {
         // TODO: Return database statistics
         return Ok(new { status = "ok" });
+    }
+
+    /// <summary>
+    /// Upload a ZIP file containing JSON export files and run the data import.
+    /// The ZIP should contain the JSON files at the root level (e.g., semesters.json, persons.json, etc.).
+    /// Streams progress as Server-Sent Events (text/event-stream).
+    /// </summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(512 * 1024 * 1024)] // 512 MB
+    [RequestFormLimits(MultipartBodyLengthLimit = 512 * 1024 * 1024)]
+    public async Task ImportFromZip(IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+        {
+            Response.StatusCode = 400;
+            Response.ContentType = "application/json";
+            await Response.WriteAsJsonAsync(new { error = "No file uploaded." }, cancellationToken);
+            return;
+        }
+
+        if (!file.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            Response.StatusCode = 400;
+            Response.ContentType = "application/json";
+            await Response.WriteAsJsonAsync(new { error = "File must be a .zip archive." }, cancellationToken);
+            return;
+        }
+
+        // Extract to a temporary directory
+        var tempDir = Path.Combine(Path.GetTempPath(), $"skojjt-import-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            _logger.LogInformation(
+                "Receiving import ZIP ({Size:N0} bytes) from {User}, extracting to {TempDir}",
+                file.Length, User.Identity?.Name ?? "unknown", tempDir);
+
+            // Extract ZIP to temp directory
+            await using (var stream = file.OpenReadStream())
+            {
+                ZipFile.ExtractToDirectory(stream, tempDir);
+            }
+
+            // Check if files were extracted inside a subfolder (common when zipping a directory)
+            var jsonFiles = Directory.GetFiles(tempDir, "*.json");
+            if (jsonFiles.Length == 0)
+            {
+                var subdirs = Directory.GetDirectories(tempDir);
+                if (subdirs.Length == 1 && Directory.GetFiles(subdirs[0], "*.json").Length > 0)
+                {
+                    // Files are in a single subfolder — use that as the import directory
+                    tempDir = subdirs[0];
+                }
+                else
+                {
+                    Response.StatusCode = 400;
+                    Response.ContentType = "application/json";
+                    await Response.WriteAsJsonAsync(
+                        new { error = "ZIP archive does not contain any JSON files." }, cancellationToken);
+                    return;
+                }
+            }
+
+            _logger.LogInformation("Extracted {Count} JSON files, starting import...",
+                Directory.GetFiles(tempDir, "*.json").Length);
+
+            // Stream progress as Server-Sent Events
+            Response.Headers.ContentType = "text/event-stream";
+            Response.Headers.CacheControl = "no-cache";
+
+            Func<MigrationProgress, Task> progress = async p =>
+            {
+                var json = JsonSerializer.Serialize(p, JsonOptions);
+                await Response.WriteAsync($"data: {json}\n\n", cancellationToken);
+                await Response.Body.FlushAsync(cancellationToken);
+            };
+
+            await _migrationService.ImportAllAsync(tempDir, cancellationToken, progress);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Import from ZIP failed");
+
+            if (!Response.HasStarted)
+            {
+                Response.StatusCode = 500;
+                Response.ContentType = "application/json";
+                await Response.WriteAsJsonAsync(new { error = ex.Message }, cancellationToken);
+            }
+            else
+            {
+                var errorJson = JsonSerializer.Serialize(new { error = ex.Message }, JsonOptions);
+                await Response.WriteAsync($"event: error\ndata: {errorJson}\n\n", cancellationToken);
+                await Response.Body.FlushAsync(cancellationToken);
+            }
+        }
+        finally
+        {
+            // Clean up temp directory
+            try
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to clean up temp directory {TempDir}", tempDir);
+            }
+        }
     }
 }
 
