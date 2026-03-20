@@ -84,6 +84,7 @@ memberlist_*.json
 scoutnet_memberlist_*.json
 datastore_export/
 migrations.sql
+apikeys.txt
 
 ## Data exports
 **/*_export/

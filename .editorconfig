@@ -4,9 +4,11 @@ root = true
 # All files
 [*]
 charset = utf-8
+end_of_line = lf
+insert_final_newline = true
 
-# C# files
-[*.cs]
+# C# and Razor files
+[*.{cs,razor,cshtml}]
 
 #### Core EditorConfig Options ####
 
@@ -14,10 +16,6 @@ charset = utf-8
 indent_size = 4
 indent_style = space
 tab_width = 4
-
-# New line preferences
-end_of_line = crlf
-insert_final_newline = false
 
 #### .NET Coding Conventions ####
 

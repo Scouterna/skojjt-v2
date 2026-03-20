@@ -1,6 +1,7 @@
 @using System.IO.Compression
 @using System.Text.Json
 @using Skojjt.Infrastructure.Services
+@implements IDisposable
 @inject DataMigrationService MigrationService
 @inject ISnackbar Snackbar
 @inject ILogger<DataImportAdminTab> Logger
@@ -98,6 +99,7 @@
 }
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     private IBrowserFile? _selectedFile;
     private bool _importing;
     private string? _errorMessage;
@@ -134,7 +136,7 @@
             await using (var browserStream = _selectedFile.OpenReadStream(maxSize))
             await using (var tempFile = File.Create(tempZipPath))
             {
-                await browserStream.CopyToAsync(tempFile);
+                await browserStream.CopyToAsync(tempFile, _cts.Token);
             }
 
             ZipFile.ExtractToDirectory(tempZipPath, tempDir);
@@ -178,8 +180,13 @@
                 });
             };
 
-            await MigrationService.ImportAllAsync(importDir, default, progress);
+            await MigrationService.ImportAllAsync(importDir, _cts.Token, progress);
             Snackbar.Add("Import slutförd!", Severity.Success);
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.LogInformation("Import was cancelled");
+            _errorMessage = "Importen avbröts.";
         }
         catch (Exception ex)
         {
@@ -213,6 +220,12 @@
             < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
             _ => $"{bytes / (1024.0 * 1024.0):F1} MB"
         };
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
     }
 
     private record ImportProgress(string Step, int Current, int Total, int Records, string? Elapsed);
