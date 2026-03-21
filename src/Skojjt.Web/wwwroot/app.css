@@ -179,6 +179,12 @@ h1:focus {
     animation: spin 1.5s linear infinite;
 }
 
+.reconnect-attempt-text {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 0.75rem !important;
+}
+
 /* Failed state */
 #components-reconnect-modal.components-reconnect-failed .show-failed {
     display: block;

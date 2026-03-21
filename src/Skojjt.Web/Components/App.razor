@@ -79,6 +79,8 @@
                 <div class="reconnect-icon">⟳</div>
                 <h4>Ansluter till servern...</h4>
                 <p>Vänta medan anslutningen återupprättas.</p>
+                <p id="reconnect-attempt" class="reconnect-attempt-text"></p>
+                <button onclick="window.Blazor.reconnect()">Försök igen nu</button>
             </div>
             <div class="reconnect-content show-failed">
                 <div class="reconnect-icon">✕</div>
@@ -98,20 +100,23 @@
     <script src="js/export.js"></script>
     <script src="_framework/blazor.web.js" autostart="false"></script>
     <script>
-        // Configure Blazor Server reconnection with exponential backoff.
-        // Default behavior only retries ~8 times over ~40 seconds.
-        // This configuration retries for several minutes with increasing delays,
-        // giving mobile/Wi-Fi users time to recover from brief network drops.
+        // Configure Blazor Server reconnection with a three-phase retry strategy.
+        // Phase 1 (attempts 0-7):  500ms — fast burst for brief hiccups (4s total)
+        // Phase 2 (attempts 8-17): 2s   — moderate for short outages (+20s = 24s total)
+        // Phase 3 (attempts 18+):  5s   — steady for longer outages, up to maxRetries
+        // Total ~50 retries ≈ 24s + 160s = ~3 minutes of retrying.
         Blazor.start({
             circuit: {
                 reconnectionOptions: {
-                    maxRetries: 30,
+                    maxRetries: 50,
                     retryIntervalMilliseconds: (previousAttempts, maxRetries) => {
-                        // Exponential backoff: 1s, 2s, 4s, 8s... capped at 30s
-                        const baseDelay = 1000;
-                        const maxDelay = 30000;
-                        const delay = Math.min(baseDelay * Math.pow(2, previousAttempts), maxDelay);
-                        return delay;
+                        const attemptEl = document.getElementById('reconnect-attempt');
+                        if (attemptEl) {
+                            attemptEl.textContent = `Försök ${previousAttempts + 1} av ${maxRetries}...`;
+                        }
+                        if (previousAttempts < 8) return 500;
+                        if (previousAttempts < 18) return 2000;
+                        return 5000;
                     },
                     dialogId: 'components-reconnect-modal'
                 }
