@@ -299,7 +299,12 @@
                                                 }
                                             </CardHeaderAvatar>
                                             <CardHeaderContent>
-                                                <MudText Typo="Typo.subtitle1">@badge.Badge.Name</MudText>
+                                                <MudLink Href="@($"/sk/{ScoutGroupId}/badges/{badge.Badge.Id}")"
+                                                         Typo="Typo.subtitle1"
+                                                         Color="Color.Inherit"
+                                                         Underline="Underline.Hover">
+                                                    @badge.Badge.Name
+                                                </MudLink>
                                                 <MudText Typo="Typo.caption" Color="Color.Secondary">
                                                     @badge.CompletedParts / @badge.TotalParts delar klara
                                                 </MudText>
