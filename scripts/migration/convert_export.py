@@ -864,7 +864,8 @@ class DatastoreExportConverter:
             result.append({
                 'troop_id': troop_id,
                 'person_id': person_id_int,
-                'is_leader': r.get('leader', False)
+                'is_leader': r.get('leader', False),
+                'patrol': r.get('patrol')
             })
         return result
     

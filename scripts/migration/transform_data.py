@@ -807,7 +807,8 @@ class DataTransformer:
                 'scout_group_id': troop_id[1],
                 'semester_id': troop_id[2],
                 'person_id': person_id,
-                'is_leader': r.get('is_leader', False)
+                'is_leader': r.get('is_leader', False),
+                'patrol': self.person_patrol_lookup.get(person_id)
             })
 
         if skipped_missing_troop:
@@ -1093,7 +1094,15 @@ class DataTransformer:
             persons.extend(stubs)
 
         self.save_json('persons.json', persons)
-        
+
+        # Build patrol lookup from person data (v1 stored patrol per-person,
+        # v2 stores it per-TroopPerson).
+        self.person_patrol_lookup = {
+            p['id']: p.get('patrol')
+            for p in persons
+            if p.get('patrol')
+        }
+
         # 4. Troops
         print("Transforming Troop...")
         raw_troops = self.load_json('troops.json')

@@ -519,6 +519,61 @@ public class ScoutnetImportServiceTests : IDisposable
 
     #endregion
 
+    #region Patrol Update Tests
+
+    [TestMethod]
+    public async Task ImportFromResponseAsync_UpdatesPatrolOnExistingTroopPerson()
+    {
+        // Arrange - Simulate migration: create troop + TroopPerson without patrol
+        var semesterId = Semester.GenerateId(2025, true);
+        var response = ScoutnetTestDataGenerator.CreateMemberListResponse(3, TestScoutGroupId, includeLeaders: false);
+
+        // Pre-create the troop as the migration would
+        var firstMember = response.Data.Values.First();
+        var troopScoutnetId = firstMember.GetUnitId()!.Value;
+        var troop = new Troop
+        {
+            ScoutnetId = troopScoutnetId,
+            ScoutGroupId = TestScoutGroupId,
+            SemesterId = semesterId,
+            Name = firstMember.GetUnitName()!
+        };
+        _context.Troops.Add(troop);
+
+        // Pre-create TroopPerson WITHOUT patrol (as migration does)
+        var personId = firstMember.GetMemberNo();
+        var person = new Person { Id = personId, FirstName = "Test", LastName = "Person" };
+        _context.Persons.Add(person);
+        _context.ScoutGroupPersons.Add(new ScoutGroupPerson
+        {
+            PersonId = personId,
+            ScoutGroupId = TestScoutGroupId
+        });
+        _context.TroopPersons.Add(new TroopPerson
+        {
+            Troop = troop,
+            PersonId = personId,
+            IsLeader = false,
+            Patrol = null // Migration didn't include patrol
+        });
+        await _context.SaveChangesAsync();
+
+        // Verify patrol is null before import
+        var before = await _context.TroopPersons.FirstAsync(tp => tp.PersonId == personId);
+        Assert.IsNull(before.Patrol, "Patrol should be null before import (simulating migration)");
+
+        // Act - Run Scoutnet import which should update the patrol
+        var result = await _service.ImportFromResponseAsync(TestScoutGroupId, semesterId, response);
+
+        // Assert
+        Assert.IsTrue(result.Success, result.ErrorMessage);
+
+        var updated = await _context.TroopPersons.FirstAsync(tp => tp.PersonId == personId);
+        Assert.IsNotNull(updated.Patrol, "Patrol should be set after Scoutnet import");
+    }
+
+    #endregion
+
     #region Duplicate Handling Tests
 
     [TestMethod]
