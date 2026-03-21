@@ -35,4 +35,8 @@
     <ProjectReference Include="..\Skojjt.Shared\Skojjt.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\CHANGELOG.md" Link="CHANGELOG.md" />
+  </ItemGroup>
+
 </Project>

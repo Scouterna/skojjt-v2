@@ -1,7 +1,6 @@
 @page "/about"
 @using System.Reflection
 @rendermode InteractiveServer
-@inject ISnackbar Snackbar
 
 <PageTitle>Om Skojjt</PageTitle>
 
@@ -10,13 +9,154 @@
     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
         Närvarohantering för scouter i Sverige.
     </MudText>
-    <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Center">
+
+    <MudGrid>
+        @* Syfte *@
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-4" Style="height:100%">
+                <div class="d-flex align-center mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-2" Color="Color.Primary" />
+                    <MudText Typo="Typo.h6">Vad är Skojjt?</MudText>
+                </div>
+                <MudText Typo="Typo.body1" Class="mb-2">
+                    Skojjt är ett verktyg för svenska scoutkårer att hantera närvarorapportering,
+                    avdelningar, medlemmar och märken. Systemet gör det enkelt att föra närvarokort
+                    och exportera underlag för kommunala aktivitetsbidrag (DAK).
+                </MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Skojjt är öppen källkod och utvecklas ideellt av scouter för scouter.
+                </MudText>
+            </MudPaper>
+        </MudItem>
+
+        @* Scoutnet-koppling *@
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-4" Style="height:100%">
+                <div class="d-flex align-center mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Sync" Class="mr-2" Color="Color.Primary" />
+                    <MudText Typo="Typo.h6">Koppling till Scoutnet</MudText>
+                </div>
+                <MudText Typo="Typo.body1" Class="mb-2">
+                    Skojjt hämtar medlemsdata direkt från Scoutnet, det centrala medlemsregistret
+                    för svensk scouting. Det innebär att ni inte behöver registrera medlemmar manuellt
+                    – uppgifter som namn, personnummer och kontaktinformation synkas automatiskt.
+                </MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Inloggning sker via ScoutID (Scoutnets SSO) så att behörighet styrs utifrån
+                    era roller i Scoutnet.
+                </MudText>
+            </MudPaper>
+        </MudItem>
+
+        @* Nyheter i v2 *@
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-4" Style="height:100%">
+                <div class="d-flex align-center mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.NewReleases" Class="mr-2" Color="Color.Primary" />
+                    <MudText Typo="Typo.h6">Nyheter i Skojjt v2</MudText>
+                </div>
+                <MudText Typo="Typo.body1" Class="mb-3">
+                    Skojjt v2 är en helt omskriven version med modern teknik och nya funktioner
+                    jämfört med den äldre versionen (v1):
+                </MudText>
+                <MudList T="string" Dense>
+                    <MudListItem Icon="@Icons.Material.Filled.Check" IconColor="Color.Success">
+                        Modernt gränssnitt byggt med Blazor och MudBlazor
+                    </MudListItem>
+                    <MudListItem Icon="@Icons.Material.Filled.Check" IconColor="Color.Success">
+                        Snabbare och mer responsivt – fungerar bra på mobil och surfplatta
+                    </MudListItem>
+                    <MudListItem Icon="@Icons.Material.Filled.Check" IconColor="Color.Success">
+                        Förbättrad DAK-export med stöd för aktuella bidragsregler
+                    </MudListItem>
+                    <MudListItem Icon="@Icons.Material.Filled.Check" IconColor="Color.Success">
+                        Märkeshantering med spårning av individuella framsteg
+                    </MudListItem>
+                    <MudListItem Icon="@Icons.Material.Filled.Check" IconColor="Color.Success">
+                        Inloggning via ScoutID istället för direkt Scoutnet-API-nyckel
+                    </MudListItem>
+                </MudList>
+            </MudPaper>
+        </MudItem>
+
+        @* Kontakt & felrapportering *@
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-4" Style="height:100%">
+                <div class="d-flex align-center mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.BugReport" Class="mr-2" Color="Color.Primary" />
+                    <MudText Typo="Typo.h6">Kontakt &amp; felrapportering</MudText>
+                </div>
+                <MudText Typo="Typo.body1" Class="mb-2">
+                    Hittat en bugg eller har ett förslag? Skapa ett ärende (issue) på GitHub:
+                </MudText>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Custom.Brands.GitHub"
+                           Href="https://github.com/Scouterna/skojjt-v2/issues"
+                           Target="_blank"
+                           Class="mb-3">
+                    Rapportera på GitHub
+                </MudButton>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                    Beskriv gärna vad du förväntade dig, vad som hände, och vilken webbläsare du använder.
+                </MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Skojjt utvecklas och förvaltas av frivilliga inom Scouterna. Vill du bidra med kod
+                    eller idéer? Besök projektets
+                    <MudLink Href="https://github.com/Scouterna/skojjt-v2" Target="_blank">GitHub-repo</MudLink>.
+                </MudText>
+            </MudPaper>
+        </MudItem>
+
+        @* Ändringslogg *@
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4">
+                <div class="d-flex align-center mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.History" Class="mr-2" Color="Color.Primary" />
+                    <MudText Typo="Typo.h6">Ändringslogg</MudText>
+                </div>
+                @foreach (var section in _changelogSections)
+                {
+                    <MudText Typo="Typo.subtitle1" Class="mt-3 mb-1" Color="Color.Primary">
+                        @(section.Title)
+                    </MudText>
+                    @if (!string.IsNullOrEmpty(section.Subtitle))
+                    {
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-1">
+                            @(section.Subtitle)
+                        </MudText>
+                    }
+                    @if (section.Items.Count > 0)
+                    {
+                        <MudList T="string" Dense>
+                            @foreach (var item in section.Items)
+                            {
+                                <MudListItem Icon="@Icons.Material.Filled.ChevronRight" IconSize="Size.Small">
+                                    @item
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+                }
+                @if (_changelogSections.Count == 0)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Ändringsloggen kunde inte läsas in.
+                    </MudText>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Center" Class="mt-6">
         Version @AppVersion
     </MudText>
 </MudContainer>
 
 @code {
-    // TODO: move this to a utility class if needed elsewhere (it is duplocated in the login screen)
+    private List<ChangelogSection> _changelogSections = [];
+
+    // TODO: move this to a utility class if needed elsewhere (it is duplicated in the login screen)
     private string AppVersion
     {
         get
@@ -25,5 +165,69 @@
             var version = assembly.GetName().Version;
             return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "0.0.0";
         }
+    }
+
+    protected override void OnInitialized()
+    {
+        _changelogSections = ParseChangelog();
+    }
+
+    private static List<ChangelogSection> ParseChangelog()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        var resourceName = assembly.GetManifestResourceNames()
+            .FirstOrDefault(n => n.EndsWith("CHANGELOG.md", StringComparison.OrdinalIgnoreCase));
+
+        if (resourceName is null)
+            return [];
+
+        using var stream = assembly.GetManifestResourceStream(resourceName);
+        if (stream is null)
+            return [];
+
+        using var reader = new StreamReader(stream);
+        var content = reader.ReadToEnd();
+
+        var sections = new List<ChangelogSection>();
+        ChangelogSection? current = null;
+
+        foreach (var line in content.Split('\n').Select(l => l.TrimEnd('\r')))
+        {
+            if (line.StartsWith("## ", StringComparison.Ordinal))
+            {
+                current = new ChangelogSection { Title = line[3..].Trim().Trim('[', ']') };
+                sections.Add(current);
+            }
+            else if (line.StartsWith("### ", StringComparison.Ordinal))
+            {
+                if (current is not null)
+                    current.Subtitle = line[4..].Trim();
+            }
+            else if (line.StartsWith('[') && line.Contains(']'))
+            {
+                var versionLabel = line.Trim().Trim('[', ']');
+                current = new ChangelogSection { Title = versionLabel };
+                sections.Add(current);
+            }
+            else if (line.StartsWith("* ", StringComparison.Ordinal) || line.StartsWith("- ", StringComparison.Ordinal))
+            {
+                current?.Items.Add(line[2..].Trim());
+            }
+            else if ((line.StartsWith("  ", StringComparison.Ordinal) && current?.Items.Count > 0))
+            {
+                var trimmed = line.Trim();
+                if (!string.IsNullOrEmpty(trimmed))
+                    current.Items[^1] = $"{current.Items[^1]} {trimmed}";
+            }
+        }
+
+        return sections;
+    }
+
+    private sealed class ChangelogSection
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Subtitle { get; set; }
+        public List<string> Items { get; } = [];
     }
 }
