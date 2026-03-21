@@ -2,9 +2,11 @@
 @using Microsoft.AspNetCore.Authorization
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
 @attribute [Authorize]
 @inject IScoutGroupRepository ScoutGroupRepository
 @inject IPersonRepository PersonRepository
+@inject IBadgeService BadgeService
 
 <PageTitle>@(_person?.FullName ?? "Person") - Skojjt</PageTitle>
 
@@ -259,6 +261,69 @@
                     }
                 </MudPaper>
             </MudItem>
+
+            @* Badge Progress *@
+            <MudItem xs="12">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <div class="d-flex align-center mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Class="mr-2" Color="Color.Secondary" />
+                        <MudText Typo="Typo.h6">Märkesframsteg</MudText>
+                    </div>
+
+                    @if (_badgeProgress.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">
+                            Inga märken påbörjade.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudGrid>
+                            @foreach (var badge in _badgeProgress)
+                            {
+                                <MudItem xs="12" sm="6" md="4">
+                                    <MudCard Outlined="true">
+                                        <MudCardHeader>
+                                            <CardHeaderAvatar>
+                                                @if (!string.IsNullOrEmpty(badge.Badge.ImageUrl))
+                                                {
+                                                    <MudAvatar Size="Size.Medium">
+                                                        <MudImage Src="@badge.Badge.ImageUrl" Alt="@badge.Badge.Name" />
+                                                    </MudAvatar>
+                                                }
+                                                else
+                                                {
+                                                    <MudAvatar Color="@(badge.IsCompleted ? Color.Success : Color.Default)" Size="Size.Medium">
+                                                        <MudIcon Icon="@(badge.IsCompleted ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.EmojiEvents)" />
+                                                    </MudAvatar>
+                                                }
+                                            </CardHeaderAvatar>
+                                            <CardHeaderContent>
+                                                <MudText Typo="Typo.subtitle1">@badge.Badge.Name</MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    @badge.CompletedParts / @badge.TotalParts delar klara
+                                                </MudText>
+                                            </CardHeaderContent>
+                                        </MudCardHeader>
+                                        <MudCardContent>
+                                            <MudProgressLinear Color="@(badge.IsCompleted ? Color.Success : Color.Primary)"
+                                                               Value="@(badge.TotalParts > 0 ? (double)badge.CompletedParts / badge.TotalParts * 100 : 0)"
+                                                               Rounded="true"
+                                                               Size="Size.Medium" />
+                                            @if (badge.IsCompleted)
+                                            {
+                                                <MudText Typo="Typo.caption" Color="Color.Success" Class="mt-1">
+                                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" /> Klart!
+                                                </MudText>
+                                            }
+                                        </MudCardContent>
+                                    </MudCard>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                    }
+                </MudPaper>
+            </MudItem>
         </MudGrid>
     }
 </MudContainer>
@@ -273,6 +338,7 @@
     private ScoutGroup? _scoutGroup;
     private Person? _person;
     private List<TroopPerson> _troopMemberships = new();
+    private IReadOnlyList<BadgePersonSummary> _badgeProgress = [];
     private bool _loading = true;
     private List<BreadcrumbItem> _breadcrumbs = new();
 
@@ -309,6 +375,8 @@
                     .Where(tp => tp.Troop?.ScoutGroupId == ScoutGroupId)
                     .OrderByDescending(tp => tp.Troop?.SemesterId ?? 0)
                     .ToList();
+
+                _badgeProgress = await BadgeService.GetPersonBadgesAsync(PersonId);
             }
         }
         finally

@@ -89,12 +89,28 @@
                             <thead>
                                 <tr>
                                     <th class="sticky-col name-col">Namn</th>
-                                    @foreach (var part in scoutParts)
+                                    @for (var i = 0; i < scoutParts.Count; i++)
                                     {
+                                        var part = scoutParts[i];
+                                        var partIndex = i;
                                         <th class="part-col">
                                             <MudTooltip Text="@(part.LongDescription ?? part.ShortDescription)">
                                                 <span>@part.ShortDescription</span>
                                             </MudTooltip>
+                                            <MudMenu Icon="@Icons.Material.Filled.MoreHoriz"
+                                                     Size="Size.Small"
+                                                     Dense="true"
+                                                     Color="Color.Primary"
+                                                     AnchorOrigin="Origin.BottomCenter"
+                                                     TransformOrigin="Origin.TopCenter"
+                                                     Class="part-menu">
+                                                <MudMenuItem OnClick="@(() => SetAllForPart(part.Id, scoutPhase, true))">Alla</MudMenuItem>
+                                                <MudMenuItem OnClick="@(() => SetAllForPart(part.Id, scoutPhase, false))">Ingen</MudMenuItem>
+                                                @if (partIndex > 0)
+                                                {
+                                                    <MudMenuItem OnClick="@(() => CopyFromPreviousPart(part.Id, scoutParts[partIndex - 1].Id, scoutPhase))">Som förra</MudMenuItem>
+                                                }
+                                            </MudMenu>
                                         </th>
                                     }
                                 </tr>
@@ -103,7 +119,13 @@
                                 @foreach (var pp in scoutPhase)
                                 {
                                     <tr>
-                                        <td class="sticky-col name-col">@pp.Person.FullName</td>
+                                        <td class="sticky-col name-col">
+                                            <MudLink Href="@($"/sk/{ScoutGroupId}/p/{pp.Person.Id}")"
+                                                     Color="Color.Inherit"
+                                                     Underline="Underline.Hover">
+                                                @pp.Person.FullName
+                                            </MudLink>
+                                        </td>
                                         @foreach (var part in scoutParts)
                                         {
                                             var isDone = pp.CompletedPartIds.Contains(part.Id);
@@ -135,12 +157,28 @@
                             <thead>
                                 <tr>
                                     <th class="sticky-col name-col">Namn</th>
-                                    @foreach (var part in adminParts)
+                                    @for (var i = 0; i < adminParts.Count; i++)
                                     {
+                                        var part = adminParts[i];
+                                        var partIndex = i;
                                         <th class="part-col">
                                             <MudTooltip Text="@(part.LongDescription ?? part.ShortDescription)">
                                                 <span>@part.ShortDescription</span>
                                             </MudTooltip>
+                                            <MudMenu Icon="@Icons.Material.Filled.MoreHoriz"
+                                                     Size="Size.Small"
+                                                     Dense="true"
+                                                     Color="Color.Primary"
+                                                     AnchorOrigin="Origin.BottomCenter"
+                                                     TransformOrigin="Origin.TopCenter"
+                                                     Class="part-menu">
+                                                <MudMenuItem OnClick="@(() => SetAllForPart(part.Id, adminPhase, true))">Alla</MudMenuItem>
+                                                <MudMenuItem OnClick="@(() => SetAllForPart(part.Id, adminPhase, false))">Ingen</MudMenuItem>
+                                                @if (partIndex > 0)
+                                                {
+                                                    <MudMenuItem OnClick="@(() => CopyFromPreviousPart(part.Id, adminParts[partIndex - 1].Id, adminPhase))">Som förra</MudMenuItem>
+                                                }
+                                            </MudMenu>
                                         </th>
                                     }
                                 </tr>
@@ -149,7 +187,13 @@
                                 @foreach (var pp in adminPhase)
                                 {
                                     <tr>
-                                        <td class="sticky-col name-col">@pp.Person.FullName</td>
+                                        <td class="sticky-col name-col">
+                                            <MudLink Href="@($"/sk/{ScoutGroupId}/p/{pp.Person.Id}")"
+                                                     Color="Color.Inherit"
+                                                     Underline="Underline.Hover">
+                                                @pp.Person.FullName
+                                            </MudLink>
+                                        </td>
                                         @foreach (var part in adminParts)
                                         {
                                             var isDone = pp.CompletedPartIds.Contains(part.Id);
@@ -179,7 +223,8 @@
                     <MudChipSet T="string" ReadOnly="true">
                         @foreach (var pp in completed)
                         {
-                            <MudChip T="string" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle">
+                            <MudChip T="string" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle"
+                                     Href="@($"/sk/{ScoutGroupId}/p/{pp.Person.Id}")">
                                 @pp.Person.FullName
                             </MudChip>
                         }
@@ -232,6 +277,10 @@
     }
     .badge-grid tbody tr:hover {
         background: var(--mud-palette-table-hover);
+    }
+    .part-menu {
+        display: block;
+        margin-top: 2px;
     }
 </style>
 
@@ -294,6 +343,31 @@
         finally
         {
             _loading = false;
+        }
+    }
+
+    private async Task SetAllForPart(int badgePartId, List<PersonPartProgress> persons, bool value)
+    {
+        foreach (var pp in persons)
+        {
+            var isDone = pp.CompletedPartIds.Contains(badgePartId);
+            if (isDone != value)
+            {
+                await TogglePart(badgePartId, pp.Person.Id, value);
+            }
+        }
+    }
+
+    private async Task CopyFromPreviousPart(int targetPartId, int sourcePartId, List<PersonPartProgress> persons)
+    {
+        foreach (var pp in persons)
+        {
+            var wasDone = pp.CompletedPartIds.Contains(sourcePartId);
+            var isDone = pp.CompletedPartIds.Contains(targetPartId);
+            if (wasDone != isDone)
+            {
+                await TogglePart(targetPartId, pp.Person.Id, wasDone);
+            }
         }
     }
 
