@@ -3,6 +3,8 @@
 
 ## Project Overview
 Skojjt is a **Blazor Server** attendance tracking system for Swedish scout groups (scoutkårer). It manages meeting attendance, troop/member management, badge tracking, and exports reports for municipal activity grants (aktivitetsbidrag / DAK). The UI is in **Swedish**.
+Scoutnet is the member register for Swedish scouting, and Skojjt integrates with it for authentication and member data. 
+This system is designed for use by scout leaders to manage their groups' attendance and activities efficiently.
 
 ## Architecture
 - **Clean Architecture** with three main layers:

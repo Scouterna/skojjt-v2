@@ -432,6 +432,93 @@ public class ScoutnetImportServiceTests : IDisposable
 
     #endregion
 
+    #region Stub/Migration Person Tests
+
+    [TestMethod]
+    public async Task ImportFromResponseAsync_UpdatesRemovedStubPerson()
+    {
+        // Arrange - Create a stub person as the migration does (Removed=true, NotInScoutnet=true)
+        var stubPerson = new Person
+        {
+            Id = 1000,
+            FirstName = "Okänd",
+            LastName = "medlem 1000",
+            Removed = true
+        };
+        _context.Persons.Add(stubPerson);
+        _context.ScoutGroupPersons.Add(new ScoutGroupPerson
+        {
+            PersonId = 1000,
+            ScoutGroupId = TestScoutGroupId,
+            NotInScoutnet = true
+        });
+        await _context.SaveChangesAsync();
+
+        // Create a Scoutnet response that contains this member with real names
+        var response = ScoutnetTestDataGenerator.CreateMemberListResponse(1, TestScoutGroupId);
+
+        // Act
+        var result = await _service.ImportFromResponseAsync(TestScoutGroupId, Semester.GenerateId(2025, true), response);
+
+        // Assert
+        Assert.IsTrue(result.Success, result.ErrorMessage);
+        Assert.AreEqual(0, result.PersonsCreated);
+        Assert.AreEqual(1, result.PersonsUpdated);
+
+        var updatedPerson = await _context.Persons.FindAsync(1000);
+        Assert.IsNotNull(updatedPerson);
+        Assert.AreNotEqual("Okänd", updatedPerson.FirstName, "FirstName should have been updated from Scoutnet");
+        Assert.AreNotEqual("medlem 1000", updatedPerson.LastName, "LastName should have been updated from Scoutnet");
+        Assert.IsFalse(updatedPerson.Removed, "Removed flag should be cleared");
+
+        var sgp = await _context.ScoutGroupPersons
+            .FirstOrDefaultAsync(s => s.PersonId == 1000 && s.ScoutGroupId == TestScoutGroupId);
+        Assert.IsNotNull(sgp);
+        Assert.IsFalse(sgp.NotInScoutnet, "NotInScoutnet should be cleared");
+    }
+
+    [TestMethod]
+    public async Task ImportFromResponseAsync_UpdatesNameFromDictionaryKeyWhenMemberNoMissing()
+    {
+        // Arrange - Create a stub person
+        var stubPerson = new Person
+        {
+            Id = 1000,
+            FirstName = "Okänd",
+            LastName = "medlem 1000",
+            Removed = true
+        };
+        _context.Persons.Add(stubPerson);
+        _context.ScoutGroupPersons.Add(new ScoutGroupPerson
+        {
+            PersonId = 1000,
+            ScoutGroupId = TestScoutGroupId,
+            NotInScoutnet = true
+        });
+        await _context.SaveChangesAsync();
+
+        // Create a response where member_no field is missing (null) but dictionary key IS the member ID
+        var response = ScoutnetTestDataGenerator.CreateMemberListResponse(1, TestScoutGroupId);
+        // Remove the member_no field from the member data to simulate API not returning it
+        var member = response.Data.Values.First();
+        member.MemberNo = null;
+
+        // Act
+        var result = await _service.ImportFromResponseAsync(TestScoutGroupId, Semester.GenerateId(2025, true), response);
+
+        // Assert
+        Assert.IsTrue(result.Success, result.ErrorMessage);
+        Assert.AreEqual(0, result.PersonsCreated);
+        Assert.AreEqual(1, result.PersonsUpdated);
+
+        var updatedPerson = await _context.Persons.FindAsync(1000);
+        Assert.IsNotNull(updatedPerson);
+        Assert.AreNotEqual("Okänd", updatedPerson.FirstName, "FirstName should have been updated from Scoutnet");
+        Assert.IsFalse(updatedPerson.Removed, "Removed flag should be cleared");
+    }
+
+    #endregion
+
     #region Duplicate Handling Tests
 
     [TestMethod]

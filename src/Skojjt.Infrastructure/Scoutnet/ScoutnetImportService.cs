@@ -151,9 +151,15 @@ public class ScoutnetImportService : IScoutnetImportService
             _logger.LogInformation("Starting import of {Count} members for group {GroupId}, semester {SemesterId}",
                 response.Data.Count, scoutGroupId, semesterId);
 
-            // Collect all person IDs from the import to fetch existing persons
-            var importPersonIds = response.Data.Values
-                .Select(m => m.GetMemberNo())
+            // Collect all person IDs from the import to fetch existing persons.
+            // Use the dictionary key as fallback when member_no is missing from the member data.
+            var importPersonIds = response.Data
+                .Select(kvp =>
+                {
+                    var id = kvp.Value.GetMemberNo();
+                    if (id == 0) int.TryParse(kvp.Key, out id);
+                    return id;
+                })
                 .Where(id => id != 0)
                 .ToHashSet();
 
@@ -185,6 +191,7 @@ public class ScoutnetImportService : IScoutnetImportService
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var personId = member.GetMemberNo();
+                if (personId == 0) int.TryParse(memberId, out personId);
                 if (personId == 0) continue;
 
                 seenPersonIds.Add(personId);
