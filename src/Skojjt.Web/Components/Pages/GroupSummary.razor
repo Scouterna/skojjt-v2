@@ -163,16 +163,29 @@
     private Semester? _semester;
     private GroupSummaryData? _summaryData;
     private bool _loading = true;
+    private bool _initialized;
+    private int _lastLoadedScoutGroupId;
+    private int _lastLoadedSemesterId;
     private List<BreadcrumbItem> _breadcrumbs = new();
 
     protected override async Task OnInitializedAsync()
     {
+        _lastLoadedScoutGroupId = ScoutGroupId;
+        _lastLoadedSemesterId = SemesterId;
         await LoadData();
+        _initialized = true;
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        await LoadData();
+        if (!_initialized) return;
+
+        if (_lastLoadedScoutGroupId != ScoutGroupId || _lastLoadedSemesterId != SemesterId)
+        {
+            _lastLoadedScoutGroupId = ScoutGroupId;
+            _lastLoadedSemesterId = SemesterId;
+            await LoadData();
+        }
     }
 
     private async Task LoadData()

@@ -369,6 +369,8 @@
     private List<Semester> _availableSemesters = new();
     private int _selectedSemesterId;
     private bool _loading = true;
+    private bool _initialized;
+    private int _lastLoadedScoutGroupId;
     private bool _isImporting = false;
     private ScoutnetImportResult? _importResult;
     private List<(string Message, DateTime Timestamp, LogSeverity Severity)> _logMessages = new();
@@ -379,12 +381,20 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _lastLoadedScoutGroupId = ScoutGroupId;
         await LoadData();
+        _initialized = true;
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        await LoadData();
+        if (!_initialized) return;
+
+        if (_lastLoadedScoutGroupId != ScoutGroupId)
+        {
+            _lastLoadedScoutGroupId = ScoutGroupId;
+            await LoadData();
+        }
     }
 
     private async Task LoadData()

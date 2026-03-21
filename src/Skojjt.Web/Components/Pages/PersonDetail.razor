@@ -340,16 +340,29 @@
     private List<TroopPerson> _troopMemberships = new();
     private IReadOnlyList<BadgePersonSummary> _badgeProgress = [];
     private bool _loading = true;
+    private bool _initialized;
+    private int _lastLoadedScoutGroupId;
+    private int _lastLoadedPersonId;
     private List<BreadcrumbItem> _breadcrumbs = new();
 
     protected override async Task OnInitializedAsync()
     {
+        _lastLoadedScoutGroupId = ScoutGroupId;
+        _lastLoadedPersonId = PersonId;
         await LoadData();
+        _initialized = true;
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        await LoadData();
+        if (!_initialized) return;
+
+        if (_lastLoadedScoutGroupId != ScoutGroupId || _lastLoadedPersonId != PersonId)
+        {
+            _lastLoadedScoutGroupId = ScoutGroupId;
+            _lastLoadedPersonId = PersonId;
+            await LoadData();
+        }
     }
 
     private async Task LoadData()
