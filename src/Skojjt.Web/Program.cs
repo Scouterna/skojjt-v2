@@ -25,6 +25,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add Application Insights for production telemetry (exceptions, requests, dependencies)
 builder.Services.AddApplicationInsightsTelemetry();
+builder.Services.AddSingleton<Microsoft.ApplicationInsights.Extensibility.ITelemetryInitializer, UserTelemetryInitializer>();
 
 // Log startup diagnostics
 var startupLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("Startup");
