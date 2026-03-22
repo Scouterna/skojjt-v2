@@ -71,7 +71,7 @@
                 @foreach (var troop in _troops)
                 {
                     <MudItem xs="12" sm="6" md="4">
-                        <MudLink Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{troop.Id}")" Underline="Underline.None" Class="d-block">
+                        <MudLink Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{troop.ScoutnetId}")" Underline="Underline.None" Class="d-block">
                             <MudCard Elevation="2" Class="hover-card">
                                 <MudCardHeader>
                                     <CardHeaderContent>

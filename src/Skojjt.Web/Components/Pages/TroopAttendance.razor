@@ -1,4 +1,4 @@
-@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopId:int}"
+@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopScoutnetId:int}"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.JSInterop
 @using MudBlazor
@@ -247,7 +247,7 @@
                                 <MudChip T="string" Color="Color.Primary"
                                          OnClose="@(() => UnassignBadge(badge.Id))"
                                          Icon="@Icons.Material.Filled.EmojiEvents">
-                                    <MudLink Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}/badges/{badge.Id}")"
+                                    <MudLink Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/badges/{badge.Id}")"
                                              Color="Color.Inherit" Underline="Underline.None">
                                         @badge.Name
                                     </MudLink>
@@ -306,8 +306,8 @@
                     <MudItem xs="12" sm="6" md="3">
                         <MudButton Variant="Variant.Outlined" FullWidth="true"
                                    StartIcon="@Icons.Material.Filled.Tune"
-                                   Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}/settings")">
-                            Standardvärden
+                                   Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/settings")">
+                                    Standardvärden
                         </MudButton>
                     </MudItem>
                 </MudGrid>
@@ -354,7 +354,7 @@
     </TitleContent>
     <DialogContent>
         <MudAlert Severity="Severity.Info" Dense="true" Class="mb-4">
-            Sök bland kårens medlemmar för att lägga till i avdelningen.
+            Sök bland kårens befintliga medlemmar eller skapa en ny person i Scoutnet.
         </MudAlert>
         <MudTextField @bind-Value="_memberSearchText" 
                       Label="Sök namn" 
@@ -408,6 +408,15 @@
             <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4 text-center">
                 Inga personer hittades med det namnet.
             </MudText>
+            <div class="d-flex justify-center mt-3">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.PersonAdd"
+                           Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/add-member")"
+                           Size="Size.Small">
+                    Skapa ny person i Scoutnet
+                </MudButton>
+            </div>
         }
         else if (!string.IsNullOrWhiteSpace(_memberSearchText))
         {
@@ -417,6 +426,13 @@
         }
     </DialogContent>
     <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.PersonAdd"
+                   Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/add-member")">
+            Skapa ny person
+        </MudButton>
+        <MudSpacer />
         <MudButton OnClick="CloseAddMemberDialog">Stäng</MudButton>
     </DialogActions>
 </MudDialog>
@@ -506,7 +522,7 @@
 @code {
     [Parameter] public int ScoutGroupId { get; set; }
     [Parameter] public int SemesterId { get; set; }
-    [Parameter] public int TroopId { get; set; }
+    [Parameter] public int TroopScoutnetId { get; set; }
 
     private ScoutGroup? _scoutGroup;
     private Semester? _semester;
@@ -565,7 +581,7 @@
     // Track the last loaded parameters to avoid reloading on every render
     private int _lastLoadedScoutGroupId;
     private int _lastLoadedSemesterId;
-    private int _lastLoadedTroopId;
+    private int _lastLoadedTroopScoutnetId;
 
     // Badge assignment state
     private List<Badge> _troopBadges = [];
@@ -605,7 +621,7 @@
 
     private Task HandleAttendanceChangedAsync(int troopId, int personId, int meetingId, bool attending, string sourceInstanceId)
     {
-        if (_disposed || sourceInstanceId == _instanceId || troopId != TroopId) return Task.CompletedTask;
+        if (_disposed || sourceInstanceId == _instanceId || _troop == null || troopId != _troop.Id) return Task.CompletedTask;
         
         try
         {
@@ -621,7 +637,7 @@
 
     private Task HandlePatrolChangedAsync(int troopId, int personId, string? patrol, string sourceInstanceId)
     {
-        if (_disposed || sourceInstanceId == _instanceId || troopId != TroopId) return Task.CompletedTask;
+        if (_disposed || sourceInstanceId == _instanceId || _troop == null || troopId != _troop.Id) return Task.CompletedTask;
         
         try
         {
@@ -639,7 +655,7 @@
 
     private Task HandleMeetingChangedAsync(int troopId, int meetingId, MeetingChangeType changeType, string sourceInstanceId)
     {
-        if (_disposed || sourceInstanceId == _instanceId || troopId != TroopId) return Task.CompletedTask;
+        if (_disposed || sourceInstanceId == _instanceId || _troop == null || troopId != _troop.Id) return Task.CompletedTask;
 
         // Reload data when meetings change - fire and forget
         _ = ReloadDataAsync();
@@ -648,7 +664,7 @@
 
     private Task HandleMemberChangedAsync(int troopId, int personId, TroopMemberChangeType changeType, string sourceInstanceId)
     {
-        if (_disposed || sourceInstanceId == _instanceId || troopId != TroopId) return Task.CompletedTask;
+        if (_disposed || sourceInstanceId == _instanceId || _troop == null || troopId != _troop.Id) return Task.CompletedTask;
 
         // Reload data when members change - fire and forget
         _ = ReloadDataAsync();
@@ -673,7 +689,7 @@
         // Only reload if parameters actually changed
         if (_lastLoadedScoutGroupId != ScoutGroupId || 
             _lastLoadedSemesterId != SemesterId || 
-            _lastLoadedTroopId != TroopId)
+            _lastLoadedTroopScoutnetId != TroopScoutnetId)
         {
             await LoadData();
         }
@@ -734,14 +750,14 @@
         // Update tracking variables (for navigation/parameter changes)
         _lastLoadedScoutGroupId = ScoutGroupId;
         _lastLoadedSemesterId = SemesterId;
-        _lastLoadedTroopId = TroopId;
-        
+        _lastLoadedTroopScoutnetId = TroopScoutnetId;
+
         try
         {
             // Load data sequentially - DbContext is not thread-safe
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
             _semester = await SemesterRepository.GetByIdAsync(SemesterId);
-            _troop = await TroopRepository.GetWithMembersAsync(TroopId);
+            _troop = await TroopRepository.GetWithMembersByScoutnetIdAsync(TroopScoutnetId, SemesterId);
             
             if (_scoutGroup != null && _semester != null && _troop != null)
             {
@@ -769,7 +785,7 @@
                 _newMeetingLocation = _troop.DefaultMeetingLocation;
 
                 // Load all meetings with attendance in a SINGLE query instead of N+1 queries
-                var meetingsWithAttendance = await MeetingRepository.GetByTroopWithAttendanceAsync(TroopId);
+                var meetingsWithAttendance = await MeetingRepository.GetByTroopWithAttendanceAsync(_troop.Id);
                 _meetings = meetingsWithAttendance.ToList();
 
                 // Build attendance dictionary from the already-loaded data
@@ -790,7 +806,7 @@
                     .ToDictionary(sgp => sgp.PersonId);
 
                 // Load badge assignments
-                _troopBadges = (await BadgeService.GetTroopBadgesAsync(TroopId)).ToList();
+                _troopBadges = (await BadgeService.GetTroopBadgesAsync(_troop.Id)).ToList();
                 var allGroupBadges = await BadgeService.GetBadgesForGroupAsync(ScoutGroupId);
                 var assignedIds = _troopBadges.Select(b => b.Id).ToHashSet();
                 _availableBadges = allGroupBadges.Where(b => !assignedIds.Contains(b.Id)).ToList();
@@ -847,10 +863,10 @@
     {
         try
         {
-            await TroopRepository.AddMemberAsync(TroopId, person.Id);
-            
+            await TroopRepository.AddMemberAsync(_troop!.Id, person.Id);
+
             // Broadcast member added to other components
-            await NotificationService.NotifyMemberChangedAsync(TroopId, person.Id, TroopMemberChangeType.Added, _instanceId);
+            await NotificationService.NotifyMemberChangedAsync(_troop.Id, person.Id, TroopMemberChangeType.Added, _instanceId);
             
             Snackbar.Add($"{person.FullName} har lagts till i avdelningen!", Severity.Success);
             
@@ -897,11 +913,11 @@
         
         try
         {
-            await TroopRepository.UpdatePatrolAsync(TroopId, personId, newPatrol);
+            await TroopRepository.UpdatePatrolAsync(_troop!.Id, personId, newPatrol);
             troopPerson.Patrol = newPatrol;
-            
+
             // Broadcast the change to other components
-            await NotificationService.NotifyPatrolChangedAsync(TroopId, personId, newPatrol, _instanceId);
+            await NotificationService.NotifyPatrolChangedAsync(_troop.Id, personId, newPatrol, _instanceId);
             
             Snackbar.Add("Patrull uppdaterad", Severity.Success);
         }
@@ -919,7 +935,7 @@
     {
         try
         {
-            await TroopRepository.SetLeaderStatusAsync(TroopId, tp.PersonId, newIsLeader);
+            await TroopRepository.SetLeaderStatusAsync(_troop!.Id, tp.PersonId, newIsLeader);
             tp.IsLeader = newIsLeader;
             
             // Re-sort the list to maintain leader-first ordering
@@ -952,10 +968,10 @@
         // Second click - actually remove
         try
         {
-            await TroopRepository.RemoveMemberAsync(TroopId, tp.PersonId);
-            
+            await TroopRepository.RemoveMemberAsync(_troop!.Id, tp.PersonId);
+
             // Broadcast member removed to other components
-            await NotificationService.NotifyMemberChangedAsync(TroopId, tp.PersonId, TroopMemberChangeType.Removed, _instanceId);
+            await NotificationService.NotifyMemberChangedAsync(_troop.Id, tp.PersonId, TroopMemberChangeType.Removed, _instanceId);
             
             // Remove from local list
             _troopPersons.Remove(tp);
@@ -982,7 +998,7 @@
     {
         try
         {
-            await BadgeService.AssignBadgeToTroopAsync(badgeId, TroopId);
+            await BadgeService.AssignBadgeToTroopAsync(badgeId, _troop!.Id);
             Snackbar.Add("M\u00e4rke tilldelat!", Severity.Success);
             await LoadData();
         }
@@ -996,7 +1012,7 @@
     {
         try
         {
-            await BadgeService.UnassignBadgeFromTroopAsync(badgeId, TroopId);
+            await BadgeService.UnassignBadgeFromTroopAsync(badgeId, _troop!.Id);
             Snackbar.Add("M\u00e4rke borttaget fr\u00e5n avdelningen", Severity.Info);
             await LoadData();
         }
@@ -1069,7 +1085,7 @@
             
             // Broadcast changes to other components
             var notifyChanges = attendanceChanges.Select(c => (c.PersonId, c.MeetingId, c.Item3)).ToList();
-            await NotificationService.NotifyAttendanceChangedBatchAsync(TroopId, notifyChanges, _instanceId);
+            await NotificationService.NotifyAttendanceChangedBatchAsync(_troop!.Id, notifyChanges, _instanceId);
             
             foreach (var key in changesToSave)
             {
@@ -1167,7 +1183,7 @@
 
                         var meeting = new Meeting
                         {
-                            TroopId = TroopId,
+                            TroopId = _troop!.Id,
                             Name = totalDays > 1 ? $"{_newMeetingName} dag {day + 1}" : _newMeetingName,
                             MeetingDate = meetingDate,
                             StartTime = startTime,
@@ -1183,7 +1199,7 @@
                     await UnitOfWork.SaveChangesAsync();
 
                     // Broadcast meeting added to other components
-                    await NotificationService.NotifyMeetingChangedAsync(TroopId, 0, MeetingChangeType.Added, _instanceId);
+                    await NotificationService.NotifyMeetingChangedAsync(_troop!.Id, 0, MeetingChangeType.Added, _instanceId);
 
                     if (skippedCount > 0)
                     {

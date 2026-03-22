@@ -1,0 +1,427 @@
+@page "/sk/{ScoutGroupId:int}/add-member"
+@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopScoutnetId:int}/add-member"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Infrastructure.Scoutnet
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject ITroopRepository TroopRepository
+@inject IScoutnetRegistrationService RegistrationService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Lägg till medlem - @(_troop?.Name ?? _scoutGroup?.Name ?? "Scoutkår") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 mb-8">  <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_scoutGroup == null)
+    {
+        <MudAlert Severity="Severity.Error">Scoutkåren kunde inte hittas.</MudAlert>
+    }
+    else if (string.IsNullOrEmpty(_scoutGroup.ApiKeyWaitinglist))
+    {
+        <MudText Typo="Typo.h4" Class="mb-4">Lägg till medlem</MudText>
+        <MudAlert Severity="Severity.Warning">
+            <MudText>
+                API-nyckel för kölistan är inte konfigurerad.
+                <MudLink Href="@($"/sk/{ScoutGroupId}/settings")">Gå till inställningar</MudLink> för att lägga till den.
+            </MudText>
+        </MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Class="mb-2">Lägg till medlem</MudText>
+        <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">
+            @_scoutGroup.Name
+            @if (_troop != null)
+            {
+                <span> — @_troop.Name</span>
+            }
+        </MudText>
+
+        <MudAlert Severity="Severity.Info" Class="mb-6" Variant="Variant.Outlined" Dense="false">
+            <MudText Typo="Typo.body2" Class="mb-1">
+                <strong>Så här fungerar det:</strong>
+            </MudText>
+            <MudList T="string" Dense="true" ReadOnly="true">
+                <MudListItem Icon="@Icons.Material.Filled.PlaylistAdd" IconColor="Color.Primary" IconSize="Size.Small">
+                    Personen läggs till i <MudLink Href="@($"https://scoutnet.se/organisation/group/home/{ScoutGroupId}#viewgroup_tabmenu_tab_allmembers_pane~waiting")">Scoutnets kölista</MudLink>.
+                </MudListItem>
+                @if (HasTroopContext)
+                {
+                    <MudListItem Icon="@Icons.Material.Filled.GroupAdd" IconColor="Color.Primary" IconSize="Size.Small">
+                        Personen läggs till direkt i Skojjts databas och i avdelningen <strong>@(_troop?.Name ?? "avdelningen")</strong>.
+                    </MudListItem>
+                }
+                else
+                {
+                    <MudListItem Icon="@Icons.Material.Filled.Save" IconColor="Color.Primary" IconSize="Size.Small">
+                        Personen läggs till direkt i Skojjts databas.
+                    </MudListItem>
+                }
+                <MudListItem Icon="@Icons.Material.Filled.SwapHoriz" IconColor="Color.Primary" IconSize="Size.Small">
+                    En kårledare behöver sedan flytta personen från 
+                    <MudLink Href="@($"https://scoutnet.se/organisation/group/home/{ScoutGroupId}#viewgroup_tabmenu_tab_allmembers_pane~waiting")">Scoutnets kölista</MudLink>
+                    för att personen ska bli en aktiv medlem i Scoutnet.
+                </MudListItem>
+            </MudList>
+        </MudAlert>
+
+        @if (_result != null)
+        {
+            @if (_result.Success)
+            {
+                <MudAlert Severity="Severity.Success" Class="mb-4" ShowCloseIcon="true" CloseIconClicked="() => _result = null">
+                    @if (_result.MemberNo > 0)
+                    {
+                        <MudText>
+                            <strong>@_lastRegisteredName</strong> har registrerats i Scoutnet
+                            med medlemsnummer <strong>@_result.MemberNo</strong>
+                            och lagts till i databasen.
+                            @if (_troop != null)
+                            {
+                                <span> Personen har även lagts till i <strong>@_troop.Name</strong>.</span>
+                            }
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudText>
+                            <strong>@_lastRegisteredName</strong> har lagts till i Scoutnets kölista.
+                        </MudText>
+                    }
+                </MudAlert>
+                @if (HasTroopContext)
+                {
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Primary"
+                               Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}")"
+                               StartIcon="@Icons.Material.Filled.ArrowBack"
+                               Class="mb-4">
+                        Tillbaka till @(_troop?.Name ?? "avdelningen")
+                    </MudButton>
+                }
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4" ShowCloseIcon="true" CloseIconClicked="() => _result = null">
+                    @_result.ErrorMessage
+                </MudAlert>
+            }
+        }
+
+        <EditForm Model="@_request" OnValidSubmit="HandleSubmit">
+            <MudGrid>
+                @* Personal Information *@
+                <MudItem xs="12">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <div class="d-flex align-center mb-4">
+                            <MudIcon Icon="@Icons.Material.Filled.Person" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">Personuppgifter</MudText>
+                        </div>
+
+                        <MudGrid>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_request.FirstName"
+                                              Label="Förnamn"
+                                              Required="true"
+                                              RequiredError="Förnamn måste anges"
+                                              Variant="Variant.Outlined"
+                                              Disabled="_isSubmitting" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_request.LastName"
+                                              Label="Efternamn"
+                                              Required="true"
+                                              RequiredError="Efternamn måste anges"
+                                              Variant="Variant.Outlined"
+                                              Disabled="_isSubmitting" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_request.Personnummer"
+                                              Label="Personnummer"
+                                              Required="true"
+                                              RequiredError="Personnummer måste anges"
+                                              HelperText="YYYYMMDD-NNNN"
+                                              Variant="Variant.Outlined"
+                                              Disabled="_isSubmitting" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_request.Email"
+                                              Label="E-postadress"
+                                              Required="true"
+                                              RequiredError="E-postadress måste anges"
+                                              InputType="InputType.Email"
+                                              Variant="Variant.Outlined"
+                                              Disabled="_isSubmitting" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+                @* Address *@
+                <MudItem xs="12">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <div class="d-flex align-center mb-4">
+                            <MudIcon Icon="@Icons.Material.Filled.Home" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">Adress</MudText>
+                        </div>
+
+                        <MudGrid>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_request.AddressLine1"
+                                              Label="Gatuadress"
+                                              Required="true"
+                                              RequiredError="Gatuadress måste anges"
+                                              Variant="Variant.Outlined"
+                                              Disabled="_isSubmitting" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudTextField @bind-Value="_request.ZipCode"
+                                              Label="Postnummer"
+                                              Required="true"
+                                              RequiredError="Postnummer måste anges"
+                                              Variant="Variant.Outlined"
+                                              Disabled="_isSubmitting" />
+                            </MudItem>
+                            <MudItem xs="12" sm="8">
+                                <MudTextField @bind-Value="_request.ZipName"
+                                              Label="Postort"
+                                              Required="true"
+                                              RequiredError="Postort måste anges"
+                                              Variant="Variant.Outlined"
+                                              Disabled="_isSubmitting" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+                @* Contact Information *@
+                <MudItem xs="12">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <div class="d-flex align-center mb-4">
+                            <MudIcon Icon="@Icons.Material.Filled.Phone" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">Kontaktuppgifter</MudText>
+                        </div>
+
+                        <MudGrid>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_request.Mobile"
+                                              Label="Mobiltelefon"
+                                              Variant="Variant.Outlined"
+                                              Disabled="_isSubmitting" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_request.Phone"
+                                              Label="Hemtelefon"
+                                              Variant="Variant.Outlined"
+                                              Disabled="_isSubmitting" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+                @* Guardian 1 *@
+                <MudItem xs="12">
+                    <MudExpansionPanels>
+                        <MudExpansionPanel Text="Anhörig 1" Icon="@Icons.Material.Filled.FamilyRestroom">
+                            <MudGrid>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField @bind-Value="_request.Guardian1Name"
+                                                  Label="Namn"
+                                                  Variant="Variant.Outlined"
+                                                  Disabled="_isSubmitting" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField @bind-Value="_request.Guardian1Email"
+                                                  Label="E-post"
+                                                  InputType="InputType.Email"
+                                                  Variant="Variant.Outlined"
+                                                  Disabled="_isSubmitting" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField @bind-Value="_request.Guardian1Mobile"
+                                                  Label="Mobiltelefon"
+                                                  Variant="Variant.Outlined"
+                                                  Disabled="_isSubmitting" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField @bind-Value="_request.Guardian1Phone"
+                                                  Label="Hemtelefon"
+                                                  Variant="Variant.Outlined"
+                                                  Disabled="_isSubmitting" />
+                                </MudItem>
+                            </MudGrid>
+                        </MudExpansionPanel>
+                    </MudExpansionPanels>
+                </MudItem>
+
+                @* Guardian 2 *@
+                <MudItem xs="12">
+                    <MudExpansionPanels>
+                        <MudExpansionPanel Text="Anhörig 2" Icon="@Icons.Material.Filled.FamilyRestroom">
+                            <MudGrid>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField @bind-Value="_request.Guardian2Name"
+                                                  Label="Namn"
+                                                  Variant="Variant.Outlined"
+                                                  Disabled="_isSubmitting" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField @bind-Value="_request.Guardian2Email"
+                                                  Label="E-post"
+                                                  InputType="InputType.Email"
+                                                  Variant="Variant.Outlined"
+                                                  Disabled="_isSubmitting" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField @bind-Value="_request.Guardian2Mobile"
+                                                  Label="Mobiltelefon"
+                                                  Variant="Variant.Outlined"
+                                                  Disabled="_isSubmitting" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField @bind-Value="_request.Guardian2Phone"
+                                                  Label="Hemtelefon"
+                                                  Variant="Variant.Outlined"
+                                                  Disabled="_isSubmitting" />
+                                </MudItem>
+                            </MudGrid>
+                        </MudExpansionPanel>
+                    </MudExpansionPanels>
+                </MudItem>
+
+                @* Submit *@
+                <MudItem xs="12" Class="d-flex justify-space-between">
+                    <MudButton Variant="Variant.Outlined"
+                               Href="@(HasTroopContext ? $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}" : $"/sk/{ScoutGroupId}")"
+                               Disabled="_isSubmitting">
+                        Tillbaka
+                    </MudButton>
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               ButtonType="ButtonType.Submit"
+                               StartIcon="@Icons.Material.Filled.PersonAdd"
+                               Disabled="_isSubmitting"
+                               Size="Size.Large">
+                        @if (_isSubmitting)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            <span>Registrerar...</span>
+                        }
+                        else
+                        {
+                            <span>Lägg till medlem</span>
+                        }
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int ScoutGroupId { get; set; }
+
+    [Parameter]
+    public int? SemesterId { get; set; }
+
+    [Parameter]
+    public int? TroopScoutnetId { get; set; }
+
+    private ScoutGroup? _scoutGroup;
+    private Troop? _troop;
+    private WaitinglistRegistrationRequest _request = new();
+    private WaitinglistRegistrationResult? _result;
+    private string _lastRegisteredName = string.Empty;
+    private bool _loading = true;
+    private bool _isSubmitting;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+
+    private bool HasTroopContext => TroopScoutnetId.HasValue && SemesterId.HasValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+
+            if (HasTroopContext)
+            {
+                _troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(TroopScoutnetId!.Value, SemesterId!.Value);
+                _breadcrumbs =
+                [
+                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem(_scoutGroup?.Name ?? "Scoutkår", href: $"/sk/{ScoutGroupId}"),
+                    new BreadcrumbItem(_troop?.Name ?? "Avdelning", href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}"),
+                    new BreadcrumbItem("Ny medlem", href: null, disabled: true)
+                ];
+            }
+            else
+            {
+                _breadcrumbs =
+                [
+                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                    new BreadcrumbItem(_scoutGroup?.Name ?? "Scoutkår", href: $"/sk/{ScoutGroupId}"),
+                    new BreadcrumbItem("Lägg till medlem", href: null, disabled: true)
+                ];
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        _isSubmitting = true;
+        _result = null;
+
+        try
+        {
+            _result = await RegistrationService.AddToWaitinglistAsync(ScoutGroupId, _request, _troop?.Id);
+
+            if (_result.Success)
+            {
+                _lastRegisteredName = $"{_request.FirstName} {_request.LastName}";
+                var troopMsg = HasTroopContext && _troop != null
+                    ? $" och lagts till i {_troop.Name}"
+                    : string.Empty;
+                Snackbar.Add($"{_request.FirstName} {_request.LastName} har registrerats i Scoutnet{troopMsg}.", Severity.Success);
+                _request = new WaitinglistRegistrationRequest();
+            }
+            else
+            {
+                Snackbar.Add(_result.ErrorMessage ?? "Ett okänt fel uppstod.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _result = new WaitinglistRegistrationResult
+            {
+                Success = false,
+                ErrorMessage = $"Ett oväntat fel uppstod: {ex.Message}"
+            };
+            Snackbar.Add("Ett oväntat fel uppstod.", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

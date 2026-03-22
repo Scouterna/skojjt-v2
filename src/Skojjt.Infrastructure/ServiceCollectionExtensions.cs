@@ -37,6 +37,9 @@ public static class ServiceCollectionExtensions
         // Register import service
         services.AddScoped<IScoutnetImportService, ScoutnetImportService>();
 
+        // Register waiting list registration service
+        services.AddScoped<IScoutnetRegistrationService, ScoutnetRegistrationService>();
+
         return services;
     }
 

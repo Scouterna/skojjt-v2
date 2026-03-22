@@ -1,4 +1,4 @@
-@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopId:int}/badges/{BadgeId:int}"
+@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopScoutnetId:int}/badges/{BadgeId:int}"
 @using Microsoft.AspNetCore.Authorization
 @using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
@@ -287,7 +287,7 @@
 @code {
     [Parameter] public int ScoutGroupId { get; set; }
     [Parameter] public int SemesterId { get; set; }
-    [Parameter] public int TroopId { get; set; }
+    [Parameter] public int TroopScoutnetId { get; set; }
     [Parameter] public int BadgeId { get; set; }
 
     private ScoutGroup? _scoutGroup;
@@ -323,12 +323,12 @@
         {
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
             _semester = await SemesterRepository.GetByIdAsync(SemesterId);
-            _troop = await TroopRepository.GetByIdAsync(TroopId);
+            _troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(TroopScoutnetId, SemesterId);
             _badge = await BadgeService.GetBadgeWithPartsAsync(BadgeId);
 
             if (_badge != null && _troop != null)
             {
-                _progress = await BadgeService.GetTroopProgressAsync(BadgeId, TroopId);
+                _progress = await BadgeService.GetTroopProgressAsync(BadgeId, _troop.Id);
             }
 
             _breadcrumbs =
@@ -336,7 +336,7 @@
                 new("Scoutkårer", href: "/sk"),
                 new(_scoutGroup?.Name ?? "Kår", href: $"/sk/{ScoutGroupId}"),
                 new(_semester?.DisplayName ?? "Termin", href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
-                new(_troop?.Name ?? "Avdelning", href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}"),
+                new(_troop?.Name ?? "Avdelning", href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}"),
                 new(_badge?.Name ?? "Märke", href: null, disabled: true)
             ];
         }

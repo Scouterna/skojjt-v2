@@ -39,6 +39,18 @@ public class TroopRepository : Repository<Troop, int>, ITroopRepository
             .FirstOrDefaultAsync(t => t.ScoutnetId == scoutnetId && t.SemesterId == semesterId, cancellationToken);
     }
 
+    public async Task<Troop?> GetWithMembersByScoutnetIdAsync(int scoutnetId, int semesterId, CancellationToken cancellationToken = default)
+    {
+        await using var context = CreateContext();
+        return await context.Set<Troop>()
+            .Include(t => t.TroopPersons)
+                .ThenInclude(tp => tp.Person)
+            .Include(t => t.Semester)
+            .Include(t => t.ScoutGroup)
+                .ThenInclude(sg => sg.ScoutGroupPersons)
+            .FirstOrDefaultAsync(t => t.ScoutnetId == scoutnetId && t.SemesterId == semesterId, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Troop>> GetByScoutGroupAndSemesterAsync(int scoutGroupId, int semesterId, CancellationToken cancellationToken = default)
     {
         await using var context = CreateContext();

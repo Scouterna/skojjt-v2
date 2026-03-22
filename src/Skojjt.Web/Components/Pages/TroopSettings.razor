@@ -1,4 +1,4 @@
-@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopId:int}/settings"
+@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopScoutnetId:int}/settings"
 @using Microsoft.AspNetCore.Authorization
 @using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
@@ -74,7 +74,7 @@
                     <div class="d-flex justify-end gap-4">
                         <MudButton Variant="Variant.Outlined"
                                    Color="Color.Default"
-                                   Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}")">
+                                   Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}")">
                             Avbryt
                         </MudButton>
                         <MudButton Variant="Variant.Filled"
@@ -99,7 +99,7 @@
     public int SemesterId { get; set; }
 
     [Parameter]
-    public int TroopId { get; set; }
+    public int TroopScoutnetId { get; set; }
 
     private Troop? _troop;
     private ScoutGroup? _scoutGroup;
@@ -132,10 +132,10 @@
 
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
             _semester = await SemesterRepository.GetByIdAsync(SemesterId);
-            _troop = await TroopRepository.GetByIdAsync(TroopId);
+            _troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(TroopScoutnetId, SemesterId);
 
-            // Verify the troop actually belongs to the requested group and semester
-            if (_troop != null && (_troop.ScoutGroupId != ScoutGroupId || _troop.SemesterId != SemesterId))
+            // Verify the troop actually belongs to the requested group
+            if (_troop != null && _troop.ScoutGroupId != ScoutGroupId)
             {
                 _troop = null;
             }
@@ -149,7 +149,7 @@
                     new("Scoutkårer", href: "/sk"),
                     new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
                     new(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
-                    new(_troop.Name, href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopId}"),
+                    new(_troop.Name, href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}"),
                     new("Inställningar", href: null, disabled: true)
                 };
             }
