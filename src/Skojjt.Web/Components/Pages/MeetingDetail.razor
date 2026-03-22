@@ -160,7 +160,7 @@ else
                 @foreach (var person in _attendees)
                 {
                     <MudListItem T="Person">
-                        <MudLink Href="@($"/persons/{person.Id}")">@person.FullName</MudLink>
+                        <MudLink Href="@($"/sk/{_troop!.ScoutGroupId}/p/{person.Id}")">@person.FullName</MudLink>
                     </MudListItem>
                 }
             </MudList>
