@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Localization;
-using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using MudBlazor;
@@ -106,13 +105,14 @@ builder.Services.AddSignalR(options =>
     options.MaximumReceiveMessageSize = 128 * 1024; // 128 KB
 });
 
-// Add response compression for SignalR
-builder.Services.AddResponseCompression(opts =>
-{
-    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["application/octet-stream"]);
-});
+// NOTE: ResponseCompressionMiddleware is intentionally NOT used.
+// MapStaticAssets() serves pre-compressed static files (gzip/brotli) at build time.
+// Using ResponseCompressionMiddleware on top causes ArgumentOutOfRangeException in
+// SendFileFallback when the compressed response wrapper's count doesn't match the
+// asset manifest's recorded file size. Azure App Service / reverse proxies handle
+// dynamic response compression at the infrastructure layer.
 
-// Add HttpContextAccessor for authentication in Blazor components
+// Add HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
 // Register CurrentUserService for accessing authenticated user's ScoutID information
@@ -405,9 +405,6 @@ if (!app.Environment.IsDevelopment())
     });
     app.UseHsts();
 }
-
-// Enable response compression
-app.UseResponseCompression();
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
