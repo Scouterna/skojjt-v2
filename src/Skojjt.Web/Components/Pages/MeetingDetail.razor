@@ -31,8 +31,8 @@ else
 {
     <MudText Typo="Typo.h4" Class="mb-2">Redigera möte</MudText>
     <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-4">
-        @_troop?.Name
-        @if (_troop?.IsLocked == true)
+        <MudLink Href="@($"/sk/{_troop!.ScoutGroupId}/t/{_troop!.SemesterId}/{_troop!.ScoutnetId}")">@_troop!.Name</MudLink>
+        @if (_troop!.IsLocked == true)
         {
             <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Color="Color.Warning" Class="ml-2" />
             <span class="mud-text-warning">Låst</span>
@@ -103,7 +103,7 @@ else
             @if (IsLocked)
             {
                 <MudAlert Severity="Severity.Warning" Class="mt-4">
-                    @if (_troop?.IsLocked == true)
+                    @if (_troop!.IsLocked == true)
                     {
                         <text>Avdelningen är låst. Ändringar kan inte göras.</text>
                     }
