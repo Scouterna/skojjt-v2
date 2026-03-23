@@ -600,7 +600,7 @@
     protected override async Task OnInitializedAsync()
     {
         // Check access immediately using URL parameter
-        _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
+        _hasAccess = CurrentUserService.HasTroopAccess(ScoutGroupId, TroopScoutnetId);
         
         if (!_hasAccess)
         {

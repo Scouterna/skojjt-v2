@@ -370,7 +370,9 @@
                 };
 
                 // Load troops with members - use a method that loads all data in one query
-                _troops = (await TroopRepository.GetByScoutGroupAndSemesterWithMembersAsync(ScoutGroupId, SemesterId))
+                var allTroops = await TroopRepository.GetByScoutGroupAndSemesterWithMembersAsync(ScoutGroupId, SemesterId);
+                _troops = allTroops
+                    .Where(t => CurrentUserService.HasTroopAccess(ScoutGroupId, t.ScoutnetId))
                     .OrderBy(t => t.Name)
                     .ToList();
 

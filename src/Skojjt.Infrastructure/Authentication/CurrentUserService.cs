@@ -82,6 +82,9 @@ public class CurrentUserService : ICurrentUserService
         var accessibleGroupsStr = identity.FindFirst(ScoutIdClaimTypes.AccessibleGroups)?.Value ?? "";
         var accessibleGroups = ParseIntList(accessibleGroupsStr);
 
+        var accessibleTroopsStr = identity.FindFirst(ScoutIdClaimTypes.AccessibleTroops)?.Value ?? "";
+        var accessibleTroops = ParseIntList(accessibleTroopsStr);
+
         //var groupRolesJson = identity.FindFirst(ScoutIdClaimTypes.GroupRoles)?.Value ?? "{}";
         //var groupRoles = ParseGroupRoles(groupRolesJson);
 
@@ -89,16 +92,17 @@ public class CurrentUserService : ICurrentUserService
         var isAdminStr = identity.FindFirst(ScoutIdClaimTypes.Admin)?.Value ?? "false";
         var isAdmin = string.Equals(isAdminStr, "true", StringComparison.OrdinalIgnoreCase);
 
-        return new ScoutIdClaims
-        {
-            Uid = uid,
-            Email = email,
-            DisplayName = displayName,
-            //IsMemberRegistrar = memberRegistrarGroups.Contains(groupId),
-            IsAdmin = isAdmin,
-            //GroupRoles = groupRoles,
-            AccessibleGroupIds = accessibleGroups.ToHashSet(),
-			MemberRegistrarGroups = memberRegistrarGroups.ToHashSet()
+		return new ScoutIdClaims
+		{
+			Uid = uid,
+			Email = email,
+			DisplayName = displayName,
+			//IsMemberRegistrar = memberRegistrarGroups.Contains(groupId),
+			IsAdmin = isAdmin,
+			//GroupRoles = groupRoles,
+			AccessibleGroupIds = accessibleGroups.ToHashSet(),
+			MemberRegistrarGroups = memberRegistrarGroups.ToHashSet(),
+			AccessibleTroopScoutnetIds = accessibleTroops.ToHashSet()
 		};
     }
 
@@ -135,7 +139,40 @@ public class CurrentUserService : ICurrentUserService
             return false;
 
 		return user.MemberRegistrarGroups.Contains(scoutGroupId);
-    }
+	}
+
+	/// <summary>
+	/// Checks if the current user has access to a specific troop.
+	/// Admins (with admin mode active) and member registrars have access to all troops in their group.
+	/// Other leaders only have access to troops they have explicit role claims for.
+	/// </summary>
+	public bool HasTroopAccess(int scoutGroupId, int troopScoutnetId)
+	{
+		var user = GetCurrentUser();
+		if (user == null) return false;
+
+		// Admins have access to all troops when admin mode is active
+		if (user.IsAdmin && _adminModeService.IsAdminModeActive) return true;
+
+		// Must have group access first
+		if (!user.AccessibleGroupIds.Contains(scoutGroupId)) return false;
+
+		// Member registrars have access to all troops in their group
+		if (user.MemberRegistrarGroups.Contains(scoutGroupId)) return true;
+
+		return user.AccessibleTroopScoutnetIds.Contains(troopScoutnetId);
+	}
+
+	/// <summary>
+	/// Gets the set of troop Scoutnet IDs the current user has direct access to.
+	/// </summary>
+	public IReadOnlySet<int> GetAccessibleTroopIds()
+	{
+		var user = GetCurrentUser();
+		if (user == null)
+			return new HashSet<int>();
+		return user.AccessibleTroopScoutnetIds;
+	}
 
     /// <summary>
     /// Gets all scout group IDs the current user has access to.
