@@ -252,7 +252,7 @@ public static class AktivitetsbidragValidator
                     Message = $"Sammankomstkod '{sammankomst.Kod}' är för kort.",
                     XmlPath = $"Sammankomst[@kod='{sammankomst.Kod}']",
                     ActualValue = sammankomst.Kod,
-                    ExpectedValue = "String (max length 50)",
+                    ExpectedValue = "String (min length 3)",
                 });
             }
 
