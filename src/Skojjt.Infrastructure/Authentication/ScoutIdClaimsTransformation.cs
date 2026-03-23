@@ -89,7 +89,7 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
                 // Extract group information from the role claim
                 var groupId = match.Groups[1].Value;
                 var roleName = match.Groups[2].Value;
-                if (roleName is "leader" or "assistant_leader" or "member_registrar")
+                if (roleName is "ledare" or "leader" or "assistant_leader" or "member_registrar")
                 {
                     accessibleGroups.Add(groupId);
                 }
