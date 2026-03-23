@@ -231,9 +231,9 @@ public static class AktivitetsbidragValidator
         var seenKoder = new HashSet<string>(StringComparer.Ordinal);
         foreach (var sammankomst in dak.Kort.Sammankomster)
         {
-			// The bug in softadmin where you had to have Kod as a int32 is fixed.
+            // The bug in softadmin where you had to have Kod as a int32 is fixed.
 
-			if (sammankomst.Kod.Length > 50)
+            if (sammankomst.Kod.Length > 50)
             {
                 issues.Add(new DakParseIssue
                 {
@@ -244,19 +244,19 @@ public static class AktivitetsbidragValidator
                     ExpectedValue = "String (max length 50)",
                 });
             }
-			if (sammankomst.Kod.Length < 3)
-			{
-				issues.Add(new DakParseIssue
-				{
-					Severity = DakIssueSeverity.Warning,
-					Message = $"Sammankomstkod '{sammankomst.Kod}' är för kort.",
-					XmlPath = $"Sammankomst[@kod='{sammankomst.Kod}']",
-					ActualValue = sammankomst.Kod,
-					ExpectedValue = "String (max length 50)",
-				});
-			}
+            if (sammankomst.Kod.Length < 3)
+            {
+                issues.Add(new DakParseIssue
+                {
+                    Severity = DakIssueSeverity.Warning,
+                    Message = $"Sammankomstkod '{sammankomst.Kod}' är för kort.",
+                    XmlPath = $"Sammankomst[@kod='{sammankomst.Kod}']",
+                    ActualValue = sammankomst.Kod,
+                    ExpectedValue = "String (max length 50)",
+                });
+            }
 
-			if (!seenKoder.Add(sammankomst.Kod))
+            if (!seenKoder.Add(sammankomst.Kod))
             {
                 issues.Add(new DakParseIssue
                 {
