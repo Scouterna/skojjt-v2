@@ -36,6 +36,12 @@ public static class ScoutIdClaimTypes
     public const string AccessibleGroups = "scoutid/accessible_groups";
 
     /// <summary>
+    /// Accessible troop Scoutnet IDs (comma-separated).
+    /// Users with troop-level roles only get access to specific troops, not all troops in a group.
+    /// </summary>
+    public const string AccessibleTroops = "scoutid/accessible_troops";
+
+    /// <summary>
     /// Role assignments in JSON format.
     /// </summary>
     //public const string GroupRoles = "scoutid/group_roles";

@@ -304,7 +304,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
+        _hasAccess = CurrentUserService.HasTroopAccess(ScoutGroupId, TroopScoutnetId);
         if (!_hasAccess)
         {
             _breadcrumbs = [new("Scoutkårer", href: "/sk"), new("Ingen behörighet", href: null, disabled: true)];

@@ -1,5 +1,6 @@
 namespace Skojjt.Core.Exports.Validation;
 
+
 /// <summary>
 /// Pre-configured <see cref="AktivitetsbidragSettings"/> for known municipalities and years.
 /// Add new entries here when rates change  no validator code changes needed.

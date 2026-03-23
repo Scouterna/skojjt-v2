@@ -1,10 +1,12 @@
-﻿@page "/sk/{ScoutGroupId:int}/settings"
+@page "/sk/{ScoutGroupId:int}/settings"
 @using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
 @using Skojjt.Core.Data
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
 @attribute [Authorize]
 @rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
 @inject IScoutGroupRepository ScoutGroupRepository
 @inject ISnackbar Snackbar
 
@@ -16,6 +18,12 @@
     @if (_loading)
     {
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">
+            Du har inte behörighet att ändra kårinställningar. Endast registeransvariga har tillgång.
+        </MudAlert>
     }
     else if (_scoutGroup == null)
     {
@@ -250,6 +258,7 @@
 
     private ScoutGroup? _scoutGroup;
     private bool _loading = true;
+    private bool _hasAccess;
     private bool _formIsValid = false;
     private bool _showApiKey1 = false;
     private bool _showApiKey2 = false;
@@ -273,6 +282,9 @@
         _loading = true;
         try
         {
+            _hasAccess = CurrentUserService.IsMemberRegistrar(ScoutGroupId);
+            if (!_hasAccess) return;
+
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
             
             if (_scoutGroup != null)

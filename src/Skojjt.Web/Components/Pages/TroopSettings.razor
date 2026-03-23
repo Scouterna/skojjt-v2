@@ -127,7 +127,7 @@
         _loading = true;
         try
         {
-            _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
+            _hasAccess = CurrentUserService.HasTroopAccess(ScoutGroupId, TroopScoutnetId);
             if (!_hasAccess) return;
 
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);

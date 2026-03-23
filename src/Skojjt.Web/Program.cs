@@ -32,6 +32,14 @@ startupLogger.LogInformation("Starting Skojjt.Web, Environment: {Env}", builder.
 startupLogger.LogInformation("ConnectionString configured: {HasCs}", !string.IsNullOrEmpty(builder.Configuration.GetConnectionString("DefaultConnection")));
 startupLogger.LogInformation("ScoutId Authority: {Authority}", builder.Configuration["ScoutId:Authority"]);
 
+// Set default culture for all threads (including Blazor Server circuit threads).
+// UseRequestLocalization only applies to the initial HTTP request; subsequent
+// renders on SignalR threads would otherwise use the system default (en-US),
+// causing MudDatePicker to show Sunday as first day of week instead of Monday.
+var svSE = new CultureInfo("sv-SE");
+CultureInfo.DefaultThreadCurrentCulture = svSE;
+CultureInfo.DefaultThreadCurrentUICulture = svSE;
+
 // Add MudBlazor services with Swedish localization
 builder.Services.AddMudServices();
 builder.Services.AddTransient<MudLocalizer, SwedishMudLocalizer>();

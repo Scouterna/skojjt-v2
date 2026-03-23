@@ -1,8 +1,10 @@
 @page "/sk/{ScoutGroupId:int}/p"
 @using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
 @attribute [Authorize]
+@inject ICurrentUserService CurrentUserService
 @inject IScoutGroupRepository ScoutGroupRepository
 @inject IPersonRepository PersonRepository
 @inject NavigationManager NavigationManager
@@ -16,6 +18,12 @@
     @if (_loading)
     {
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">
+            Du har inte behörighet att visa alla medlemmar. Endast registeransvariga har tillgång.
+        </MudAlert>
     }
     else if (_scoutGroup == null)
     {
@@ -142,6 +150,7 @@
     private string _searchString = "";
     private bool _showRemoved = false;
     private bool _loading = true;
+    private bool _hasAccess;
     private bool _tableLoading = false;
     private List<BreadcrumbItem> _breadcrumbs = new();
 
@@ -160,6 +169,9 @@
         _loading = true;
         try
         {
+            _hasAccess = CurrentUserService.IsMemberRegistrar(ScoutGroupId);
+            if (!_hasAccess) return;
+
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
             
             if (_scoutGroup != null)

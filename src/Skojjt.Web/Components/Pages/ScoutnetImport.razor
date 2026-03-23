@@ -1,10 +1,12 @@
 @page "/sk/{ScoutGroupId:int}/import"
 @using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
 @using Skojjt.Infrastructure.Scoutnet
 @attribute [Authorize]
 @rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
 @inject IScoutGroupRepository ScoutGroupRepository
 @inject ISemesterRepository SemesterRepository
 @inject IScoutnetImportService ImportService
@@ -19,6 +21,12 @@
     @if (_loading)
     {
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">
+            Du har inte behörighet att importera från Scoutnet. Endast registeransvariga har tillgång.
+        </MudAlert>
     }
     else if (_scoutGroup == null)
     {
@@ -369,6 +377,7 @@
     private List<Semester> _availableSemesters = new();
     private int _selectedSemesterId;
     private bool _loading = true;
+    private bool _hasAccess;
     private bool _initialized;
     private int _lastLoadedScoutGroupId;
     private bool _isImporting = false;
@@ -402,6 +411,9 @@
         _loading = true;
         try
         {
+            _hasAccess = CurrentUserService.IsMemberRegistrar(ScoutGroupId);
+            if (!_hasAccess) return;
+
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
             
             if (_scoutGroup != null)

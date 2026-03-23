@@ -30,6 +30,18 @@ public interface ICurrentUserService
     bool IsMemberRegistrar(int scoutGroupId);
 
     /// <summary>
+    /// Checks if the current user has access to a specific troop.
+    /// Member registrars and admins have access to all troops in their group.
+    /// Other leaders only have access to troops they have explicit role claims for.
+    /// </summary>
+    bool HasTroopAccess(int scoutGroupId, int troopScoutnetId);
+
+    /// <summary>
+    /// Gets the set of troop Scoutnet IDs the current user has direct access to.
+    /// </summary>
+    IReadOnlySet<int> GetAccessibleTroopIds();
+
+    /// <summary>
     /// Checks if the current user has a specific role for a scout group.
     /// Returns false if user doesn't have access to the group.
     /// </summary>

@@ -1,5 +1,6 @@
 namespace Skojjt.Core.Exports.Validation;
 
+
 /// <summary>
 /// Validates a <see cref="DakData"/> against <see cref="AktivitetsbidragSettings"/>
 /// and calculates the expected grant amount.
@@ -67,6 +68,7 @@ public static class AktivitetsbidragValidator
         List<DakParseIssue> issues)
     {
         var path = $"Sammankomst[@kod='{sammankomst.Kod}']";
+
         // Check duration
         if (sammankomst.DurationMinutes < settings.MinSammankomstMinuter)
         {
