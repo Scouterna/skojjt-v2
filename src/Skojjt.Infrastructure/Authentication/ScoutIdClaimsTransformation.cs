@@ -83,6 +83,7 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
         HashSet<string> memberRegistrarGroups = new();
         foreach (var role in identity.FindAll(claim => claim.Type.EndsWith("role") && claim.Value != null))
         {
+            _logger.LogDebug("Uid:{Uid}. Processing role claim: {RoleClaim}", uid, role.Value);
             var match = s_regexGroup.Match(role.Value);
             if (match.Success)
             {

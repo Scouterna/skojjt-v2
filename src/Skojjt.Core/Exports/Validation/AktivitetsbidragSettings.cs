@@ -1,3 +1,70 @@
-namespace Skojjt.Core.Exports.Validation;/// <summary>/// Configurable settings for aktivitetsbidrag validation and calculation./// Municipality-specific and changes yearly  keep settings separate from logic./// </summary>public class AktivitetsbidragSettings{    /// <summary>    /// Display name, e.g. "Göteborgs kommun 2026".    /// </summary>    public required string Namn { get; init; }    /// <summary>    /// Municipality code, e.g. "1480". Null means the settings apply to any municipality.    /// </summary>    public string? KommunId { get; init; }    /// <summary>    /// Year these settings apply to. Null means default/current.    /// </summary>    public int? Ar { get; init; }    // --- Bidragsbelopp ---    /// <summary>    /// Amount per eligible female participant per meeting (kr).    /// </summary>    public required decimal BeloppPerFlicka { get; init; }    /// <summary>    /// Amount per eligible male participant per meeting (kr).    /// </summary>    public required decimal BeloppPerPojke { get; init; }    // --- Deltagarkrav ---    /// <summary>    /// Minimum age for eligible participants (inclusive).    /// </summary>    public required int MinAlderDeltagare { get; init; }    /// <summary>    /// Maximum age for eligible participants (inclusive).    /// </summary>    public required int MaxAlderDeltagare { get; init; }    /// <summary>    /// Minimum age for leaders (inclusive).    /// </summary>    public required int MinAlderLedare { get; init; }    /// <summary>    /// Minimum number of eligible participants per meeting for the meeting to qualify.    /// </summary>    public required int MinAntalDeltagare { get; init; }
-    /// <summary>    /// Minimum number of leaders per meeting for the meeting to qualify.    /// </summary>    public required int MinAntalLedare { get; init; }    // --- Sammankomstkrav ---    /// <summary>    /// Minimum meeting duration in minutes for the meeting to qualify.    /// </summary>    public required int MinSammankomstMinuter { get; init; }
+namespace Skojjt.Core.Exports.Validation;
+
+/// <summary>
+/// Configurable settings for aktivitetsbidrag validation and calculation.
+/// Municipality-specific and changes yearly  keep settings separate from logic.
+/// </summary>
+public class AktivitetsbidragSettings
+{
+    /// <summary>
+    /// Display name, e.g. "Göteborgs kommun 2026".
+    /// </summary>
+    public required string Namn { get; init; }
+
+    /// <summary>
+    /// Municipality code, e.g. "1480". Null means the settings apply to any municipality.
+    /// </summary>
+    public string? KommunId { get; init; }
+
+    /// <summary>
+    /// Year these settings apply to. Null means default/current.
+    /// </summary>
+    public int? Ar { get; init; }
+
+    // --- Bidragsbelopp ---
+    /// <summary>
+    /// Amount per eligible female participant per meeting (kr).
+    /// </summary>
+    public required decimal BeloppPerFlicka { get; init; }
+
+    /// <summary>
+    /// Amount per eligible male participant per meeting (kr).
+    /// </summary>
+    public required decimal BeloppPerPojke { get; init; }
+
+    // --- Deltagarkrav ---
+
+    /// <summary>
+    /// Minimum age for eligible participants (inclusive).
+    /// </summary>
+    public required int MinAlderDeltagare { get; init; }
+
+    /// <summary>
+    /// Maximum age for eligible participants (inclusive).
+    /// </summary>
+    public required int MaxAlderDeltagare { get; init; }
+
+    /// <summary>
+    /// Minimum age for leaders (inclusive).
+    /// </summary>
+    public required int MinAlderLedare { get; init; }
+
+    /// <summary>
+    /// Minimum number of eligible participants per meeting for the meeting to qualify.
+    /// </summary>
+    public required int MinAntalDeltagare { get; init; }
+
+    /// <summary>
+    /// Minimum number of leaders per meeting for the meeting to qualify.
+    /// </summary>
+    public required int MinAntalLedare { get; init; }
+
+    // --- Sammankomstkrav ---
+
+    /// <summary>
+    /// Minimum meeting duration in minutes for the meeting to qualify.
+    /// </summary>
+    public required int MinSammankomstMinuter { get; init; }
+
 }
+
