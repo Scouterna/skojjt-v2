@@ -1,10 +1,13 @@
 @page "/sk/new"
 @using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
 @using Skojjt.Infrastructure.Scoutnet
 @attribute [Authorize]
 @rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
+@inject IAdminModeService AdminModeService
 @inject IScoutGroupRepository ScoutGroupRepository
 @inject ISemesterRepository SemesterRepository
 @inject IScoutnetApiClient ApiClient
@@ -17,6 +20,14 @@
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 mb-8">
     <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
 
+    @if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">
+            Du har inte behörighet att lägga till en scoutkår. Endast registeransvariga har tillgång.
+        </MudAlert>
+    }
+    else
+    {
     <MudText Typo="Typo.h4" Class="mb-2">Lägg till ny scoutkår</MudText>
     <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">
         Importera en scoutkår från Scoutnet
@@ -233,10 +244,12 @@
             </MudPaper>
         </MudPaper>
     }
+    }
 </MudContainer>
 
 @code {
     private int _activeStep = 0;
+    private bool _hasAccess;
     private int? _scoutGroupId;
     private string _apiKey = string.Empty;
     private bool _isVerifying = false;
@@ -261,6 +274,10 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var user = CurrentUserService.GetCurrentUser();
+        _hasAccess = (user?.IsAdmin == true && AdminModeService.IsAdminModeActive) || (user?.MemberRegistrarGroups.Count > 0);
+        if (!_hasAccess) return;
+
         // Load available semesters
         var currentSemester = await SemesterRepository.GetOrCreateCurrentSemesterAsync();
         var semesters = await SemesterRepository.GetAllOrderedAsync();

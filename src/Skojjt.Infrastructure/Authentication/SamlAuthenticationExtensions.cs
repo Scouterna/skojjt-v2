@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Sustainsys.Saml2;
 using Sustainsys.Saml2.Metadata;
 using Sustainsys.Saml2.WebSso;
@@ -75,6 +73,14 @@ public static class SamlAuthenticationExtensions
             }
 
             options.IdentityProviders.Add(idp);
+
+            // Force re-authentication on every login so that users can switch accounts.
+            // Without this, the IdP's session survives logout (SimpleSAML SLO is unreliable)
+            // and the next login silently re-authenticates the previous user.
+            options.Notifications.AuthenticationRequestCreated = (request, _, _) =>
+            {
+                request.ForceAuthentication = true;
+            };
 
             // After the SAML response is processed, normalize claims so
             // ScoutIdClaimsTransformation works identically to the OIDC path.

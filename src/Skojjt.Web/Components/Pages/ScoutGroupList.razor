@@ -14,12 +14,15 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <div class="d-flex justify-space-between align-center mb-4">
         <MudText Typo="Typo.h4">Scoutkårer</MudText>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   Href="/sk/new">
-            Lägg till scoutkår
-        </MudButton>
+        @if (_isMemberRegistrar)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Href="/sk/new">
+                Lägg till scoutkår
+            </MudButton>
+        }
     </div>
 
     @if (_isAdmin)
@@ -122,6 +125,7 @@
     private IReadOnlyList<int> _accessibleGroupIds = [];
     private bool _loading = true;
     private bool _isAdmin;
+    private bool _isMemberRegistrar;
     private int _allGroupsCount;
     private string _allGroupIds = "";
 
@@ -137,6 +141,8 @@
         {
             _isAdmin = CurrentUserService.IsAdmin && AdminModeService.IsAdminModeActive;
             _accessibleGroupIds = CurrentUserService.GetAccessibleGroupIds();
+            var user = CurrentUserService.GetCurrentUser();
+            _isMemberRegistrar = _isAdmin || (user?.MemberRegistrarGroups.Count > 0);
 
             var allScoutGroups = await ScoutGroupRepository.GetAllAsync();
             _allGroupsCount = allScoutGroups.Count;

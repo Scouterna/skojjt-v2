@@ -136,5 +136,9 @@ public class ClaimsTransformationTests
         var accessibleGroups = resultIdentity.FindFirst(ScoutIdClaimTypes.AccessibleGroups)?.Value;
         Assert.IsNotNull(accessibleGroups);
         Assert.Contains(accessibleGroups, "42", $"Expected accessible groups to contain '42', but was '{accessibleGroups}'");
+
+        var accessibleTroops = resultIdentity.FindFirst(ScoutIdClaimTypes.AccessibleTroops)?.Value;
+        Assert.IsNotNull(accessibleTroops);
+        Assert.Contains(accessibleTroops, "999", $"Expected accessible troops to contain '999', but was '{accessibleTroops}'");
     }
 }
