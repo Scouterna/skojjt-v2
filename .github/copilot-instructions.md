@@ -31,9 +31,16 @@ This system is designed for use by scout leaders to manage their groups' attenda
 - Repositories inherit from `Repository<TEntity>` and use the factory pattern.
 
 ### Authorization & Access Control
-- Users can **only** access scout groups listed in their `AccessibleGroupIds` (from ScoutID claims).
-- Always check access with `ICurrentUserService.HasGroupAccess(scoutGroupId)` or `RequireGroupAccess(scoutGroupId)`.
+- Authorization operates at **two levels**: group-level and troop-level.
+- **Group-level access**: Users can only access scout groups listed in their `AccessibleGroupIds`. Check with `ICurrentUserService.HasGroupAccess(scoutGroupId)` or `RequireGroupAccess(scoutGroupId)`.
+- **Troop-level access**: Within a group, users only see troops they have explicit role claims for. Check with `ICurrentUserService.HasTroopAccess(scoutGroupId, troopScoutnetId)`.
+- **Member registrar** (`member_registrar` role) has full access to all troops within their group, plus access to group-level management pages (Scoutnet import, all members, add member, badges, group settings).
+- **Troop leaders** (`leader`, `assistant_leader`, `other_leader` roles) only have access to the specific troops listed in their role claims.
 - Admin users only have elevated access when admin mode is explicitly active (`IAdminModeService.IsAdminModeActive`).
+- **ScoutID role claims** come in two formats:
+  - `group:<group_id>:<role>` — direct group-level role (e.g., `group:42:member_registrar`).
+  - `troop:<troop_scoutnet_id>:<role>` — troop-level role (e.g., `troop:999:other_leader`). These are resolved to their parent scout group via a DB lookup in `ScoutIdClaimsTransformation`, with results cached in a static `ConcurrentDictionary`.
+- **Custom claims** emitted after transformation: `AccessibleGroups` (comma-separated group IDs), `AccessibleTroops` (comma-separated troop Scoutnet IDs), `MemberRegistrarGroups` (comma-separated group IDs).
 
 ### Blazor Pages
 - Pages use `@attribute [Authorize]` and `@rendermode InteractiveServer`.
@@ -69,6 +76,7 @@ This system is designed for use by scout leaders to manage their groups' attenda
 
 ## MudBlazor Specifics
 - In the MudBlazor version used in this project, `MudAvatar` parameter casing should be lowercase `image` not `Image`.
+- The `MudDatePicker` week should start on Monday (Swedish locale). Set `CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("sv-SE")` in `Program.cs`, as `UseRequestLocalization` only applies to the initial HTTP request, not Blazor Server SignalR circuit threads.
 
 ## Domain Terminology (Swedish → English)
 | Swedish | English |
@@ -83,3 +91,4 @@ This system is designed for use by scout leaders to manage their groups' attenda
 | Märke | Badge |
 | Personnummer | Swedish personal identity number |
 | Aktivitetsbidrag | Activity grant |
+| Patrull | Patrol (subgroup within a troop) |
