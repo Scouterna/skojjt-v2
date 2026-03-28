@@ -173,6 +173,9 @@ builder.Services.AddScoped<IMyProfileService, MyProfileService>();
 builder.Services.AddScoutnetServices(builder.Configuration);
 builder.Services.AddExportServices();
 
+// Register documentation service
+builder.Services.AddSingleton<DocumentationService>();
+
 // Register user sync service for syncing ScoutID users to database on login
 builder.Services.AddScoped<IUserSyncService, UserSyncService>();
 

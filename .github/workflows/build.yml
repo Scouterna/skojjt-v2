@@ -2,7 +2,8 @@ name: Build & Test
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ '**' ]
+    tags-ignore: [ 'v*' ]  # Tag pushes are handled by release.yml
   pull_request:
     branches: [ master, main ]
 

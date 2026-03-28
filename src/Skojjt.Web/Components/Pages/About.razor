@@ -1,5 +1,6 @@
 @page "/about"
 @using System.Reflection
+@using Markdig
 @rendermode InteractiveServer
 
 <PageTitle>Om Skojjt</PageTitle>
@@ -136,7 +137,7 @@
                             @foreach (var item in section.Items)
                             {
                                 <MudListItem Icon="@Icons.Material.Filled.ChevronRight" IconSize="Size.Small">
-                                    @item
+                                    @((MarkupString)RenderInlineMarkdown(item))
                                 </MudListItem>
                             }
                         </MudList>
@@ -226,6 +227,17 @@
         }
 
         return sections;
+    }
+
+    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder().Build();
+
+    private static string RenderInlineMarkdown(string text)
+    {
+        var html = Markdown.ToHtml(text, MarkdownPipeline).Trim();
+        // Strip wrapping <p>...</p> so it renders inline
+        if (html.StartsWith("<p>", StringComparison.Ordinal) && html.EndsWith("</p>", StringComparison.Ordinal))
+            html = html[3..^4];
+        return html;
     }
 
     private sealed class ChangelogSection

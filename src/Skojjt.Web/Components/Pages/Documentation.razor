@@ -1,0 +1,105 @@
+@page "/hjalp"
+@page "/hjalp/{Slug}"
+@using Skojjt.Web.Services
+@rendermode InteractiveServer
+@inject DocumentationService DocService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(_currentTitle ?? "Hjälp") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-8">
+    <MudText Typo="Typo.h4" Class="mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Class="mr-2" />
+        Hjälp & dokumentation
+    </MudText>
+
+    <MudGrid>
+        @* Sidebar with table of contents *@
+        <MudItem xs="12" md="3">
+            <MudPaper Elevation="2" Class="pa-3">
+                <MudText Typo="Typo.h6" Class="mb-2">Innehåll</MudText>
+                <MudNavMenu>
+                    @foreach (var doc in _pages)
+                    {
+                        <MudNavLink Href="@($"/hjalp/{doc.Slug}")"
+                                    Match="NavLinkMatch.All"
+                                    Icon="@Icons.Material.Filled.Article">
+                            @doc.Title
+                        </MudNavLink>
+                    }
+                </MudNavMenu>
+            </MudPaper>
+        </MudItem>
+
+        @* Main content area *@
+        <MudItem xs="12" md="9">
+            <MudPaper Elevation="2" Class="pa-4 pa-sm-6">
+                @if (_htmlContent is not null)
+                {
+                    <div class="docs-content">
+                        @((MarkupString)_htmlContent)
+                    </div>
+                }
+                else if (Slug is not null)
+                {
+                    <MudAlert Severity="Severity.Warning">
+                        Sidan kunde inte hittas.
+                    </MudAlert>
+                }
+                else
+                {
+                    <MudText Typo="Typo.h5" Class="mb-4">Välkommen till hjälpsidorna</MudText>
+                    <MudText Typo="Typo.body1" Class="mb-4">
+                        Här hittar du dokumentation om hur du använder Skojjt. Välj ett ämne i menyn till vänster.
+                    </MudText>
+
+                    <MudGrid>
+                        @foreach (var doc in _pages)
+                        {
+                            <MudItem xs="12" sm="6">
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Primary"
+                                           FullWidth="true"
+                                           Href="@($"/hjalp/{doc.Slug}")"
+                                           StartIcon="@Icons.Material.Filled.Article"
+                                           Class="justify-start text-left pa-4"
+                                           Style="text-transform: none">
+                                    @doc.Title
+                                </MudButton>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    [Parameter]
+    public string? Slug { get; set; }
+
+    private IReadOnlyList<DocPage> _pages = [];
+    private string? _htmlContent;
+    private string? _currentTitle;
+
+    protected override void OnInitialized()
+    {
+        _pages = DocService.GetPages();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Slug is not null)
+        {
+            _htmlContent = DocService.GetPageHtml(Slug);
+            _currentTitle = _pages.FirstOrDefault(p =>
+                string.Equals(p.Slug, Slug, StringComparison.OrdinalIgnoreCase))?.Title ?? "Hjälp";
+        }
+        else if (_pages.Count > 0)
+        {
+            // Auto-navigate to first page
+            NavigationManager.NavigateTo($"/hjalp/{_pages[0].Slug}", replace: true);
+        }
+    }
+}
