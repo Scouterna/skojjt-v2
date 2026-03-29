@@ -1,6 +1,7 @@
 @page "/about"
 @using System.Reflection
 @using Markdig
+@using Skojjt.Shared
 @rendermode InteractiveServer
 
 <PageTitle>Om Skojjt</PageTitle>
@@ -161,16 +162,7 @@
 @code {
     private List<ChangelogSection> _changelogSections = [];
 
-    // TODO: move this to a utility class if needed elsewhere (it is duplicated in the login screen)
-    private string AppVersion
-    {
-        get
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            var version = assembly.GetName().Version;
-            return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "0.0.0";
-        }
-    }
+	private string AppVersion => AppVersionHelper.GetVersion(Assembly.GetExecutingAssembly());
 
     protected override void OnInitialized()
     {
