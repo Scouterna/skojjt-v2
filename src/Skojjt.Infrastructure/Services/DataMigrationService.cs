@@ -186,7 +186,7 @@ public class DataMigrationService
 
         var stats = new Dictionary<string, int>();
         var totalSw = System.Diagnostics.Stopwatch.StartNew();
-        var totalSteps = 13;
+        var totalSteps = 12;
         var currentStep = 0;
 
         // Import in dependency order
@@ -198,7 +198,6 @@ public class DataMigrationService
         stats["troop_persons"] = await ImportStepAsync("troop_persons", ++currentStep, totalSteps, progress, () => ImportTroopPersonsAsync(Path.Combine(importDirectory, "troop_persons.json"), cancellationToken));
         stats["meetings"] = await ImportStepAsync("meetings", ++currentStep, totalSteps, progress, () => ImportMeetingsAsync(Path.Combine(importDirectory, "meetings.json"), cancellationToken));
         stats["meeting_attendances"] = await ImportStepAsync("meeting_attendances", ++currentStep, totalSteps, progress, () => ImportMeetingAttendancesAsync(Path.Combine(importDirectory, "meeting_attendances.json"), cancellationToken));
-        stats["users"] = await ImportStepAsync("users", ++currentStep, totalSteps, progress, () => ImportUsersAsync(Path.Combine(importDirectory, "users.json"), cancellationToken));
         stats["badge_templates"] = await ImportStepAsync("badge_templates", ++currentStep, totalSteps, progress, () => ImportBadgeTemplatesAsync(Path.Combine(importDirectory, "badge_templates.json"), cancellationToken));
         stats["badges"] = await ImportStepAsync("badges", ++currentStep, totalSteps, progress, () => ImportBadgesAsync(Path.Combine(importDirectory, "badges.json"), cancellationToken));
         stats["troop_badges"] = await ImportStepAsync("troop_badges", ++currentStep, totalSteps, progress, () => ImportTroopBadgesAsync(Path.Combine(importDirectory, "troop_badges.json"), cancellationToken));
@@ -728,34 +727,6 @@ public class DataMigrationService
         return count;
     }
 
-    private async Task<int> ImportUsersAsync(string filePath, CancellationToken cancellationToken)
-    {
-        var items = await LoadJsonFileAsync<UserImport>(filePath, cancellationToken);
-        var count = 0;
-        var existingEmails = (await _context.Users.Select(u => u.Email).ToListAsync(cancellationToken)).ToHashSet();
-
-        foreach (var item in items)
-        {
-            if (string.IsNullOrEmpty(item.Id) || string.IsNullOrEmpty(item.Email))
-                continue;
-
-            if (!existingEmails.Add(item.Email))
-                continue;
-
-            _context.Users.Add(new User
-            {
-                Id = item.Id,
-                Email = item.Email,
-                Name = item.Name,
-            });
-            count++;
-        }
-
-        await SaveAndClearAsync(cancellationToken);
-        _logger.LogInformation("Imported {Count} users", count);
-        return count;
-    }
-
     private async Task<int> ImportBadgeTemplatesAsync(string filePath, CancellationToken cancellationToken)
     {
         var items = await LoadJsonFileAsync<BadgeTemplateImport>(filePath, cancellationToken);
@@ -1194,16 +1165,6 @@ public record MeetingImport(
 );
 
 public record MeetingAttendanceImport(long TroopScoutnetId, long GroupId, int SemesterId, long PersonId, string MeetingDate);
-
-public record UserImport(
-    string Id,
-    string Email,
-    string? Name,
-    int? ScoutGroupId,
-    int? ActiveSemesterId,
-    bool? HasAccess,
-    bool? IsAdmin
-);
 
 public record BadgeTemplateImport(
     int Id,

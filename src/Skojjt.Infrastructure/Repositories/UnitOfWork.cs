@@ -20,7 +20,6 @@ public class UnitOfWork : IUnitOfWork
     private IPersonRepository? _persons;
     private ITroopRepository? _troops;
     private IMeetingRepository? _meetings;
-    private IUserRepository? _users;
     private IBadgeRepository? _badges;
     private IBadgeTemplateRepository? _badgeTemplates;
 
@@ -34,7 +33,6 @@ public class UnitOfWork : IUnitOfWork
     public IPersonRepository Persons => _persons ??= new PersonRepository(_contextFactory);
     public ITroopRepository Troops => _troops ??= new TroopRepository(_contextFactory);
     public IMeetingRepository Meetings => _meetings ??= new MeetingRepository(_contextFactory);
-    public IUserRepository Users => _users ??= new UserRepository(_contextFactory);
     public IBadgeRepository Badges => _badges ??= new BadgeRepository(_contextFactory);
     public IBadgeTemplateRepository BadgeTemplates => _badgeTemplates ??= new BadgeTemplateRepository(_contextFactory);
 

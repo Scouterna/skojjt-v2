@@ -193,23 +193,33 @@ else
             _appliedMigrations = (await context.Database.GetAppliedMigrationsAsync()).ToList();
             _pendingMigrations = (await context.Database.GetPendingMigrationsAsync()).ToList();
 
-            // Table row counts (requires open connection)
+            // Table row counts using actual COUNT(*) — pg_stat estimates
+            // (n_live_tup) are stale after migrations or bulk imports
             _tables = [];
             await connection.OpenAsync();
             try
             {
                 _serverVersion = connection.ServerVersion;
-                using var command = connection.CreateCommand();
-                command.CommandText = """
-                    SELECT schemaname || '.' || relname AS table_name,
-                           n_live_tup AS row_count
-                    FROM pg_stat_user_tables
-                    ORDER BY n_live_tup DESC;
-                    """;
-                using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
+
+                // Get table names from system catalog
+                var tableNames = new List<(string Schema, string Name)>();
+                using (var cmd = connection.CreateCommand())
                 {
-                    _tables[reader.GetString(0)] = reader.GetInt64(1);
+                    cmd.CommandText = "SELECT schemaname, relname FROM pg_stat_user_tables";
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        tableNames.Add((reader.GetString(0), reader.GetString(1)));
+                    }
+                }
+
+                // Count each table
+                foreach (var (schema, name) in tableNames)
+                {
+                    using var cmd = connection.CreateCommand();
+                    cmd.CommandText = $"SELECT COUNT(*) FROM \"{schema}\".\"{name}\"";
+                    var count = (long)(await cmd.ExecuteScalarAsync())!;
+                    _tables[$"{schema}.{name}"] = count;
                 }
             }
             finally

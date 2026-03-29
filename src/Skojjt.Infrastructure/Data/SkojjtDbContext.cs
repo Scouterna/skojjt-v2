@@ -21,7 +21,6 @@ public class SkojjtDbContext : DbContext
     public DbSet<TroopPerson> TroopPersons => Set<TroopPerson>();
     public DbSet<Meeting> Meetings => Set<Meeting>();
     public DbSet<MeetingAttendance> MeetingAttendances => Set<MeetingAttendance>();
-    public DbSet<User> Users => Set<User>();
     public DbSet<Badge> Badges => Set<Badge>();
     public DbSet<BadgePart> BadgeParts => Set<BadgePart>();
     public DbSet<BadgePartDone> BadgePartsDone => Set<BadgePartDone>();

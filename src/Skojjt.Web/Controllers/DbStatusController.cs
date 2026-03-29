@@ -65,32 +65,27 @@ public class DbStatusController : ControllerBase
             result.MigrationError ??= ex.Message;
         }
 
-        // Get table row counts
+        // Get table row counts using EF Core raw SQL
         try
         {
+            var tableNames = await _db.Database
+                .SqlQueryRaw<TableInfo>("SELECT schemaname AS \"Schema\", relname AS \"Name\" FROM pg_stat_user_tables")
+                .ToListAsync(cancellationToken);
+
             var tables = new Dictionary<string, long>();
-            var connection = _db.Database.GetDbConnection();
-            await connection.OpenAsync(cancellationToken);
-            try
+            foreach (var table in tableNames)
             {
-                using var command = connection.CreateCommand();
-                command.CommandText = """
-                    SELECT schemaname || '.' || relname AS table_name,
-                           n_live_tup AS row_count
-                    FROM pg_stat_user_tables
-                    ORDER BY n_live_tup DESC;
-                    """;
-                using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                while (await reader.ReadAsync(cancellationToken))
-                {
-                    tables[reader.GetString(0)] = reader.GetInt64(1);
-                }
+                // Table names come from pg_stat_user_tables (system catalog), not user input
+#pragma warning disable EF1002
+                var count = await _db.Database
+                    .SqlQueryRaw<long>($"SELECT COUNT(*) AS \"Value\" FROM \"{table.Schema}\".\"{table.Name}\"")
+                    .SingleAsync(cancellationToken);
+#pragma warning restore EF1002
+                tables[$"{table.Schema}.{table.Name}"] = count;
             }
-            finally
-            {
-                await connection.CloseAsync();
-            }
-            result.Tables = tables;
+
+            result.Tables = tables.OrderByDescending(kv => kv.Value)
+                .ToDictionary(kv => kv.Key, kv => kv.Value);
         }
         catch (Exception ex)
         {
@@ -220,3 +215,5 @@ public record DbStatusResult
 }
 
 public record QueryRequest(string Sql);
+
+public record TableInfo(string Schema, string Name);

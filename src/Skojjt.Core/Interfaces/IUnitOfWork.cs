@@ -10,7 +10,6 @@ public interface IUnitOfWork : IDisposable
     IPersonRepository Persons { get; }
     ITroopRepository Troops { get; }
     IMeetingRepository Meetings { get; }
-    IUserRepository Users { get; }
     IBadgeRepository Badges { get; }
     IBadgeTemplateRepository BadgeTemplates { get; }
 

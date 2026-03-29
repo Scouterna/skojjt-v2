@@ -12,16 +12,13 @@ namespace Skojjt.Web.Controllers;
 public class DevAuthController : Controller
 {
     private readonly IScoutIdSimulator? _scoutIdSimulator;
-    private readonly IUserSyncService? _userSyncService;
     private readonly ILogger<DevAuthController> _logger;
 
     public DevAuthController(
         ILogger<DevAuthController> logger,
-        IScoutIdSimulator? scoutIdSimulator = null,
-        IUserSyncService? userSyncService = null)
+        IScoutIdSimulator? scoutIdSimulator = null)
     {
         _scoutIdSimulator = scoutIdSimulator;
-        _userSyncService = userSyncService;
         _logger = logger;
     }
 
@@ -109,18 +106,8 @@ public class DevAuthController : Controller
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
-        // Sync user to database
-        await SyncUserToDatabaseAsync(new ScoutIdClaims
-        {
-            Uid = uid,
-            Email = email,
-            DisplayName = name,
-            //GroupNo = groupNo,
-            //GroupId = groupId,
-            //IsMemberRegistrar = isMemberRegistrar || isAdmin,
-            //AccessibleGroupIds = accessibleGroupIds,
-            //GroupRoles = groupRoles
-        });
+        // User sync to database is handled by ScoutIdClaimsTransformation
+        // on the first request after login.
 
         return LocalRedirect(string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl);
     }
@@ -232,31 +219,10 @@ public class DevAuthController : Controller
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
-        // Sync user to database
-        var scoutIdClaims = _scoutIdSimulator!.CreateClaimsForUser(user);
-        await SyncUserToDatabaseAsync(scoutIdClaims);
+        // User sync to database is handled by ScoutIdClaimsTransformation
+        // on the first request after login.
 
         return LocalRedirect(string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl);
-    }
-
-    private async Task SyncUserToDatabaseAsync(ScoutIdClaims claims)
-    {
-        if (_userSyncService == null)
-        {
-            _logger.LogDebug("UserSyncService not available, skipping user sync");
-            return;
-        }
-
-        try
-        {
-            await _userSyncService.SyncUserAsync(claims);
-            _logger.LogDebug("User {Uid} synced to database", claims.Uid);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to sync user {Uid} to database", claims.Uid);
-            // Don't fail login if sync fails
-        }
     }
 
     [HttpGet("logout")]

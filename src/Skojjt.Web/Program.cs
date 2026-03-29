@@ -160,7 +160,6 @@ builder.Services.AddScoped<IScoutGroupRepository, ScoutGroupRepository>();
 builder.Services.AddScoped<IPersonRepository, PersonRepository>();
 builder.Services.AddScoped<ITroopRepository, TroopRepository>();
 builder.Services.AddScoped<IMeetingRepository, MeetingRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBadgeRepository, BadgeRepository>();
 builder.Services.AddScoped<IBadgeTemplateRepository, BadgeTemplateRepository>();
 
@@ -175,9 +174,6 @@ builder.Services.AddExportServices();
 
 // Register documentation service
 builder.Services.AddSingleton<DocumentationService>();
-
-// Register user sync service for syncing ScoutID users to database on login
-builder.Services.AddScoped<IUserSyncService, UserSyncService>();
 
 // Configure authentication based on environment and configuration
 var useDevAuth = builder.Environment.IsDevelopment() && 
@@ -300,27 +296,6 @@ else
 
                 // Admin role assignment is handled by ScoutIdClaimsTransformation
                 // which runs on every request via IClaimsTransformation.
-
-                // Sync user to database
-                try
-                {
-                    var userSyncService = context.HttpContext.RequestServices.GetService<IUserSyncService>();
-                    if (userSyncService != null && context.Principal != null)
-                    {
-                        var currentUserService = context.HttpContext.RequestServices.GetRequiredService<ICurrentUserService>();
-                        var claims = currentUserService.GetUserFromPrincipal(context.Principal);
-                        if (claims != null)
-                        {
-                            await userSyncService.SyncUserAsync(claims);
-                            logger.LogDebug("User {Name} synced to database", name);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failed to sync user {Name} to database", name);
-                    // Don't fail authentication if sync fails
-                }
             },
             OnAuthenticationFailed = context =>
             {

@@ -38,21 +38,18 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
             return principal;
         }
 
-        // Check if transformation has already been applied
-        if (identity.HasClaim(c => c.Type == ScoutIdClaimTypes.ScoutnetUid))
+        // Transform claims if not already done (dev auth pre-populates ScoutID claims)
+        if (!identity.HasClaim(c => c.Type == ScoutIdClaimTypes.ScoutnetUid))
         {
-            return principal;
-        }
+            // Log all incoming claims for debugging
+            _logger.LogDebug("Transforming claims for user. All claims:");
+            foreach (var claim in identity.Claims)
+            {
+                _logger.LogDebug("  Claim: {Type} = {Value}", claim.Type, claim.Value);
+            }
 
-        // Log all incoming claims for debugging
-        _logger.LogDebug("Transforming claims for user. All claims:");
-        foreach (var claim in identity.Claims)
-        {
-            _logger.LogDebug("  Claim: {Type} = {Value}", claim.Type, claim.Value);
+            await ExtractSignInAttributesAsync(identity);
         }
-
-        // Try to extract ScoutID attributes from OIDC claims
-        await ExtractSignInAttributesAsync(identity);
 
         return principal;
     }
@@ -114,7 +111,7 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
             }
         }
 
-        // Resolve troop→group mappings for any troop-based role claims
+        // Resolve troop-to-group mappings for any troop-based role claims
         if (troopRoles.Count > 0)
         {
             await ResolveTroopGroupMappingsAsync(troopRoles, accessibleGroups, memberRegistrarGroups, accessibleTroops);
@@ -132,7 +129,7 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
         identity.AddClaim(new Claim(ScoutIdClaimTypes.AccessibleTroops,
             string.Join(",", accessibleTroops)));
 
-        // Check if user is a system administrator from the database
+        // Check if user is a system administrator
         identity.AddClaim(new Claim(ScoutIdClaimTypes.Admin, isAdmin ? "true" : "false"));
         if (isAdmin)
         {
@@ -175,7 +172,7 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
                     s_troopToGroupCache.TryAdd(mapping.ScoutnetId, mapping.ScoutGroupId);
                 }
 
-                // Don't cache null for unfound troop IDs — they may appear
+                // Don't cache null for unfound troop IDs - they may appear
                 // after a new scout group is imported from Scoutnet.
             }
             catch (Exception ex)
