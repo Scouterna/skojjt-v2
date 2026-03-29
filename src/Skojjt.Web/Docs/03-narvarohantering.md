@@ -34,6 +34,8 @@ Du kan ta bort en sammankomst genom att klicka på sammankomstens meny (tre punk
 
 Från avdelningens meny kan du generera en **Sensus närvarolista** – en utskriftsvänlig sammanställning av terminens närvaro. Denna kan användas som underlag vid rapportering.
 
+Använd patruller för att dela upp avdelningen i mindre listor och se närvaro per patrull. Varje patrull behöver minst en ledare.
+
 ## Tips
 
 - Registrera närvaron direkt under eller efter sammankomsten så glömmer ni inte

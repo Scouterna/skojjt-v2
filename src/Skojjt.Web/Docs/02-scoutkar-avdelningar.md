@@ -48,7 +48,7 @@ Det finns även en API-nyckel för att lägga till nya medlemmar på väntelista
 Varje termin (VT = vårtermin, HT = hösttermin) hanterar sin egen uppsättning av närvarodata. Terminer skapas automatiskt men du kan även skapa nya vid behov.
 
 - **VT** – vårtermin, januari–juni
-- **HT** – hösttermin, augusti–december
+- **HT** – hösttermin, juli–december
 
 Välj termin för att se avdelningarna och deras sammankomster.
 

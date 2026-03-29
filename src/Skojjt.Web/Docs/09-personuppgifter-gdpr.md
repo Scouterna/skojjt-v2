@@ -24,8 +24,8 @@ Skojjt lagrar följande uppgifter om medlemmar:
 Personuppgifterna importeras från **Scoutnet**, Scouternas centrala medlemsregister. Det innebär att:
 
 - Data som finns i Skojjt har sitt ursprung i Scoutnet
-- Skojjt **skickar aldrig personuppgifter tillbaka** till Scoutnet
 - Registeransvariga styr importen – data hämtas bara vid manuell import
+- Skojjt kan skicka uppgifter till Scoutnets väntelista om den funktionen är konfigurerad – i övrigt skickas inga personuppgifter tillbaka till Scoutnet
 
 Närvarodata och märkesframsteg skapas direkt i Skojjt av ledare.
 

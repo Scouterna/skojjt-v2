@@ -4,9 +4,10 @@
 
 Skojjt använder ScoutID för inloggning. Kontrollera att:
 
-- Du har ett aktivt ScoutID-konto
-- Du använder rätt inloggningsuppgifter
-- Du har en roll i Scoutnet (registeransvarig eller avdelningsledare)
+- Du använder rätt inloggningsuppgifter.
+- Du kan logga in med din e-postadress, personnummer eller medlems-ID.
+- Det är den adressen som ligger i Scoutnet.
+- Prova att logga in på scoutnet.se – det är samma inloggning som används i Skojjt.
 
 Om du fortfarande inte kan logga in, kontakta din kårs registeransvarig.
 
