@@ -5,6 +5,7 @@
 @using Skojjt.Infrastructure.Authentication
 @using Skojjt.Infrastructure.Scoutnet
 @using Microsoft.Extensions.Options
+@using Skojjt.Shared
 @inject NavigationManager NavigationManager
 @inject IConfiguration Configuration
 @inject IWebHostEnvironment Environment
@@ -41,7 +42,7 @@
                             <span> – Simulerad inloggning</span>
                         }
                     </div>
-                    <MudChip T="string" Size="Size.Small" Color="Color.Default">v@AppVersion</MudChip>
+                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@AppVersion</MudChip>
                 </div>
             </MudAlert>
         }
@@ -267,15 +268,7 @@
     private string ScoutnetBaseUrl =>
         ScoutnetOptions.Value.BaseUrl;
 
-    private string AppVersion
-    {
-        get
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            var version = assembly.GetName().Version;
-            return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "0.0.0";
-        }
-    }
+    private string AppVersion => AppVersionHelper.GetVersion(Assembly.GetExecutingAssembly());
 
     private string GetErrorMessage(string error) => error switch
     {
