@@ -12,9 +12,9 @@ public static class AppVersionHelper
             return "0.0.0";
 
         var fileVersionInfo = FileVersionInfo.GetVersionInfo(assembly.Location);
-        int major = fileVersionInfo.ProductMajorPart;
-        int minor = fileVersionInfo.ProductMinorPart;
-        int build = fileVersionInfo.ProductBuildPart;
+        int major = fileVersionInfo.FileMajorPart;
+        int minor = fileVersionInfo.FileMinorPart;
+        int build = fileVersionInfo.FileBuildPart;
         return $"{major}.{minor}.{build}";
     }
 }
