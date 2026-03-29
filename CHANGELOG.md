@@ -1,7 +1,7 @@
 # Changelog
 
 ## [2.0.1]
-* Användardocumentation tillagd. Se [Hjälp](/hjalp/01-komma-igang) för mer information.
+* Användardokumentation tillagd. Se [Hjälp](/hjalp/01-komma-igang) för mer information.
 
 ## [2.0.0]
 * Första releasen av v2. Detta är en omskrivning av skojjt v1. 
