@@ -242,7 +242,7 @@ else
     {
         if (!_hasAccess || _form == null || _meeting == null || !_meetingDate.HasValue) return;
         {
-            await _form.Validate();
+            await _form.ValidateAsync();
             if (_formIsValid)
             {
                 try
@@ -267,7 +267,7 @@ else
     {
         if (!_hasAccess || _meeting == null) return;
 
-        var result = await DialogService.ShowMessageBox(
+        var result = await DialogService.ShowMessageBoxAsync(
             "Ta bort möte",
             $"Är du säker på att du vill ta bort mötet '{_meeting.Name}'? Detta går inte att ångra.",
             yesText: "Ta bort",

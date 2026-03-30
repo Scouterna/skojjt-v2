@@ -20,12 +20,13 @@
             <MudPaper Elevation="2" Class="pa-4">
                 <MudText Typo="Typo.h6" Class="mb-2">Fil 1 (primär)</MudText>
                 <MudFileUpload T="IBrowserFile" Accept=".xml" FilesChanged="OnFile1Changed" MaximumFileCount="1">
-                    <ActivatorContent>
+                    <CustomContent Context="fileUpload">
                         <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.UploadFile" FullWidth="true">
+                                   StartIcon="@Icons.Material.Filled.UploadFile" FullWidth="true"
+                                   OnClick="@fileUpload.OpenFilePickerAsync">
                             @(_file1Name ?? "Välj DAK XML-fil")
                         </MudButton>
-                    </ActivatorContent>
+                    </CustomContent>
                 </MudFileUpload>
             </MudPaper>
         </MudItem>
@@ -33,12 +34,13 @@
             <MudPaper Elevation="2" Class="pa-4">
                 <MudText Typo="Typo.h6" Class="mb-2">Fil 2 (jämför mot)</MudText>
                 <MudFileUpload T="IBrowserFile" Accept=".xml" FilesChanged="OnFile2Changed" MaximumFileCount="1">
-                    <ActivatorContent>
+                    <CustomContent Context="fileUpload">
                         <MudButton Variant="Variant.Outlined" Color="Color.Secondary"
-                                   StartIcon="@Icons.Material.Filled.UploadFile" FullWidth="true">
+                                   StartIcon="@Icons.Material.Filled.UploadFile" FullWidth="true"
+                                   OnClick="@fileUpload.OpenFilePickerAsync">
                             @(_file2Name ?? "Välj DAK XML-fil (valfri)")
                         </MudButton>
-                    </ActivatorContent>
+                    </CustomContent>
                 </MudFileUpload>
             </MudPaper>
         </MudItem>

@@ -17,7 +17,7 @@ This system is designed for use by scout leaders to manage their groups' attenda
 ## Tech Stack & Versions
 - **.NET 10** / **C# 14** — target framework `net10.0` across all projects.
 - **Blazor Server** with `@rendermode InteractiveServer` — not Razor Pages or MVC.
-- **MudBlazor** (v8) for all UI components. Use `MudBlazor` components, not raw HTML or Bootstrap.
+- **MudBlazor** (v9) for all UI components. Use `MudBlazor` components, not raw HTML or Bootstrap.
 - **Entity Framework Core 10** with **PostgreSQL** (Npgsql).
 - **MSTest** for unit tests (not xUnit or NUnit).
 - Authentication via **ScoutID** (Keycloak-based OpenID Connect / SAML).
@@ -75,7 +75,7 @@ This system is designed for use by scout leaders to manage their groups' attenda
 - Gender is determined from the second-to-last digit of the personnummer (even = female, odd = male).
 
 ## MudBlazor Specifics
-- In the MudBlazor version used in this project, `MudAvatar` parameter casing should be lowercase `image` not `Image`.
+- **MudBlazor v9 breaking changes**: `ActivatorContent` on `MudFileUpload` is replaced by `CustomContent` with explicit `Context` and `OnClick="@context.OpenFilePickerAsync"`. `MudForm.Validate()` is replaced by `ValidateAsync()`. `ShowMessageBox` is replaced by `ShowMessageBoxAsync`. `MudTabs.PanelClass` is renamed to `TabPanelsClass`.
 - The `MudDatePicker` week should start on Monday (Swedish locale). Set `CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("sv-SE")` in `Program.cs`, as `UseRequestLocalization` only applies to the initial HTTP request, not Blazor Server SignalR circuit threads.
 
 ## Domain Terminology (Swedish → English)

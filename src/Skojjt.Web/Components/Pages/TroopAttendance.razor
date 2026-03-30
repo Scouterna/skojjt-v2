@@ -1167,7 +1167,7 @@
     {
         if (_meetingForm != null && _newMeetingDate.HasValue)
         {
-            await _meetingForm.Validate();
+            await _meetingForm.ValidateAsync();
             if (_meetingForm.IsValid)
             {
                 try

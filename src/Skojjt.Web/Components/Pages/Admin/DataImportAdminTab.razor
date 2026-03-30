@@ -18,13 +18,14 @@
 
     <MudFileUpload T="IBrowserFile" Accept=".zip" MaximumFileCount="1"
                    FilesChanged="OnFileSelected">
-        <ActivatorContent>
+        <CustomContent Context="fileUpload">
             <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.CloudUpload"
-                       Disabled="_importing">
+                       Disabled="_importing"
+                       OnClick="@fileUpload.OpenFilePickerAsync">
                 Välj ZIP-fil
             </MudButton>
-        </ActivatorContent>
+        </CustomContent>
     </MudFileUpload>
 
     @if (_selectedFile is not null)
