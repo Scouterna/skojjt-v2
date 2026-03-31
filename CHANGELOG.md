@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.0.6]
+* Byt domän till skojjt.scouterna.net. Stöd för omdirigering från gamla domännamn. Fix för minus i URL.
+* Uppgradering till MudBlazor 9.2.0 med anpassningar för breaking changes.
+
 ## [2.0.1]
 * Användardokumentation tillagd. Se [Hjälp](/hjalp/01-komma-igang) för mer information.
 
