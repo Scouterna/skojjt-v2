@@ -16,6 +16,7 @@ using Skojjt.Infrastructure.Data;
 using Skojjt.Infrastructure.Repositories;
 using Skojjt.Infrastructure.Services;
 using Skojjt.Web.Authentication;
+using Microsoft.AspNetCore.HttpOverrides;
 using Skojjt.Web.Components;
 using Skojjt.Web.Hubs;
 using Skojjt.Web.Services;
@@ -37,6 +38,9 @@ startupLogger.LogInformation("ScoutId Authority: {Authority}", builder.Configura
 // renders on SignalR threads would otherwise use the system default (en-US),
 // causing MudDatePicker to show Sunday as first day of week instead of Monday.
 var svSE = new CultureInfo("sv-SE");
+// Override the Swedish negative sign (U+2212 '−') with ASCII hyphen-minus (U+002D '-')
+// so that negative integers in URLs (e.g. v1 troop ScoutnetIds) don't break route matching.
+svSE.NumberFormat.NegativeSign = "-";
 CultureInfo.DefaultThreadCurrentCulture = svSE;
 CultureInfo.DefaultThreadCurrentUICulture = svSE;
 
@@ -337,6 +341,19 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddCascadingAuthenticationState();
 
+// Configure forwarded headers for Azure App Service reverse proxy.
+// Without this, the SAML library constructs ACS URLs using the internal
+// Azure hostname instead of the custom domain (e.g. skojjt.scouterna.net).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
+        | ForwardedHeaders.XForwardedProto
+        | ForwardedHeaders.XForwardedHost;
+    // Azure App Service proxy IPs are not known in advance
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 // Add health checks for Azure monitoring
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<SkojjtDbContext>("database");
@@ -364,6 +381,36 @@ using (var scope = app.Services.CreateScope())
 app.Logger.LogInformation("Application built successfully. Configuring middleware pipeline...");
 
 // Configure the HTTP request pipeline
+
+// UseForwardedHeaders must run before UseHsts and UseHttpsRedirection.
+// Azure App Service terminates TLS and forwards requests internally over HTTP.
+// Without processing X-Forwarded-Proto first, UseHsts sees HTTP and never
+// emits the Strict-Transport-Security header, causing Chrome to show "Not secure".
+app.UseForwardedHeaders();
+
+// Redirect non-canonical hostnames (e.g. skojjt.azurewebsites.net) to the
+// canonical domain (skojjt.scouterna.net). This runs early so SAML/auth
+// callbacks always use the domain registered in ScoutID.
+// Health check and SAML callback paths are excluded — a 301 on a POST would
+// cause browsers to drop the SAML response body, silently breaking login.
+var canonicalHostname = app.Configuration["CanonicalHostname"];
+if (!string.IsNullOrEmpty(canonicalHostname))
+{
+    app.Use(async (context, next) =>
+    {
+        var host = context.Request.Host.Host;
+        if (!string.Equals(host, canonicalHostname, StringComparison.OrdinalIgnoreCase)
+            && !context.Request.Path.StartsWithSegments("/healthz")
+            && !context.Request.Path.StartsWithSegments("/Saml2"))
+        {
+            var url = $"{context.Request.Scheme}://{canonicalHostname}{context.Request.Path}{context.Request.QueryString}";
+            context.Response.Redirect(url, permanent: true);
+            return;
+        }
+        await next();
+    });
+}
+
 if (!app.Environment.IsDevelopment())
 {
     // Serve a static HTML error page instead of re-executing through the Blazor pipeline.
