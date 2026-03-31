@@ -193,26 +193,31 @@ public class PersonFlowService : IPersonFlowService
         var projAgeYear = projYear;
 
         // Build available troops (assume same troops exist next semester)
-        // Map: UnitTypeId → (ScoutnetId, TroopName)
+        // Map: UnitTypeId → list of troops (multiple troops may share the same age group)
         var troopsByUnitType = lastTroops
             .Where(t => t.UnitTypeId.HasValue)
             .GroupBy(t => t.UnitTypeId!.Value)
-            .ToDictionary(g => g.Key, g => g.First());
+            .ToDictionary(g => g.Key, g => g.ToList());
 
-        // For each non-leader member in the last semester, project their troop.
-        // Members whose age falls outside all defined age ranges are excluded.
+        // Phase 1: For each non-leader member, determine whether they stay in their
+        // current troop or move to a different unit type.
+        // Direct assignments (stays in current troop or no birth date) go straight
+        // into projectedCounts. Members moving to a new unit type are collected in
+        // pendingDistribution so they can be spread evenly across target troops.
         var projectedCounts = new Dictionary<(string From, int ToScoutnetId, string ToName), int>();
+        var pendingDistribution = new Dictionary<(string SourceNodeId, int TargetUnitTypeId), int>();
 
         foreach (var troop in lastTroops)
         {
+            var sourceNodeId = BuildNodeId(lastSemesterId, troop.ScoutnetId, troop.Name);
+
             foreach (var tp in troop.TroopPersons.Where(tp => !tp.IsLeader))
             {
                 var birthDate = tp.Person.BirthDate;
                 if (!birthDate.HasValue)
                 {
                     // No birth date — assume stays in same troop
-                    var key = (BuildNodeId(lastSemesterId, troop.ScoutnetId, troop.Name),
-                               troop.ScoutnetId, troop.Name);
+                    var key = (sourceNodeId, troop.ScoutnetId, troop.Name);
                     projectedCounts[key] = projectedCounts.GetValueOrDefault(key) + 1;
                     continue;
                 }
@@ -220,16 +225,69 @@ public class PersonFlowService : IPersonFlowService
                 // Age the person turns during the projected year (birth month irrelevant)
                 var ageAtProjection = projAgeYear - birthDate.Value.Year;
 
-                // Find the best matching troop by age range
-                var matchedTroop = FindTroopForAge(ageAtProjection, troopsByUnitType, troop);
-
-                if (matchedTroop != null)
+                // Check if member still fits in their current troop
+                if (troop.UnitTypeId.HasValue &&
+                    ScoutUnitTypes.AgeRanges.TryGetValue(troop.UnitTypeId.Value, out var currentRange) &&
+                    ageAtProjection >= currentRange.MinAge && ageAtProjection <= currentRange.MaxAge)
                 {
-                    var key = (BuildNodeId(lastSemesterId, troop.ScoutnetId, troop.Name),
-                               matchedTroop.ScoutnetId, matchedTroop.Name);
+                    var key = (sourceNodeId, troop.ScoutnetId, troop.Name);
                     projectedCounts[key] = projectedCounts.GetValueOrDefault(key) + 1;
+                    continue;
+                }
+
+                // Find target unit type for age-based move
+                var targetUnitTypeId = FindUnitTypeForAge(ageAtProjection, troopsByUnitType);
+                if (targetUnitTypeId.HasValue)
+                {
+                    var pendingKey = (sourceNodeId, targetUnitTypeId.Value);
+                    pendingDistribution[pendingKey] = pendingDistribution.GetValueOrDefault(pendingKey) + 1;
                 }
                 // else: age outside all defined ranges — skip from projection
+            }
+        }
+
+        // Phase 2: Distribute pending members evenly across troops of the same
+        // unit type. Uses running counts (seeded from direct assignments) so the
+        // final projected troop sizes are as balanced as possible.
+        var directCountsPerTroop = new Dictionary<int, int>();
+        foreach (var ((_, scoutnetId, _), count) in projectedCounts)
+        {
+            directCountsPerTroop[scoutnetId] = directCountsPerTroop.GetValueOrDefault(scoutnetId) + count;
+        }
+
+        foreach (var group in pendingDistribution.GroupBy(kv => kv.Key.TargetUnitTypeId))
+        {
+            var unitTypeId = group.Key;
+            var troops = troopsByUnitType[unitTypeId];
+            var sources = group.Select(kv => (kv.Key.SourceNodeId, Count: kv.Value)).ToList();
+
+            if (troops.Count <= 1)
+            {
+                var troop = troops[0];
+                foreach (var (src, count) in sources)
+                {
+                    var key = (src, troop.ScoutnetId, troop.Name);
+                    projectedCounts[key] = projectedCounts.GetValueOrDefault(key) + count;
+                }
+            }
+            else
+            {
+                // Seed running counts with members already staying in these troops
+                var troopRunningCounts = troops.ToDictionary(
+                    t => t.ScoutnetId,
+                    t => directCountsPerTroop.GetValueOrDefault(t.ScoutnetId));
+
+                foreach (var (src, count) in sources)
+                {
+                    for (var m = 0; m < count; m++)
+                    {
+                        // Assign to the troop with fewest members for balance
+                        var targetTroop = troops.MinBy(t => troopRunningCounts[t.ScoutnetId])!;
+                        var key = (src, targetTroop.ScoutnetId, targetTroop.Name);
+                        projectedCounts[key] = projectedCounts.GetValueOrDefault(key) + 1;
+                        troopRunningCounts[targetTroop.ScoutnetId]++;
+                    }
+                }
             }
         }
 
@@ -282,31 +340,20 @@ public class PersonFlowService : IPersonFlowService
     }
 
     /// <summary>
-    /// Finds the best troop for a member of a given age.
-    /// Prefers the member's current troop if age still fits, otherwise picks the
-    /// first troop whose age range matches (by age order, youngest suitable first).
+    /// Finds the unit type ID for a member of a given age.
+    /// Returns the first unit type whose age range matches (ordered youngest first).
     /// </summary>
-    private static Troop? FindTroopForAge(
+    private static int? FindUnitTypeForAge(
         int age,
-        Dictionary<int, Troop> troopsByUnitType,
-        Troop currentTroop)
+        Dictionary<int, List<Troop>> troopsByUnitType)
     {
-        // Check if member still fits in their current troop
-        if (currentTroop.UnitTypeId.HasValue &&
-            ScoutUnitTypes.AgeRanges.TryGetValue(currentTroop.UnitTypeId.Value, out var currentRange) &&
-            age >= currentRange.MinAge && age <= currentRange.MaxAge)
-        {
-            return currentTroop;
-        }
-
-        // Find the best matching troop by age (prefer the "next" age group up)
         foreach (var (unitTypeId, (minAge, maxAge)) in ScoutUnitTypes.AgeRanges
             .Where(kv => kv.Key != 7) // Skip "Annat"
             .OrderBy(kv => kv.Value.MinAge))
         {
-            if (age >= minAge && age <= maxAge && troopsByUnitType.TryGetValue(unitTypeId, out var troop))
+            if (age >= minAge && age <= maxAge && troopsByUnitType.ContainsKey(unitTypeId))
             {
-                return troop;
+                return unitTypeId;
             }
         }
 
