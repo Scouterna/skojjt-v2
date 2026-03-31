@@ -161,6 +161,8 @@ public class ScoutnetMember
 
     public int? GetUnitId() => int.TryParse(Unit?.RawValue, out var result) ? result : null;
     public string? GetUnitName() => Unit?.Value;
+    public int? GetUnitTypeId() => int.TryParse(UnitType?.RawValue, out var result) ? result : null;
+    public string? GetUnitTypeName() => UnitType?.Value;
 
     public bool IsActive() => Status?.Value == "Aktiv";
 

@@ -1,0 +1,365 @@
+@page "/sk/{ScoutGroupId:int}/personflode"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
+@using MudBlazor.Charts
+@using MudBlazor.Utilities
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject IPersonFlowService PersonFlowService
+@inject ISemesterRepository SemesterRepository
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject ICurrentUserService CurrentUserService
+
+<PageTitle>Personflöde - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-8">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">
+            Du har inte behörighet att visa denna scoutkår.
+        </MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Class="mb-1">Personflöde</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            Visar hur medlemmar rör sig mellan avdelningar från termin till termin.
+        </MudText>
+
+        <MudAlert Severity="Severity.Info" Dense="true" Class="mb-4" Icon="@Icons.Material.Filled.Info">
+            Endast avdelningar med en åldersgrupp (avdelningstyp) visas.
+            Saknas din avdelning? Ställ in åldersgrupp under
+            <strong>Avdelningsinställningar → Åldersgrupp</strong>, eller importera från Scoutnet.
+        </MudAlert>
+
+        @* Semester selection *@
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudGrid>
+                <MudItem xs="12" md="8">
+                    <MudSelect T="int" Label="Terminer att visa" MultiSelection="true"
+                               @bind-SelectedValues="_selectedSemesterIds"
+                               Variant="Variant.Outlined" Dense="true"
+                               MultiSelectionTextFunc="@FormatSelectedSemesters"
+                               Disabled="@(_availableSemesters.Count == 0)">
+                        @foreach (var semester in _availableSemesters)
+                        {
+                            <MudSelectItem T="int" Value="@semester.Id">@semester.DisplayName</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4" Class="d-flex align-end">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.Timeline"
+                               OnClick="LoadFlowData"
+                               Disabled="@(_selectedSemesterIds.Count < 2)">
+                        Visa flöde
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+            <div class="d-flex align-center mt-3">
+                <MudSwitch T="bool" @bind-Value="_includeProjection"
+                           Color="Color.Secondary" Label="Visa prognos för nästa termin"
+                           title="Projicerar medlemmar till nästa termin baserat på ålder och avdelningens åldersgrupp" />
+            </div>
+            @if (_selectedSemesterIds.Count < 2)
+            {
+                <MudText Typo="Typo.caption" Color="Color.Warning" Class="mt-2">
+                    Välj minst två terminer för att visa flödet.
+                </MudText>
+            }
+        </MudPaper>
+
+        @* Sankey chart *@
+        @if (_loadingFlow)
+        {
+            <MudProgressLinear Color="Color.Secondary" Indeterminate="true" Class="mb-4" />
+        }
+        else if (_flowResult != null && _hasEdges)
+        {
+            <MudPaper Elevation="2" Class="pa-4 mb-4">
+                <MudText Typo="Typo.h6" Class="mb-3">Medlemsflöde mellan avdelningar</MudText>
+
+                @* Legend *@
+                <div class="d-flex flex-wrap gap-4 mb-2">
+                    <div class="d-flex align-center gap-1">
+                        <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Color="Color.Primary" />
+                        <MudText Typo="Typo.caption">Avdelning</MudText>
+                    </div>
+                    <div class="d-flex align-center gap-1">
+                        <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Color="Color.Success" />
+                        <MudText Typo="Typo.caption">Ny medlem</MudText>
+                    </div>
+                    <div class="d-flex align-center gap-1">
+                        <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Color="Color.Error" />
+                        <MudText Typo="Typo.caption">Slutat</MudText>
+                    </div>
+                    @if (_includeProjection)
+                    {
+                        <div class="d-flex align-center gap-1">
+                            <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Style="color: #9C27B0;" />
+                            <MudText Typo="Typo.caption">Prognos</MudText>
+                        </div>
+                    }
+                </div>
+
+                @* Column headers *@
+                <div class="d-flex" style="padding: 0 24px;">
+                    @foreach (var column in _flowResult.Columns)
+                    {
+                        <div style="flex: 1; text-align: center;">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">
+                                <strong>@column.Label</strong>
+                            </MudText>
+                        </div>
+                    }
+                </div>
+
+                <MudChart T="double"
+                          ChartType="ChartType.Sankey"
+                          ChartSeries="@_sankeyChartSeries"
+                          Width="100%"
+                          Height="@($"{_chartHeight}px")"
+                          ChartOptions="@_sankeyOptions" />
+            </MudPaper>
+
+            @* Summary table *@
+            <MudPaper Elevation="2" Class="pa-4 mb-4">
+                <MudText Typo="Typo.h6" Class="mb-3">Sammanfattning per termin</MudText>
+                <MudSimpleTable Dense="true" Hover="true" Bordered="true">
+                    <thead>
+                        <tr>
+                            <th>Termin</th>
+                            <th style="text-align:right">Avdelningar</th>
+                            <th style="text-align:right">Medlemmar</th>
+                            <th style="text-align:right">Nya</th>
+                            <th style="text-align:right">Slutat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var col in _flowResult.Columns)
+                        {
+                            var troopNodes = col.Nodes.Where(n => !n.IsSpecial).ToList();
+                            var newNode = col.Nodes.FirstOrDefault(n => n.IsSpecial && n.Id.EndsWith("_Ny"));
+                            var leftNode = col.Nodes.FirstOrDefault(n => n.IsSpecial && n.Id.EndsWith("_Slutat"));
+                            <tr>
+                                <td><strong>@col.Label</strong></td>
+                                <td style="text-align:right">@troopNodes.Count</td>
+                                <td style="text-align:right">@troopNodes.Sum(n => n.PersonCount)</td>
+                                <td style="text-align:right">
+                                    @if (newNode != null)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success">+@newNode.PersonCount</MudChip>
+                                    }
+                                    else { <span>—</span> }
+                                </td>
+                                <td style="text-align:right">
+                                    @if (leftNode != null)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Error">-@leftNode.PersonCount</MudChip>
+                                    }
+                                    else { <span>—</span> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        }
+        else if (_flowResult != null)
+        {
+            <MudAlert Severity="Severity.Info" Class="mb-4">
+                Inga data att visa för de valda terminerna. Kontrollera att avdelningarna har en
+                åldersgrupp inställd under <strong>Avdelningsinställningar → Åldersgrupp</strong>.
+            </MudAlert>
+        }
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int ScoutGroupId { get; set; }
+
+    private bool _loading = true;
+    private bool _loadingFlow;
+    private bool _hasAccess;
+    private bool _hasEdges;
+    private bool _includeProjection;
+    private ScoutGroup? _scoutGroup;
+    private List<Semester> _availableSemesters = [];
+    private IReadOnlyCollection<int> _selectedSemesterIds = Array.Empty<int>();
+    private PersonFlowResult? _flowResult;
+    private List<ChartSeries<double>> _sankeyChartSeries = [];
+    private int _chartHeight = 400;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+
+    private SankeyChartOptions _sankeyOptions = new()
+    {
+        ShowLabels = true,
+        ShowNodeValues = true,
+        ShowEdgeLabels = false,
+        HighlightOnHover = true,
+        LabelFontSize = "10",
+        LabelPadding = 0,
+        OrderNodesByValue = false,
+        MinVerticalSpacing = 4,
+        EdgeOpacity = 0.4
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId)
+                     && CurrentUserService.IsMemberRegistrar(ScoutGroupId);
+
+        if (!_hasAccess)
+        {
+            _breadcrumbs =
+            [
+                new BreadcrumbItem("Scoutkårer", "/sk"),
+                new BreadcrumbItem("Ingen behörighet", null, disabled: true)
+            ];
+            _loading = false;
+            return;
+        }
+
+        _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+        _availableSemesters = (await SemesterRepository.GetByScoutGroupAsync(ScoutGroupId)).ToList();
+
+        _breadcrumbs =
+        [
+            new BreadcrumbItem("Scoutkårer", "/sk"),
+            new BreadcrumbItem(_scoutGroup?.Name ?? "Scoutkår", $"/sk/{ScoutGroupId}"),
+            new BreadcrumbItem("Personflöde", null, disabled: true)
+        ];
+
+        _selectedSemesterIds = _availableSemesters
+            .Take(4)
+            .Select(s => s.Id)
+            .ToList();
+
+        _loading = false;
+
+        if (_selectedSemesterIds.Count >= 2)
+            await LoadFlowData();
+    }
+
+    private async Task LoadFlowData()
+    {
+        _loadingFlow = true;
+        _flowResult = null;
+        _sankeyChartSeries = [];
+        _hasEdges = false;
+        StateHasChanged();
+
+        try
+        {
+            _flowResult = await PersonFlowService.GetFlowAsync(
+                ScoutGroupId, _selectedSemesterIds.ToList(), _includeProjection);
+            BuildSankeyData();
+        }
+        finally
+        {
+            _loadingFlow = false;
+        }
+    }
+
+    private void BuildSankeyData()
+    {
+        if (_flowResult == null) return;
+
+        var idToDisplayName = new Dictionary<string, string>();
+        var nodeOverrides = new List<SankeyNode>();
+
+        // Build unique display names per node (zero-width space suffix per column)
+        foreach (var column in _flowResult.Columns)
+        {
+            var uniqueSuffix = new string('\u200B', column.ColumnIndex);
+            var isProjectionColumn = column.Label.EndsWith("(proj.)");
+
+            foreach (var node in column.Nodes)
+            {
+                var displayName = $"{node.Name}{uniqueSuffix}";
+                idToDisplayName[node.Id] = displayName;
+
+                var color = node.IsSpecial
+                    ? (node.Id.EndsWith("_Ny")
+                        ? new MudColor("#4CAF50")
+                        : new MudColor("#F44336"))
+                    : isProjectionColumn
+                        ? new MudColor("#9C27B0")
+                        : new MudColor("#1976D2");
+
+                nodeOverrides.Add(new SankeyNode(displayName, column.ColumnIndex, color));
+            }
+        }
+
+        // Build SankeyEdge list from flow links
+        var edges = new List<SankeyEdge<double>>();
+        foreach (var link in _flowResult.Links)
+        {
+            if (idToDisplayName.TryGetValue(link.SourceNodeId, out var src) &&
+                idToDisplayName.TryGetValue(link.TargetNodeId, out var tgt))
+            {
+                edges.Add(new SankeyEdge<double>(src, tgt, link.Value));
+            }
+        }
+
+        _hasEdges = edges.Count > 0;
+        if (!_hasEdges) return;
+
+        // Each ChartSeries.Data accepts SankeyEdge<double>[] via implicit conversion.
+        // Use a single series containing all edges.
+        _sankeyChartSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = string.Empty,
+                Data = edges.ToArray()
+            }
+        ];
+
+        // Set node overrides for colors and column positions
+        _sankeyOptions = new SankeyChartOptions
+        {
+            ShowLabels = true,
+            ShowNodeValues = true,
+            ShowEdgeLabels = false,
+            HighlightOnHover = true,
+            LabelFontSize = "10",
+            LabelPadding = 0,
+            OrderNodesByValue = false,
+            MinVerticalSpacing = 4,
+            EdgeOpacity = 0.4,
+            NodeOverrides = nodeOverrides
+        };
+
+        var maxNodesInColumn = _flowResult.Columns
+            .Select(c => c.Nodes.Count)
+            .DefaultIfEmpty(0)
+            .Max();
+        _chartHeight = Math.Max(300, maxNodesInColumn * 50);
+    }
+
+    private string FormatSelectedSemesters(IReadOnlyList<string> selectedValues)
+    {
+        if (selectedValues.Count == 0)
+            return "Välj terminer...";
+
+        var selectedIds = selectedValues
+            .Select(v => int.TryParse(v, out var id) ? id : 0)
+            .Where(id => id > 0)
+            .ToHashSet();
+
+        return string.Join(", ", _availableSemesters
+            .Where(s => selectedIds.Contains(s.Id))
+            .Select(s => s.DisplayName));
+    }
+}

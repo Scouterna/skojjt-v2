@@ -1,5 +1,6 @@
 @page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopScoutnetId:int}/settings"
 @using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core
 @using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
@@ -66,6 +67,26 @@
                                               HelperText="Standardplats för nya möten" />
                             </MudItem>
                         </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <div class="d-flex align-center mb-4">
+                            <MudIcon Icon="@Icons.Material.Filled.Category" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">Åldersgrupp</MudText>
+                        </div>
+
+                        <MudSelect T="int?" @bind-Value="_troop.UnitTypeId"
+                                   Label="Avdelningstyp"
+                                   Variant="Variant.Outlined"
+                                   HelperText="Scoutnet-åldersgrupp. Används för sortering i personflödesgrafen."
+                                   Clearable="true">
+                            @foreach (var ut in ScoutUnitTypes.All)
+                            {
+                                <MudSelectItem T="int?" Value="@ut.Id">@ut.Name</MudSelectItem>
+                            }
+                        </MudSelect>
                     </MudPaper>
                 </MudItem>
 

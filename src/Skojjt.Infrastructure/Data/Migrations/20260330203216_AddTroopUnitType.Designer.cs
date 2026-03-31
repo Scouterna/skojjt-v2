@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Skojjt.Infrastructure.Data;
 
 #nullable disable
 
-namespace Skojjt.Infrastructure.Migrations
+namespace Skojjt.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(SkojjtDbContext))]
-    partial class SkojjtDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260330203216_AddTroopUnitType")]
+    partial class AddTroopUnitType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -818,6 +821,11 @@ namespace Skojjt.Infrastructure.Migrations
                     b.Property<int>("SemesterId")
                         .HasColumnType("integer")
                         .HasColumnName("semester_id");
+
+                    b.Property<string>("UnitType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("unit_type");
 
                     b.Property<int?>("UnitTypeId")
                         .HasColumnType("integer")

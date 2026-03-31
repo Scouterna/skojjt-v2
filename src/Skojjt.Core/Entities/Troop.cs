@@ -29,6 +29,12 @@ public class Troop
 	public string ? DefaultMeetingLocation { get; set; }
 
 	/// <summary>
+	/// Scoutnet unit type numeric ID. Lower values = younger age groups.
+	/// Used for stable age-based sorting in charts.
+	/// </summary>
+	public int? UnitTypeId { get; set; }
+
+	/// <summary>
 	/// When true, prevents users from accidentally editing attendance after it has been reported.
 	/// </summary>
 	public bool IsLocked { get; set; } = false;

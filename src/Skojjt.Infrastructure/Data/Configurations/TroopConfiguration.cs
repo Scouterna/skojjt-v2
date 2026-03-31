@@ -45,9 +45,12 @@ public class TroopConfiguration : IEntityTypeConfiguration<Troop>
 			.HasColumnName("default_meeting_location")
 			.HasMaxLength(100);
 
+		builder.Property(e => e.UnitTypeId)
+			.HasColumnName("unit_type_id");
+
 		builder.Property(e => e.IsLocked)
-            .HasColumnName("is_locked")
-            .HasDefaultValue(false);
+			.HasColumnName("is_locked")
+			.HasDefaultValue(false);
 
         // Relationships
         builder.HasOne(e => e.ScoutGroup)

@@ -73,58 +73,74 @@
             </MudItem>
 
             @* Quick Links Section *@
-                <MudItem xs="12" md="6">
-                    <MudPaper Elevation="2" Class="pa-4">
-                        <div class="d-flex align-center mb-4">
-                            <MudIcon Icon="@Icons.Material.Filled.Apps" Class="mr-2" Color="Color.Primary" />
-                            <MudText Typo="Typo.h6">Snabblänkar</MudText>
-                        </div>
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <div class="d-flex align-center mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.Apps" Class="mr-2" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6">Snabblänkar</MudText>
+                    </div>
 
-                        <MudStack Spacing="2">
-                            @if (_isMemberRegistrar)
-                            {
-                                <MudButton Variant="Variant.Outlined" 
-                                           FullWidth="true" 
-                                           StartIcon="@Icons.Material.Filled.CloudDownload"
-                                           Href="@($"/sk/{ScoutGroupId}/import")"
-                                           Class="justify-start"
-                                           Color="Color.Primary">
-                                    Scoutnet Import
-                                </MudButton>
-                                <MudButton Variant="Variant.Outlined" 
-                                           FullWidth="true" 
-                                           StartIcon="@Icons.Material.Filled.People"
-                                           Href="@($"/sk/{ScoutGroupId}/p")"
-                                           Class="justify-start">
-                                    Alla medlemmar
-                                </MudButton>
-                                <MudButton Variant="Variant.Outlined" 
-                                           FullWidth="true" 
-                                           StartIcon="@Icons.Material.Filled.PersonAdd"
-                                           Href="@($"/sk/{ScoutGroupId}/add-member")"
-                                           Class="justify-start"
-                                           Color="Color.Success">
-                                    Lägg till medlem
-                                </MudButton>
-                                <MudButton Variant="Variant.Outlined" 
-                                           FullWidth="true" 
-                                           StartIcon="@Icons.Material.Filled.EmojiEvents"
-                                           Href="@($"/sk/{ScoutGroupId}/badges")"
-                                           Class="justify-start"
-                                           Color="Color.Secondary">
-                                    Märken
-                                </MudButton>
-                                <MudButton Variant="Variant.Outlined" 
-                                           FullWidth="true" 
-                                           StartIcon="@Icons.Material.Filled.Settings"
-                                           Href="@($"/sk/{ScoutGroupId}/settings")"
-                                           Class="justify-start">
-                                    Kårinställningar
-                                </MudButton>
-                            }
-                        </MudStack>
-                    </MudPaper>
-                </MudItem>
+                    <MudStack Spacing="2">
+                        @if (_isMemberRegistrar)
+                        {
+                            <MudButton Variant="Variant.Outlined" 
+                                       FullWidth="true" 
+                                       StartIcon="@Icons.Material.Filled.CloudDownload"
+                                       Href="@($"/sk/{ScoutGroupId}/import")"
+                                       Class="justify-start"
+                                       Color="Color.Primary">
+                                Scoutnet Import
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" 
+                                       FullWidth="true" 
+                                       StartIcon="@Icons.Material.Filled.People"
+                                       Href="@($"/sk/{ScoutGroupId}/p")"
+                                       Class="justify-start">
+                                Alla medlemmar
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" 
+                                       FullWidth="true" 
+                                       StartIcon="@Icons.Material.Filled.PersonAdd"
+                                       Href="@($"/sk/{ScoutGroupId}/add-member")"
+                                       Class="justify-start"
+                                       Color="Color.Success">
+                                Lägg till medlem
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" 
+                                       FullWidth="true" 
+                                       StartIcon="@Icons.Material.Filled.EmojiEvents"
+                                       Href="@($"/sk/{ScoutGroupId}/badges")"
+                                       Class="justify-start"
+                                       Color="Color.Secondary">
+                                Märken
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" 
+                                       FullWidth="true" 
+                                       StartIcon="@Icons.Material.Filled.Settings"
+                                       Href="@($"/sk/{ScoutGroupId}/settings")"
+                                       Class="justify-start">
+                                Kårinställningar
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" 
+                                       FullWidth="true" 
+                                       StartIcon="@Icons.Material.Filled.BarChart"
+                                       Href="@($"/sk/{ScoutGroupId}/grafer")"
+                                       Class="justify-start"
+                                       Color="Color.Tertiary">
+                                Grafer
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" 
+                                       FullWidth="true" 
+                                       StartIcon="@Icons.Material.Filled.Timeline"
+                                       Href="@($"/sk/{ScoutGroupId}/personflode")"
+                                       Class="justify-start"
+                                       Color="Color.Tertiary">
+                                Personflöde
+                            </MudButton>
+                        }
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
 
             @* Contact Info Section *@
             <MudItem xs="12">
@@ -172,11 +188,11 @@
     public int ScoutGroupId { get; set; }
 
     private ScoutGroup? _scoutGroup;
-    private List<Semester> _semesters = new();
+    private List<Semester> _semesters = [];
     private bool _loading = true;
-    private bool _hasAccess = false;
-    private bool _isMemberRegistrar = false;
-    private List<BreadcrumbItem> _breadcrumbs = new();
+    private bool _hasAccess;
+    private bool _isMemberRegistrar;
+    private List<BreadcrumbItem> _breadcrumbs = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -199,26 +215,26 @@
             
             if (!_hasAccess)
             {
-                _breadcrumbs = new List<BreadcrumbItem>
-                {
+                _breadcrumbs =
+                [
                     new BreadcrumbItem("Scoutkårer", href: "/sk"),
                     new BreadcrumbItem("Ingen behörighet", href: null, disabled: true)
-                };
+                ];
                 return;
             }
 
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
-            
+
             if (_scoutGroup != null)
             {
                 var semesters = await SemesterRepository.GetByScoutGroupAsync(ScoutGroupId);
                 _semesters = semesters.ToList();
-                
-                _breadcrumbs = new List<BreadcrumbItem>
-                {
+
+                _breadcrumbs =
+                [
                     new BreadcrumbItem("Scoutkårer", href: "/sk"),
                     new BreadcrumbItem(_scoutGroup.Name, href: null, disabled: true)
-                };
+                ];
             }
         }
         finally

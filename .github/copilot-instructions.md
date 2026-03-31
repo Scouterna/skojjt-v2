@@ -1,10 +1,7 @@
-.markdown
 # Copilot Instructions
 
 ## Project Overview
-Skojjt is a **Blazor Server** attendance tracking system for Swedish scout groups (scoutkårer). It manages meeting attendance, troop/member management, badge tracking, and exports reports for municipal activity grants (aktivitetsbidrag / DAK). The UI is in **Swedish**.
-Scoutnet is the member register for Swedish scouting, and Skojjt integrates with it for authentication and member data. 
-This system is designed for use by scout leaders to manage their groups' attendance and activities efficiently.
+Skojjt is a **Blazor Server** attendance tracking system for Swedish scout groups (scoutkårer). It manages meeting attendance, troop/member management, badge tracking, and exports reports for municipal activity grants (aktivitetsbidrag / DAK). The UI is in **Swedish**. Scoutnet is the member register for Swedish scouting, and Skojjt integrates with it for authentication and member data. This system is designed for use by scout leaders to manage their groups' attendance and activities efficiently.
 
 ## Architecture
 - **Clean Architecture** with three main layers:
@@ -92,3 +89,15 @@ This system is designed for use by scout leaders to manage their groups' attenda
 | Personnummer | Swedish personal identity number |
 | Aktivitetsbidrag | Activity grant |
 | Patrull | Patrol (subgroup within a troop) |
+
+## Scoutnet Unit Type Mapping
+- Complete Scoutnet unit_type (troop_type) mapping:
+  - `0` = empty
+  - `1` = Bäverscouter
+  - `2` = Spårarscouter
+  - `3` = Upptäckarscouter
+  - `4` = Äventyrarscouter
+  - `5` = Utmanarscouter
+  - `6` = Roverscouter
+  - `7` = Annat
+  - `8` = Familjescouter

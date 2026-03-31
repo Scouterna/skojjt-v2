@@ -1,0 +1,192 @@
+@page "/sk/{ScoutGroupId:int}/grafer"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject ISemesterRepository SemesterRepository
+@inject ICurrentUserService CurrentUserService
+@inject IAttendanceStatsService AttendanceStatsService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Grafer - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">
+            Du har inte behörighet att visa denna scoutkår.
+        </MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Class="mb-1">Grafer</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            Statistik och grafer för @(_scoutGroup?.Name ?? "scoutkåren").
+        </MudText>
+
+        @* Attendance history chart *@
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <div class="d-flex align-center mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.ShowChart" Class="mr-2" Color="Color.Primary" />
+                <MudText Typo="Typo.h6">Närvarohistorik per termin</MudText>
+            </div>
+
+            @if (_attendanceStats.Count >= 2)
+            {
+                <MudChart T="double" ChartType="ChartType.Line"
+                          ChartSeries="_attendanceChartSeries"
+                          ChartLabels="_attendanceXLabels"
+                          Width="100%"
+                          Height="350px"
+                          ChartOptions="_lineChartOptions" />
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info" Dense="true">
+                    Minst två terminer med data behövs för att visa närvarohistorik.
+                </MudAlert>
+            }
+        </MudPaper>
+
+        @* Summary table *@
+        @if (_attendanceStats.Count > 0)
+        {
+            <MudPaper Elevation="2" Class="pa-4 mb-4">
+                <div class="d-flex align-center mb-4">
+                    <MudIcon Icon="@Icons.Material.Filled.TableChart" Class="mr-2" Color="Color.Primary" />
+                    <MudText Typo="Typo.h6">Sammanfattning per termin</MudText>
+                </div>
+
+                <MudSimpleTable Dense="true" Hover="true" Bordered="true">
+                    <thead>
+                        <tr>
+                            <th>Termin</th>
+                            <th style="text-align: right;">Medlemmar</th>
+                            <th style="text-align: right;">Sammankomster</th>
+                            <th style="text-align: right;">Total närvaro</th>
+                            <th style="text-align: right;">Snitt/möte</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var stat in _attendanceStats)
+                        {
+                            <tr>
+                                <td><strong>@stat.SemesterLabel</strong></td>
+                                <td style="text-align: right;">@stat.MemberCount</td>
+                                <td style="text-align: right;">@stat.MeetingCount</td>
+                                <td style="text-align: right;">@stat.TotalAttendanceCount</td>
+                                <td style="text-align: right;">@stat.AverageAttendancePerMeeting.ToString("F1")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        }
+
+        @* Link to Person Flow *@
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <div class="d-flex align-center mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.Timeline" Class="mr-2" Color="Color.Primary" />
+                <MudText Typo="Typo.h6">Personflöde</MudText>
+            </div>
+            <MudText Typo="Typo.body2" Class="mb-3">
+                Visualisera hur medlemmar rör sig mellan avdelningar över tid.
+            </MudText>
+            <MudButton Variant="Variant.Outlined"
+                       StartIcon="@Icons.Material.Filled.Timeline"
+                       Href="@($"/sk/{ScoutGroupId}/personflode")"
+                       Color="Color.Primary">
+                Visa personflöde
+            </MudButton>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int ScoutGroupId { get; set; }
+
+    private bool _loading = true;
+    private bool _hasAccess;
+    private ScoutGroup? _scoutGroup;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private List<SemesterAttendanceStats> _attendanceStats = [];
+    private List<ChartSeries<double>> _attendanceChartSeries = [];
+    private string[] _attendanceXLabels = [];
+
+    private readonly LineChartOptions _lineChartOptions = new()
+    {
+        YAxisRequireZeroPoint = true,
+        ShowLegend = true,
+        ShowToolTips = true
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId)
+                     && CurrentUserService.IsMemberRegistrar(ScoutGroupId);
+
+        if (!_hasAccess)
+        {
+            _breadcrumbs =
+            [
+                new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                new BreadcrumbItem("Ingen behörighet", href: null, disabled: true)
+            ];
+            _loading = false;
+            return;
+        }
+
+        _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+
+        _breadcrumbs =
+        [
+            new BreadcrumbItem("Scoutkårer", "/sk"),
+            new BreadcrumbItem(_scoutGroup?.Name ?? "Scoutkår", $"/sk/{ScoutGroupId}"),
+            new BreadcrumbItem("Grafer", null, disabled: true)
+        ];
+
+        _attendanceStats = (await AttendanceStatsService.GetStatsByScoutGroupAsync(
+            ScoutGroupId)).ToList();
+        BuildAttendanceChart();
+
+        _loading = false;
+    }
+
+    private void BuildAttendanceChart()
+    {
+        if (_attendanceStats.Count < 2)
+            return;
+
+        _attendanceXLabels = _attendanceStats.Select(s => s.SemesterLabel).ToArray();
+
+        _attendanceChartSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Medlemmar",
+                Data = _attendanceStats.Select(s => (double)s.MemberCount).ToArray()
+            },
+            new ChartSeries<double>
+            {
+                Name = "Sammankomster",
+                Data = _attendanceStats.Select(s => (double)s.MeetingCount).ToArray()
+            },
+            new ChartSeries<double>
+            {
+                Name = "Snitt närvaro/möte",
+                Data = _attendanceStats.Select(s => Math.Round(s.AverageAttendancePerMeeting, 1)).ToArray()
+            }
+        ];
+    }
+}

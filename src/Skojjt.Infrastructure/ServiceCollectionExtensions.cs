@@ -69,6 +69,12 @@ public static class ServiceCollectionExtensions
         // Register DAK analysis service
         services.AddScoped<IDakAnalysisService, DakAnalysisService>();
 
+        // Register attendance stats service (charts)
+        services.AddScoped<IAttendanceStatsService, AttendanceStatsService>();
+
+        // Register person flow service (Sankey chart)
+        services.AddScoped<IPersonFlowService, PersonFlowService>();
+
         return services;
     }
 }

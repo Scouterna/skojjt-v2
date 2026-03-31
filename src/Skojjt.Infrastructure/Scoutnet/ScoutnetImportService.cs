@@ -293,7 +293,8 @@ public class ScoutnetImportService : IScoutnetImportService
                                 ScoutnetId = unitId.Value,
                                 ScoutGroupId = scoutGroupId,
                                 SemesterId = semesterId,
-                                Name = unitName
+                                Name = unitName,
+                                UnitTypeId = member.GetUnitTypeId()
                             };
                             troopsToCreate[unitId.Value] = troop;
                             _context.Troops.Add(troop);
@@ -304,10 +305,15 @@ public class ScoutnetImportService : IScoutnetImportService
                     }
                     else
                     {
-                        // Update troop name if changed
+                        // Update troop name and unit type if changed
                         if (troop.Name != unitName)
                         {
                             troop.Name = unitName;
+                        }
+                        var unitTypeId = member.GetUnitTypeId();
+                        if (troop.UnitTypeId != unitTypeId)
+                        {
+                            troop.UnitTypeId = unitTypeId;
                         }
                     }
 
