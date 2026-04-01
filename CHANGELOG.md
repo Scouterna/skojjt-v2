@@ -1,6 +1,7 @@
 # Changelog
 
-## [Unreleased]
+## [2.0.9] - 2026-04-01
+* Fix för avdelningar med negativt ID (skapade i skojjt v1), url fungerade inte pga svenskt minus tecken, vad det nu är bra för.
 * PWA-stöd: manifest, service worker och ikoner för installation som app.
 * Fäst genvägar till avdelningar på startsidan.
 
