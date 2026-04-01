@@ -336,7 +336,7 @@
                 new("Scoutkårer", href: "/sk"),
                 new(_scoutGroup?.Name ?? "Kår", href: $"/sk/{ScoutGroupId}"),
                 new(_semester?.DisplayName ?? "Termin", href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
-                new(_troop?.Name ?? "Avdelning", href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}"),
+                new(_troop?.Name ?? "Avdelning", href: Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}")),
                 new(_badge?.Name ?? "Märke", href: null, disabled: true)
             ];
         }

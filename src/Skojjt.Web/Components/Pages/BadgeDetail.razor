@@ -171,7 +171,7 @@
                             {
                                 <MudListItem T="TroopBadge"
                                              Icon="@Icons.Material.Filled.Group"
-                                             Href="@($"/sk/{ScoutGroupId}/t/{tb.Troop.SemesterId}/{tb.Troop.ScoutnetId}/badges/{BadgeId}")">
+                                             Href="@(Invariant($"/sk/{ScoutGroupId}/t/{tb.Troop.SemesterId}/{tb.Troop.ScoutnetId}/badges/{BadgeId}"))">
                                     @tb.Troop.Name (@tb.Troop.Semester.DisplayName)
                                 </MudListItem>
                             }

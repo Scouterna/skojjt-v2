@@ -31,7 +31,7 @@ else
 {
     <MudText Typo="Typo.h4" Class="mb-2">Redigera möte</MudText>
     <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-4">
-        <MudLink Href="@($"/sk/{_troop!.ScoutGroupId}/t/{_troop!.SemesterId}/{_troop!.ScoutnetId}")">@_troop!.Name</MudLink>
+        <MudLink Href="@(Invariant($"/sk/{_troop!.ScoutGroupId}/t/{_troop!.SemesterId}/{_troop!.ScoutnetId}"))">@_troop!.Name</MudLink>
         @if (_troop!.IsLocked == true)
         {
             <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Color="Color.Warning" Class="ml-2" />
@@ -300,7 +300,7 @@ else
         if (_troop != null)
         {
             // Navigate back to the troop attendance page
-            NavigationManager.NavigateTo($"/sk/{_troop.ScoutGroupId}/t/{_troop.SemesterId}/{_troop.ScoutnetId}");
+            NavigationManager.NavigateTo(Invariant($"/sk/{_troop.ScoutGroupId}/t/{_troop.SemesterId}/{_troop.ScoutnetId}"));
         }
         else
         {

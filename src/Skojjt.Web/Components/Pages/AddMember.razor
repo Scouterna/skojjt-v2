@@ -101,7 +101,7 @@
                 {
                     <MudButton Variant="Variant.Text"
                                Color="Color.Primary"
-                               Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}")"
+                               Href="@(Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}"))"
                                StartIcon="@Icons.Material.Filled.ArrowBack"
                                Class="mb-4">
                         Tillbaka till @(_troop?.Name ?? "avdelningen")
@@ -300,7 +300,7 @@
                 @* Submit *@
                 <MudItem xs="12" Class="d-flex justify-space-between">
                     <MudButton Variant="Variant.Outlined"
-                               Href="@(HasTroopContext ? $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}" : $"/sk/{ScoutGroupId}")"
+                               Href="@(HasTroopContext ? Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}") : $"/sk/{ScoutGroupId}")"
                                Disabled="_isSubmitting">
                         Tillbaka
                     </MudButton>
@@ -367,7 +367,7 @@
                 [
                     new BreadcrumbItem("Scoutkårer", href: "/sk"),
                     new BreadcrumbItem(_scoutGroup?.Name ?? "Scoutkår", href: $"/sk/{ScoutGroupId}"),
-                    new BreadcrumbItem(_troop?.Name ?? "Avdelning", href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}"),
+                    new BreadcrumbItem(_troop?.Name ?? "Avdelning", href: Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}")),
                     new BreadcrumbItem("Ny medlem", href: null, disabled: true)
                 ];
             }

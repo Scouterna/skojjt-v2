@@ -95,7 +95,7 @@
                     <div class="d-flex justify-end gap-4">
                         <MudButton Variant="Variant.Outlined"
                                    Color="Color.Default"
-                                   Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}")">
+                                   Href="@(Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}"))">
                             Avbryt
                         </MudButton>
                         <MudButton Variant="Variant.Filled"
@@ -170,7 +170,7 @@
                     new("Scoutkårer", href: "/sk"),
                     new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
                     new(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
-                    new(_troop.Name, href: $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}"),
+                    new(_troop.Name, href: Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}")),
                     new("Inställningar", href: null, disabled: true)
                 };
             }

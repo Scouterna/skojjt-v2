@@ -255,7 +255,7 @@
                                 <MudChip T="string" Color="Color.Primary"
                                          OnClose="@(() => UnassignBadge(badge.Id))"
                                          Icon="@Icons.Material.Filled.EmojiEvents">
-                                    <MudLink Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/badges/{badge.Id}")"
+                                    <MudLink Href="@(Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/badges/{badge.Id}"))"
                                              Color="Color.Inherit" Underline="Underline.None">
                                         @badge.Name
                                     </MudLink>
@@ -283,21 +283,21 @@
             <MudExpansionPanel Text="Inställningar & Export" Icon="@Icons.Material.Filled.Settings">
                 <MudGrid>
                     <MudItem xs="12" sm="6" md="3">
-                        <ExportButton ExportUrl="@($"/reports/dak?scoutnetId={_troop.ScoutnetId}&semesterId={_troop.SemesterId}")"
+                        <ExportButton ExportUrl="@(Invariant($"/reports/dak?scoutnetId={_troop.ScoutnetId}&semesterId={_troop.SemesterId}"))"
                                       ScoutGroupId="@ScoutGroupId"
                                       Icon="@Icons.Material.Filled.FileDownload">
                             DAK-export
                         </ExportButton>
                     </MudItem>
                     <MudItem xs="12" sm="6" md="3">
-                        <ExportButton ExportUrl="@($"/reports/json?scoutnetId={_troop.ScoutnetId}&semesterId={_troop.SemesterId}")"
+                        <ExportButton ExportUrl="@(Invariant($"/reports/json?scoutnetId={_troop.ScoutnetId}&semesterId={_troop.SemesterId}"))"
                                       ScoutGroupId="@ScoutGroupId"
                                       Icon="@Icons.Material.Filled.DataObject">
                             JSON-export
                         </ExportButton>
                     </MudItem>
                     <MudItem xs="12" sm="6" md="3">
-                        <ExportButton ExportUrl="@($"/reports/excel-gbg?scoutnetId={_troop.ScoutnetId}&semesterId={_troop.SemesterId}")"
+                        <ExportButton ExportUrl="@(Invariant($"/reports/excel-gbg?scoutnetId={_troop.ScoutnetId}&semesterId={_troop.SemesterId}"))"
                                        ScoutGroupId="@ScoutGroupId"
                                        Icon="@Icons.Material.Filled.TableChart">
                              Excel (Göteborg)
@@ -306,7 +306,7 @@
                     <MudItem xs="12" sm="6" md="3">
                         <MudButton Variant="Variant.Outlined" FullWidth="true"
                                    StartIcon="@Icons.Material.Filled.Print"
-                                   Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/sensus")">
+                                   Href="@(Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/sensus"))">
                             Sensus närvarolista
                         </MudButton>
                     </MudItem>
@@ -321,7 +321,7 @@
                     <MudItem xs="12" sm="6" md="3">
                         <MudButton Variant="Variant.Outlined" FullWidth="true"
                                    StartIcon="@Icons.Material.Filled.Tune"
-                                   Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/settings")">
+                                   Href="@(Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/settings"))">
                                     Standardvärden
                         </MudButton>
                     </MudItem>
@@ -427,7 +427,7 @@
                 <MudButton Variant="Variant.Outlined"
                            Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.PersonAdd"
-                           Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/add-member")"
+                           Href="@(Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/add-member"))"
                            Size="Size.Small">
                     Skapa ny person i Scoutnet
                 </MudButton>
@@ -444,7 +444,7 @@
         <MudButton Variant="Variant.Outlined"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.PersonAdd"
-                   Href="@($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/add-member")">
+                   Href="@(Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}/add-member"))">
             Skapa ny person
         </MudButton>
         <MudSpacer />
@@ -744,7 +744,7 @@
         {
             if (_troop != null)
             {
-                var url = $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}";
+                var url = Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}");
                 var troopShortcutName = $"{_troop.Name} - {_troop.Semester.DisplayName}";
                 await JSRuntime.InvokeVoidAsync("skojjtShortcuts.add", TroopScoutnetId, "Avdelning", url, troopShortcutName);
                 _isPinned = true;

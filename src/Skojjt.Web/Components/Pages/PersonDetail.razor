@@ -236,7 +236,7 @@
                         <MudList T="TroopPerson" Dense="true" Class="py-0">
                             @foreach (var tp in _troopMemberships)
                             {
-                                <MudListItem T="TroopPerson" Href="@($"/sk/{ScoutGroupId}/t/{tp.Troop.SemesterId}/{tp.Troop.ScoutnetId}")">
+                                <MudListItem T="TroopPerson" Href="@(Invariant($"/sk/{ScoutGroupId}/t/{tp.Troop.SemesterId}/{tp.Troop.ScoutnetId}"))">
                                     <div class="d-flex justify-space-between align-center" style="width: 100%;">
                                         <div>
                                             <MudText>@tp.Troop.Name</MudText>
