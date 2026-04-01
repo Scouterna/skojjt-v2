@@ -1,4 +1,6 @@
 @page "/"
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Skojjt - Hem</PageTitle>
 
@@ -7,17 +9,47 @@
         <div class="d-flex justify-center mb-6">
             <MudImage Src="/img/logo.png" Alt="Skojjt Logo" Width="200" />
         </div>
-        
+
         <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6">
             Välkommen till Skojjt
         </MudText>
-        
+
         <AuthorizeView>
             <Authorized>
                 <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Primary" Class="mb-6">
                     @context.User.Identity?.Name
                 </MudText>
-                
+
+                @if (_pinnedTroops.Count > 0)
+                {
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Align="Align.Center" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.PushPin" Size="Size.Small" Class="mr-1" />
+                        Genvägar
+                    </MudText>
+                    <MudGrid Justify="Justify.Center" Class="mb-4">
+                        @foreach (var troop in _pinnedTroops)
+                        {
+                            <MudItem xs="12" sm="6">
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Secondary"
+                                           Size="Size.Large"
+                                           FullWidth="true"
+                                           Href="@troop.Url"
+                                           StartIcon="@Icons.Material.Filled.Groups">
+                                    @troop.Name
+                                </MudButton>
+                                @if (!string.IsNullOrEmpty(troop.ScoutGroupName))
+                                {
+                                    <MudText Typo="Typo.caption" Align="Align.Center" Color="Color.Secondary">
+                                        @troop.ScoutGroupName
+                                    </MudText>
+                                }
+                            </MudItem>
+                        }
+                    </MudGrid>
+                    <MudDivider Class="my-4" />
+                }
+
                 <MudGrid Justify="Justify.Center" Class="mb-4">
                     <MudItem xs="12" sm="6">
                         <MudButton Variant="Variant.Filled" 
@@ -54,3 +86,28 @@
                 </AuthorizeView>
     </MudPaper>
 </MudContainer>
+
+@code {
+    private record PinnedTroop(int TroopScoutnetId, string Name, string Url, string ScoutGroupName);
+    private List<PinnedTroop> _pinnedTroops = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var shortcuts = await JSRuntime.InvokeAsync<PinnedTroop[]>("skojjtShortcuts.getAll");
+                if (shortcuts is { Length: > 0 })
+                {
+                    _pinnedTroops = [.. shortcuts];
+                    StateHasChanged();
+                }
+            }
+            catch
+            {
+                // localStorage unavailable during prerendering
+            }
+        }
+    }
+}

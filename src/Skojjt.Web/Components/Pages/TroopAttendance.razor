@@ -59,22 +59,30 @@
                 </MudText>
             </div>
             
-            <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
-                <MudButton StartIcon="@Icons.Material.Filled.Add"
-                           OnClick="@(() => _showNewMeetingDialog = true)"
-                           Disabled="@_troop.IsLocked">
-                    Nytt möte
-                </MudButton>
-                <MudButton StartIcon="@Icons.Material.Filled.Hiking"
-                           OnClick="OpenNewHikeDialog"
-                           Disabled="@_troop.IsLocked">
-                    Läger
-                </MudButton>
-                <MudButton StartIcon="@Icons.Material.Filled.PersonAdd"
-                           OnClick="@(() => _showAddMemberDialog = true)">
-                    Lägg till
-                </MudButton>
-            </MudButtonGroup>
+            <div class="d-flex align-center gap-2">
+                <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
+                    <MudButton StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="@(() => _showNewMeetingDialog = true)"
+                               Disabled="@_troop.IsLocked">
+                        Nytt möte
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.Hiking"
+                               OnClick="OpenNewHikeDialog"
+                               Disabled="@_troop.IsLocked">
+                        Läger
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.PersonAdd"
+                               OnClick="@(() => _showAddMemberDialog = true)">
+                        Lägg till
+                    </MudButton>
+                </MudButtonGroup>
+                <MudTooltip Text="@(_isPinned ? "Ta bort genväg" : "Lägg till genväg på startsidan")">
+                    <MudIconButton Icon="@(_isPinned ? Icons.Material.Filled.PushPin : Icons.Material.Outlined.PushPin)"
+                                   Color="@(_isPinned ? Color.Primary : Color.Default)"
+                                   Size="Size.Small"
+                                   OnClick="TogglePinShortcut" />
+                </MudTooltip>
+            </div>
         </div>
 
         @* Attendance Grid *@
@@ -543,6 +551,7 @@
     private bool _hasAccess = false;
     private bool _showExtraInfo = false;
     private bool _groupByPatrol = false;
+    private bool _isPinned = false;
     private bool _showNewMeetingDialog = false;
     private bool _showAddMemberDialog = false;
     private string _memberSearchText = "";
@@ -552,11 +561,11 @@
     private MudForm? _meetingForm;
     private bool _disposed;
     private bool _initialized;
-    
+
     // Patrol editing state
     private int? _editingPatrolPersonId;
     private string? _editingPatrolValue;
-    
+
     // Remove confirmation state
     private int? _pendingRemovePersonId;
 
@@ -564,7 +573,7 @@
     private SaveStatus _saveStatus = SaveStatus.Saved;
     private CancellationTokenSource? _saveDebounceTokenSource;
     private const int SaveDebounceMs = 1500;
-    
+
     private string _newMeetingName = "Möte";
     private int _newMeetingDuration = 90;
     private bool _newMeetingIsHike = false;
@@ -572,10 +581,10 @@
     private DateTime? _newMeetingDate = DateTime.Today;
     private TimeSpan? _newMeetingTime = new TimeSpan(18, 30, 0);
     private string? _newMeetingLocation = "";
-    
+
     private DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
     private List<BreadcrumbItem> _breadcrumbs = new();
-    
+
     // Unique identifier for this component instance to exclude from broadcasts
     private readonly string _instanceId = Guid.NewGuid().ToString();
 
@@ -601,7 +610,7 @@
     {
         // Check access immediately using URL parameter
         _hasAccess = CurrentUserService.HasTroopAccess(ScoutGroupId, TroopScoutnetId);
-        
+
         if (!_hasAccess)
         {
             _loading = false;
@@ -619,17 +628,17 @@
         _patrolHandlerId = StateService.RegisterPatrolHandler(HandlePatrolChangedAsync);
         _meetingHandlerId = StateService.RegisterMeetingHandler(HandleMeetingChangedAsync);
         _memberHandlerId = StateService.RegisterMemberHandler(HandleMemberChangedAsync);
-        
+
         // Load data once during initialization
         await LoadData();
-        
+
         _initialized = true;
     }
 
     private Task HandleAttendanceChangedAsync(int troopId, int personId, int meetingId, bool attending, string sourceInstanceId)
     {
         if (_disposed || sourceInstanceId == _instanceId || _troop == null || troopId != _troop.Id) return Task.CompletedTask;
-        
+
         try
         {
             var key = (personId, meetingId);
@@ -638,14 +647,14 @@
             _ = TryInvokeStateHasChangedAsync();
         }
         catch { }
-        
+
         return Task.CompletedTask;
     }
 
     private Task HandlePatrolChangedAsync(int troopId, int personId, string? patrol, string sourceInstanceId)
     {
         if (_disposed || sourceInstanceId == _instanceId || _troop == null || troopId != _troop.Id) return Task.CompletedTask;
-        
+
         try
         {
             var troopPerson = _troopPersons.FirstOrDefault(tp => tp.PersonId == personId);
@@ -656,7 +665,7 @@
             }
         }
         catch { }
-        
+
         return Task.CompletedTask;
     }
 
@@ -692,7 +701,7 @@
     {
         // Skip if not yet initialized (OnInitializedAsync will handle the first load)
         if (!_initialized) return;
-        
+
         // Only reload if parameters actually changed
         if (_lastLoadedScoutGroupId != ScoutGroupId || 
             _lastLoadedSemesterId != SemesterId || 
@@ -705,7 +714,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (_disposed) return;
-        
+
         if (firstRender)
         {
             await JSRuntime.InvokeVoidAsyncIgnoreErrors("eval", """
@@ -716,8 +725,32 @@
                     });
                 }
             """);
+
+            _isPinned = await JSRuntime.InvokeAsync<bool>("skojjtShortcuts.isPinned", TroopScoutnetId);
+            StateHasChanged();
         }
         await JSRuntime.InvokeVoidAsyncIgnoreErrors("eval", $"window.hasUnsavedChanges = {(_saveStatus == SaveStatus.Unsaved).ToString().ToLower()};");
+    }
+
+    private async Task TogglePinShortcut()
+    {
+        if (_isPinned)
+        {
+            await JSRuntime.InvokeVoidAsync("skojjtShortcuts.remove", TroopScoutnetId);
+            _isPinned = false;
+            Snackbar.Add("Genväg borttagen", Severity.Info);
+        }
+        else
+        {
+            if (_troop != null)
+            {
+                var url = $"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}";
+                var troopShortcutName = $"{_troop.Name} - {_troop.Semester.DisplayName}";
+                await JSRuntime.InvokeVoidAsync("skojjtShortcuts.add", TroopScoutnetId, "Avdelning", url, troopShortcutName);
+                _isPinned = true;
+                Snackbar.Add("Genväg tillagd på startsidan", Severity.Success);
+            }
+        }
     }
 
     private async Task<bool> TryInvokeJsAsync(string identifier, params object?[] args)
