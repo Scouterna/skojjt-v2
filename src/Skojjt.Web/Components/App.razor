@@ -11,6 +11,12 @@
     <link rel="stylesheet" href="@Assets["Skojjt.Web.styles.css"]" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#1B5E20" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Skojjt" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <HeadOutlet />
     <title>Skojjt - Närvarosystem för scouter</title>
     <script>
@@ -135,6 +141,11 @@
         }).observe(document.getElementById('components-reconnect-modal'), {
             attributes: true, attributeFilter: ['class']
         });
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js');
+        }
     </script>
 </body>
 

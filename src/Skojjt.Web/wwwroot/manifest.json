@@ -1,19 +1,29 @@
 {
-    "manifest_version" : 3,
-    "name": "Skojjt",
-    "version": "3.0.0",
+    "name": "Skojjt - Närvarosystem för scouter",
+    "short_name": "Skojjt",
+    "description": "Närvarosystem för svenska scoutkårer",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "theme_color": "#1B5E20",
+    "background_color": "#ffffff",
     "icons": [
         {
             "src": "/img/android-chrome-144x144.png",
             "sizes": "144x144",
             "type": "image/png"
+        },
+        {
+            "src": "/img/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/img/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
         }
-    ],
-    "theme_color": "#ffffff",
-    "background_color": "#ffffff",
-    "display": "standalone",
-    "host_permissions" : [
-        "http://*/*",
-        "https://*/*"
     ]
 }
