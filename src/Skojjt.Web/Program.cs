@@ -39,7 +39,8 @@ startupLogger.LogInformation("ScoutId Authority: {Authority}", builder.Configura
 // causing MudDatePicker to show Sunday as first day of week instead of Monday.
 var svSE = new CultureInfo("sv-SE");
 // Override the Swedish negative sign (U+2212 '−') with ASCII hyphen-minus (U+002D '-')
-// so that negative integers in URLs (e.g. v1 troop ScoutnetIds) don't break route matching.
+// as a safety net. URL interpolations also use FormattableString.Invariant() explicitly,
+// but this ensures any missed site still produces valid URLs for negative ScoutnetIds.
 svSE.NumberFormat.NegativeSign = "-";
 CultureInfo.DefaultThreadCurrentCulture = svSE;
 CultureInfo.DefaultThreadCurrentUICulture = svSE;
@@ -52,7 +53,7 @@ builder.Services.AddTransient<MudLocalizer, SwedishMudLocalizer>();
 // Accept-Language headers (e.g. bots/scanners sending binary garbage).
 // This ensures all requests use a known-good culture before reaching Blazor's
 // ServerComponentSerializer, which would otherwise crash on invalid culture names.
-var supportedCultures = new[] { new CultureInfo("sv-SE"), new CultureInfo("en") };
+var supportedCultures = new[] { svSE, new CultureInfo("en") };
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
     options.DefaultRequestCulture = new RequestCulture("sv-SE");
