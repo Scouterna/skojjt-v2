@@ -192,7 +192,7 @@
         {
             if (line.StartsWith("## ", StringComparison.Ordinal))
             {
-                current = new ChangelogSection { Title = line[3..].Trim().Trim('[', ']') };
+                current = new ChangelogSection { Title = line[3..].Trim() };
                 sections.Add(current);
             }
             else if (line.StartsWith("### ", StringComparison.Ordinal))
@@ -202,8 +202,10 @@
             }
             else if (line.StartsWith('[') && line.Contains(']'))
             {
-                var versionLabel = line.Trim().Trim('[', ']');
-                current = new ChangelogSection { Title = versionLabel };
+                // Skip link reference definitions (e.g. [2.0.9]: https://...)
+                if (line.Contains(": http", StringComparison.Ordinal))
+                    continue;
+                current = new ChangelogSection { Title = line.Trim() };
                 sections.Add(current);
             }
             else if (line.StartsWith("* ", StringComparison.Ordinal) || line.StartsWith("- ", StringComparison.Ordinal))
