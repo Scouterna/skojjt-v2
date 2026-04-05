@@ -53,7 +53,11 @@ builder.Services.AddTransient<MudLocalizer, SwedishMudLocalizer>();
 // Accept-Language headers (e.g. bots/scanners sending binary garbage).
 // This ensures all requests use a known-good culture before reaching Blazor's
 // ServerComponentSerializer, which would otherwise crash on invalid culture names.
-var supportedCultures = new[] { svSE, new CultureInfo("en") };
+// The English fallback culture must also use Monday as first day of week so that
+// MudDatePicker always starts on Monday, even when the browser sends Accept-Language: en.
+var enCulture = new CultureInfo("en");
+enCulture.DateTimeFormat.FirstDayOfWeek = DayOfWeek.Monday;
+var supportedCultures = new[] { svSE, enCulture };
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
     options.DefaultRequestCulture = new RequestCulture("sv-SE");
