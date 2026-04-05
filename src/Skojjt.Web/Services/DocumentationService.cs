@@ -1,4 +1,7 @@
+using System.Globalization;
 using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 using Markdig;
 
 namespace Skojjt.Web.Services;
@@ -50,7 +53,8 @@ public sealed class DocumentationService
         if (markdown is null)
             return null;
 
-        return Markdown.ToHtml(markdown, Pipeline);
+        var html = Markdown.ToHtml(markdown, Pipeline);
+        return NormalizeFragmentAnchors(html, slug);
     }
 
     /// <summary>
@@ -70,6 +74,38 @@ public sealed class DocumentationService
 
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
+    }
+
+    /// <summary>
+    /// Normalizes heading id attributes and fragment-only href attributes to ASCII
+    /// by stripping diacritics (e.g. ä→a, ö→o, å→a), and rewrites fragment-only
+    /// links to include the full page path so Blazor navigates within the page.
+    /// </summary>
+    private static string NormalizeFragmentAnchors(string html, string slug)
+    {
+        // Normalize id="..." on heading elements
+        html = Regex.Replace(html, " id=\"([^\"]+)\"", m =>
+            $" id=\"{RemoveDiacritics(m.Groups[1].Value)}\"");
+
+        // Rewrite fragment-only href="#..." to full path "/hjalp/slug#..."
+        // so Blazor's enhanced navigation stays on the documentation page
+        // instead of navigating to the root URL.
+        html = Regex.Replace(html, " href=\"#([^\"]+)\"", m =>
+            $" href=\"/hjalp/{slug}#{RemoveDiacritics(m.Groups[1].Value)}\"");
+
+        return html;
+    }
+
+    private static string RemoveDiacritics(string text)
+    {
+        var normalized = text.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder(normalized.Length);
+        foreach (var c in normalized)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                sb.Append(c);
+        }
+        return sb.ToString().Normalize(NormalizationForm.FormC);
     }
 
     private static string? ExtractTitle(string markdown)

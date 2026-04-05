@@ -222,3 +222,110 @@ h1:focus {
         color: #9AA0A6;
     }
 }
+
+/* ── Documentation page (.docs-content) ── */
+
+.docs-content h1 {
+    font-size: 2rem;
+    font-weight: 500;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+.docs-content h2 {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-top: 3rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+}
+
+.docs-content h3 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.docs-content p {
+    margin-bottom: 0.75rem;
+    line-height: 1.7;
+}
+
+.docs-content ul {
+    list-style-type: disc !important;
+    padding-left: 2.5rem !important;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    list-style-position: outside;
+}
+
+.docs-content ol {
+    list-style-type: decimal !important;
+    padding-left: 2.5rem !important;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    list-style-position: outside;
+}
+
+.docs-content li {
+    margin-bottom: 0.4rem;
+    line-height: 1.6;
+    display: list-item !important;
+}
+
+.docs-content code {
+    background: var(--mud-palette-background-gray);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.docs-content pre {
+    background: var(--mud-palette-background-gray);
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+
+.docs-content pre code {
+    background: none;
+    padding: 0;
+}
+
+.docs-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+}
+
+.docs-content th,
+.docs-content td {
+    border: 1px solid var(--mud-palette-lines-default);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+}
+
+.docs-content th {
+    background: var(--mud-palette-background-gray);
+    font-weight: 600;
+}
+
+.docs-content strong {
+    font-weight: 600;
+}
+
+.docs-content blockquote {
+    border-left: 4px solid var(--mud-palette-primary);
+    padding: 0.5rem 1rem;
+    margin: 1rem 0;
+    background: var(--mud-palette-background-gray);
+}
+
+.docs-content hr {
+    border: none;
+    border-top: 1px solid var(--mud-palette-lines-default);
+    margin: 1.5rem 0;
+}
