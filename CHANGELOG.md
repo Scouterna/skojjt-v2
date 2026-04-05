@@ -1,7 +1,15 @@
 # Changelog
 
+## [2.1.0] - 2026-04-05
+* Allow all member register users to access badge templates
+* Fix: bug when you comple a badge row, the checkmark would be checked for the next person in the list.
+* Improved the documentation for badge templates and added a section about how to add badge images.
+* Improved the layout for documentation pages, with better spacing.
+* Fix: Date picker would sometimes start on Sunday, now it always starts on Monday, even if the user has a different culture set.
+* Fix: badge picture for the badge list was not showing, now it does.
+
 ## [2.0.10] - 2026-04-01
-* Fixat changelog parsing
+* Fix changelog parsing
 
 ## [2.0.9] - 2026-04-01
 * Fix för avdelningar med negativt ID (skapade i skojjt v1), url fungerade inte pga svenskt minus tecken, vad det nu är bra för.
