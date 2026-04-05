@@ -4,6 +4,7 @@
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
 @using Skojjt.Core.Services
+@using Skojjt.Shared
 @attribute [Authorize]
 @rendermode InteractiveServer
 @inject ICurrentUserService CurrentUserService
@@ -262,7 +263,7 @@
     {
         try
         {
-            var badge = await BadgeService.CreateBadgeAsync(ScoutGroupId, _newBadgeName, _newBadgeDescription, _newBadgeImageUrl);
+            var badge = await BadgeService.CreateBadgeAsync(ScoutGroupId, _newBadgeName, _newBadgeDescription, ImageUrlHelper.ResolveImageUrl(_newBadgeImageUrl));
             _showNewBadgeDialog = false;
             _newBadgeName = "";
             _newBadgeDescription = null;

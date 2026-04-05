@@ -1,0 +1,38 @@
+@page "/badge-templates"
+@using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
+
+<PageTitle>Märkesmallar - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">
+            Du har inte behörighet att hantera märkesmallar. Endast registeransvariga har tillgång.
+        </MudAlert>
+    }
+    else
+    {
+        <BadgeTemplatesAdminTab />
+    }
+</MudContainer>
+
+@code {
+    private bool _hasAccess;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+
+    protected override void OnInitialized()
+    {
+        _hasAccess = CurrentUserService.IsAnyMemberRegistrar;
+        _breadcrumbs =
+        [
+            new("Hem", href: "/"),
+            new("Märkesmallar", href: null, disabled: true)
+        ];
+    }
+}

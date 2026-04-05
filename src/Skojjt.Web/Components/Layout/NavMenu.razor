@@ -7,7 +7,12 @@
     <AuthorizeView>
         <Authorized>
             <MudNavLink Href="/sk" Icon="@Icons.Material.Filled.Groups2">Scoutkårer</MudNavLink>
-            
+
+            @if (CurrentUserService.IsAnyMemberRegistrar)
+            {
+                <MudNavLink Href="/badge-templates" Icon="@Icons.Material.Filled.EmojiEvents">Märkesmallar</MudNavLink>
+            }
+
             @if (CurrentUserService.IsAdmin)
             {
                 <MudDivider Class="my-2" />

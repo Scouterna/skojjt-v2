@@ -83,6 +83,11 @@ public interface ICurrentUserService
     //int? PrimaryGroupId { get; }
 
     /// <summary>
+    /// Checks if the current user is a member registrar for any scout group.
+    /// </summary>
+    bool IsAnyMemberRegistrar { get; }
+
+    /// <summary>
     /// Checks if the current user is a system administrator.
     /// </summary>
     bool IsAdmin { get; }

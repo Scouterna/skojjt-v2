@@ -241,6 +241,30 @@ public class ScoutIdAuthenticationTests
             "Should NOT be registrar for group without access");
     }
 
+    [TestMethod]
+    public void CurrentUserService_IsAnyMemberRegistrar_WithRegistrarRole_ReturnsTrue()
+    {
+        // Arrange
+        var service = CreateServiceWithUser(
+            accessibleGroups: "1001",
+            memberRegistrarGroups: "1001");
+
+        // Act & Assert
+        Assert.IsTrue(service.IsAnyMemberRegistrar);
+    }
+
+    [TestMethod]
+    public void CurrentUserService_IsAnyMemberRegistrar_WithoutRegistrarRole_ReturnsFalse()
+    {
+        // Arrange - user has group access but no registrar role
+        var service = CreateServiceWithUser(
+            accessibleGroups: "1001");
+
+        // Act & Assert
+        Assert.IsFalse(service.IsAnyMemberRegistrar,
+            "Should NOT be any member registrar without registrar role claims");
+    }
+
     private static CurrentUserService CreateServiceWithUser(
         string accessibleGroups,
         string? memberRegistrarGroups = null)

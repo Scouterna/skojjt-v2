@@ -1,5 +1,6 @@
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
+@using Skojjt.Shared
 @rendermode InteractiveServer
 @inject IBadgeTemplateRepository TemplateRepository
 @inject IBadgeRepository BadgeRepository
@@ -317,7 +318,7 @@ else
                 {
                     Name = _editName.Trim(),
                     Description = _editDescription?.Trim(),
-                    ImageUrl = _editImageUrl?.Trim()
+                    ImageUrl = ImageUrlHelper.ResolveImageUrl(_editImageUrl?.Trim())
                 };
                 await TemplateRepository.AddAsync(template);
 
@@ -341,7 +342,7 @@ else
                 // Update existing template
                 _editingTemplate.Name = _editName.Trim();
                 _editingTemplate.Description = _editDescription?.Trim();
-                _editingTemplate.ImageUrl = _editImageUrl?.Trim();
+                _editingTemplate.ImageUrl = ImageUrlHelper.ResolveImageUrl(_editImageUrl?.Trim());
                 _editingTemplate.UpdatedAt = DateTime.UtcNow;
                 await TemplateRepository.UpdateAsync(_editingTemplate);
 

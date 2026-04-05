@@ -37,6 +37,17 @@ public class CurrentUserService : ICurrentUserService
 
     public bool IsAdmin => GetCurrentUser()?.IsAdmin ?? false;
 
+    public bool IsAnyMemberRegistrar
+    {
+        get
+        {
+            var user = GetCurrentUser();
+            if (user == null) return false;
+            if (user.IsAdmin && _adminModeService.IsAdminModeActive) return true;
+            return user.MemberRegistrarGroups.Count > 0;
+        }
+    }
+
     public ScoutIdClaims? GetCurrentUser()
     {
         if (_cachedClaims != null)
