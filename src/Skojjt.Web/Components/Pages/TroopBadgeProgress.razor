@@ -118,7 +118,7 @@
                             <tbody>
                                 @foreach (var pp in scoutPhase)
                                 {
-                                    <tr>
+                                    <tr @key="pp.Person.Id">
                                         <td class="sticky-col name-col">
                                             <MudLink Href="@($"/sk/{ScoutGroupId}/p/{pp.Person.Id}")"
                                                      Color="Color.Inherit"
@@ -186,7 +186,7 @@
                             <tbody>
                                 @foreach (var pp in adminPhase)
                                 {
-                                    <tr>
+                                    <tr @key="pp.Person.Id">
                                         <td class="sticky-col name-col">
                                             <MudLink Href="@($"/sk/{ScoutGroupId}/p/{pp.Person.Id}")"
                                                      Color="Color.Inherit"
