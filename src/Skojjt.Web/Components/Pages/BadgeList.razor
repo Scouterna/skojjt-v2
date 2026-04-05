@@ -155,7 +155,9 @@
                                 <div class="d-flex align-center gap-2">
                                     @if (!string.IsNullOrEmpty(template.ImageUrl))
                                     {
-                                        <MudAvatar src="@template.ImageUrl" Size="Size.Small" />
+                                        <MudAvatar Size="Size.Small">
+                                            <MudImage Src="@template.ImageUrl" Alt="@template.Name" />
+                                        </MudAvatar>
                                     }
                                     else
                                     {
