@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.1.1] - unreleased
+* Added instruction video link to documentation.
+* New API endpoint `/api/v1/me` that returns information about the current user and their associated scout groups and troops. 
+
 ## [2.1.0] - 2026-04-05
 * Allow all member register users to access badge templates
 * Fix: bug when you comple a badge row, the checkmark would be checked for the next person in the list.

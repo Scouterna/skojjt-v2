@@ -12,6 +12,12 @@ Skojjt är ett närvarohanteringssystem för svenska scoutkårer. Med Skojjt kan
 - **Exportera DAK-filer** för kommunala aktivitetsbidrag
 - Se **sammanställningar** och rapporter per termin
 
+## Instruktionsvideo
+
+Se vår instruktionsvideo på YouTube för en snabb genomgång av hur Skojjt fungerar:
+
+[▶ Se instruktionsvideo på YouTube](https://youtu.be/lH4_G_nK4f8)
+
 ## Logga in
 
 Skojjt använder **ScoutID** för inloggning – samma inloggning som du använder för Scoutnet och andra scoutverktyg. Du behöver alltså inte skapa ett separat konto.

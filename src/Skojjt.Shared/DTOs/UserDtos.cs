@@ -40,3 +40,15 @@ public record CurrentUserDto(
     bool IsAdmin,
     bool CanImport
 );
+
+/// <summary>
+/// DTO for the /api/v1/me endpoint response.
+/// </summary>
+public record MeResponseDto(
+    string Uid,
+    string DisplayName,
+    string Email,
+    bool IsMemberRegistrar,
+    IReadOnlyList<ScoutGroupDto> AccessibleGroups,
+    IReadOnlyList<int> AccessibleTroopScoutnetIds
+);
