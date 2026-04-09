@@ -18,6 +18,7 @@
 @inject AttendanceNotificationService NotificationService
 @inject AttendanceStateService StateService
 @inject IBadgeService BadgeService
+@inject ISensusSyncService SensusSyncService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
@@ -76,6 +77,12 @@
                         Lägg till
                     </MudButton>
                 </MudButtonGroup>
+                <MudButton Variant="Variant.Outlined" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.CloudUpload"
+                           OnClick="@(() => _showSensusDialog = true)"
+                           Disabled="@(_troop!.IsLocked || _meetings.Count == 0)">
+                    Spara i Sensus
+                </MudButton>
                 <MudTooltip Text="@(_isPinned ? "Ta bort genväg" : "Lägg till genväg på startsidan")">
                     <MudIconButton Icon="@(_isPinned ? Icons.Material.Filled.PushPin : Icons.Material.Outlined.PushPin)"
                                    Color="@(_isPinned ? Color.Primary : Color.Default)"
@@ -452,6 +459,110 @@
     </DialogActions>
 </MudDialog>
 
+@* Sensus sync dialog *@
+<MudDialog @bind-Visible="_showSensusDialog" Options="@(new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true })">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Class="mr-2" />
+            Spara närvaro i Sensus
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_sensusSyncing)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+
+        @if (_sensusArrangemang == null)
+        {
+            <MudText Typo="Typo.body2" Class="mb-4">
+                Logga in med dina Sensus-uppgifter för att synka närvaro från Skojjt till Sensus e-tjänst.
+            </MudText>
+            <MudTextField @bind-Value="_sensusUsername" Label="Person-/LMA-nummer" 
+                          HelperText="Bara siffror, t.ex. 200001011234"
+                          InputType="InputType.Text" autocomplete="username"
+                          Disabled="_sensusSyncing" Class="mb-2" />
+            <MudTextField @bind-Value="_sensusPassword" Label="Lösenord" 
+                          InputType="InputType.Password" autocomplete="current-password"
+                          Disabled="_sensusSyncing" Class="mb-2" />
+
+            @if (!string.IsNullOrEmpty(_sensusError))
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-2">@_sensusError</MudAlert>
+            }
+        }
+        else if (_sensusSyncResult == null)
+        {
+            <MudText Typo="Typo.body2" Class="mb-4">
+                Välj arrangemang att synka närvaro till:
+            </MudText>
+            <MudSelect @bind-Value="_selectedArrangemangId" Label="Arrangemang" Class="mb-2">
+                @foreach (var a in _sensusArrangemang)
+                {
+                    <MudSelectItem Value="a.Id">@a.Name (@a.SchemaCount sammankomster)</MudSelectItem>
+                }
+            </MudSelect>
+
+            @if (!string.IsNullOrEmpty(_sensusError))
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-2">@_sensusError</MudAlert>
+            }
+        }
+        else
+        {
+            <MudAlert Severity="@(_sensusSyncResult.ErrorCount > 0 ? Severity.Warning : Severity.Success)" Class="mb-4">
+                @{
+                    var parts = new List<string>();
+                    if (_sensusSyncResult.SyncedCount > 0) parts.Add($"{_sensusSyncResult.SyncedCount} synkade");
+                    if (_sensusSyncResult.SkippedCount > 0) parts.Add($"{_sensusSyncResult.SkippedCount} hoppade över");
+                    if (_sensusSyncResult.NoMatchCount > 0) parts.Add($"{_sensusSyncResult.NoMatchCount} utan matchande datum");
+                    if (_sensusSyncResult.ErrorCount > 0) parts.Add($"{_sensusSyncResult.ErrorCount} fel");
+                }
+                Synk klar! @string.Join(", ", parts)
+                <br />
+                <small>Matchade @_sensusSyncResult.MatchedPersons av @_sensusSyncResult.TotalPersons personer</small>
+            </MudAlert>
+
+            <MudExpansionPanels Class="mt-2">
+                <MudExpansionPanel Text="Logg" MaxHeight="300">
+                    <MudList T="string" Dense>
+                        @foreach (var msg in _sensusSyncResult.LogMessages)
+                        {
+                            <MudListItem T="string">
+                                <MudText Typo="Typo.caption" Style="font-family: monospace;">@msg</MudText>
+                            </MudListItem>
+                        }
+                    </MudList>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        }
+    </DialogContent>
+    <DialogActions>
+        @if (_sensusArrangemang == null)
+        {
+            <MudButton OnClick="CloseSensusDialog">Avbryt</MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                       OnClick="SensusLogin"
+                       Disabled="@(_sensusSyncing || string.IsNullOrWhiteSpace(_sensusUsername) || string.IsNullOrWhiteSpace(_sensusPassword))">
+                Logga in
+            </MudButton>
+        }
+        else if (_sensusSyncResult == null)
+        {
+            <MudButton OnClick="CloseSensusDialog">Avbryt</MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                       OnClick="SensusSyncAttendance"
+                       Disabled="@(_sensusSyncing || _selectedArrangemangId == 0)">
+                Synka närvaro
+            </MudButton>
+        }
+        else
+        {
+            <MudButton OnClick="CloseSensusDialog" Color="Color.Primary" Variant="Variant.Filled">Stäng</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
 <style>
     .attendance-grid-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .attendance-grid { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 600px; }
@@ -559,6 +670,17 @@
     private HashSet<int> _troopPersonIds = new();
     private bool _searchingMembers = false;
     private MudForm? _meetingForm;
+
+    // Sensus sync state
+    private bool _showSensusDialog;
+    private string _sensusUsername = string.Empty;
+    private string _sensusPassword = string.Empty;
+    private List<SensusArrangemangDto>? _sensusArrangemang;
+    private int _selectedArrangemangId;
+    private SensusSyncResult? _sensusSyncResult;
+    private bool _sensusSyncing;
+    private string? _sensusError;
+    private readonly CancellationTokenSource _cts = new();
     private bool _disposed;
     private bool _initialized;
 
@@ -1312,10 +1434,79 @@
         }
     }
 
+    // =========================================================================
+    // Sensus sync
+    // =========================================================================
+
+    private async Task SensusLogin()
+    {
+        _sensusError = null;
+        _sensusSyncing = true;
+        StateHasChanged();
+
+        try
+        {
+            var sanitizedUsername = new string(_sensusUsername.Where(char.IsDigit).ToArray());
+            var credentials = new SensusCredentials(sanitizedUsername, _sensusPassword);
+            var arrangemang = await SensusSyncService.GetArrangemangAsync(credentials, _cts.Token);
+            _sensusArrangemang = arrangemang.ToList();
+
+            if (_sensusArrangemang.Count == 1)
+            {
+                _selectedArrangemangId = _sensusArrangemang[0].Id;
+            }
+        }
+        catch (Exception ex)
+        {
+            _sensusError = ex.Message;
+        }
+        finally
+        {
+            _sensusSyncing = false;
+        }
+    }
+
+    private async Task SensusSyncAttendance()
+    {
+        if (_troop == null) return;
+
+        _sensusError = null;
+        _sensusSyncing = true;
+        StateHasChanged();
+
+        try
+        {
+            var sanitizedUsername = new string(_sensusUsername.Where(char.IsDigit).ToArray());
+            var credentials = new SensusCredentials(sanitizedUsername, _sensusPassword);
+            _sensusSyncResult = await SensusSyncService.SyncAttendanceAsync(
+                credentials, _troop.Id, _selectedArrangemangId, _cts.Token);
+        }
+        catch (Exception ex)
+        {
+            _sensusError = ex.Message;
+        }
+        finally
+        {
+            _sensusSyncing = false;
+        }
+    }
+
+    private void CloseSensusDialog()
+    {
+        _showSensusDialog = false;
+        _sensusArrangemang = null;
+        _selectedArrangemangId = 0;
+        _sensusSyncResult = null;
+        _sensusSyncing = false;
+        _sensusError = null;
+    }
+
     public async ValueTask DisposeAsync()
     {
         _disposed = true;
-        
+        await _cts.CancelAsync();
+        _cts.Dispose();
+
         // Unregister all handlers from state service
         if (_attendanceHandlerId != null)
             StateService.UnregisterAttendanceHandler(_attendanceHandlerId);

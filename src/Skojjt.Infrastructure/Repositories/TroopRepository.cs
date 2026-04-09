@@ -55,6 +55,7 @@ public class TroopRepository : Repository<Troop, int>, ITroopRepository
     {
         await using var context = CreateContext();
         return await context.Set<Troop>()
+            .Include(t => t.TroopPersons)
             .Where(t => t.ScoutGroupId == scoutGroupId && t.SemesterId == semesterId)
             .OrderBy(t => t.Name)
             .ToListAsync(cancellationToken);
@@ -77,6 +78,7 @@ public class TroopRepository : Repository<Troop, int>, ITroopRepository
         await using var context = CreateContext();
         return await context.Set<Troop>()
             .Where(t => t.ScoutGroupId == scoutGroupId)
+            .Include(t => t.TroopPersons)
             .Include(t => t.Semester)
             .OrderByDescending(t => t.SemesterId)
             .ThenBy(t => t.Name)

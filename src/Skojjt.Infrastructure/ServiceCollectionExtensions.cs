@@ -4,6 +4,7 @@ using Skojjt.Core.Exports;
 using Skojjt.Core.Services;
 using Skojjt.Infrastructure.Exports;
 using Skojjt.Infrastructure.Scoutnet;
+using Skojjt.Infrastructure.Sensus;
 using Skojjt.Infrastructure.Services;
 
 namespace Skojjt.Infrastructure;
@@ -74,6 +75,18 @@ public static class ServiceCollectionExtensions
 
         // Register person flow service (Sankey chart)
         services.AddScoped<IPersonFlowService, PersonFlowService>();
+
+        // Register Sensus sync service with named HttpClient
+        services.AddHttpClient(SensusSyncService.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://e-tjanst.sensus.se");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+            UseCookies = false,
+        });
+        services.AddScoped<ISensusSyncService, SensusSyncService>();
 
         return services;
     }

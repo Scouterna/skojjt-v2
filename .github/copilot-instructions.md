@@ -75,6 +75,9 @@ Skojjt is a **Blazor Server** attendance tracking system for Swedish scout group
 - **MudBlazor v9 breaking changes**: `ActivatorContent` on `MudFileUpload` is replaced by `CustomContent` with explicit `Context` and `OnClick="@context.OpenFilePickerAsync"`. `MudForm.Validate()` is replaced by `ValidateAsync()`. `ShowMessageBox` is replaced by `ShowMessageBoxAsync`. `MudTabs.PanelClass` is renamed to `TabPanelsClass`.
 - The `MudDatePicker` week should start on Monday (Swedish locale). Set `CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("sv-SE")` in `Program.cs`, as `UseRequestLocalization` only applies to the initial HTTP request, not Blazor Server SignalR circuit threads.
 
+## Sensus API Specifics
+- Sensus studietimmar (signeratAntalStudieTimmar) are represented as 45-minute blocks, not 60-minute hours. The Sensus API returns this field as a JSON decimal (e.g., 1.0) even though the values are logically integers.
+
 ## Domain Terminology (Swedish → English)
 | Swedish | English |
 |---|---|
