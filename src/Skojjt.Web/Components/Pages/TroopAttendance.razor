@@ -77,12 +77,6 @@
                         Lägg till
                     </MudButton>
                 </MudButtonGroup>
-                <MudButton Variant="Variant.Outlined" Size="Size.Small"
-                           StartIcon="@Icons.Material.Filled.CloudUpload"
-                           OnClick="@(() => _showSensusDialog = true)"
-                           Disabled="@(_troop!.IsLocked || _meetings.Count == 0)">
-                    Spara i Sensus
-                </MudButton>
                 <MudTooltip Text="@(_isPinned ? "Ta bort genväg" : "Lägg till genväg på startsidan")">
                     <MudIconButton Icon="@(_isPinned ? Icons.Material.Filled.PushPin : Icons.Material.Outlined.PushPin)"
                                    Color="@(_isPinned ? Color.Primary : Color.Default)"
@@ -323,6 +317,14 @@
                                    Color="@(_troop.IsLocked ? Color.Success : Color.Warning)"
                                    OnClick="ToggleLock">
                             @(_troop.IsLocked ? "Lås upp" : "Lås närvaro")
+                        </MudButton>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudButton Variant="Variant.Outlined" FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.CloudUpload"
+                                   OnClick="@(() => _showSensusDialog = true)"
+                                   Disabled="@(_troop!.IsLocked || _meetings.Count == 0)">
+                            Spara i Sensus
                         </MudButton>
                     </MudItem>
                     <MudItem xs="12" sm="6" md="3">
