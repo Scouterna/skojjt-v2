@@ -1,6 +1,9 @@
 # Changelog
 
-## [2.1.1] - unreleased
+## [2.1.2] - 2026-04-10
+* Synk sensus lista, send your attendance from skojjt directly to sensus e-tjanst.
+
+## [2.1.1] - 2026-04-06
 * Added instruction video link to documentation.
 * New API endpoint `/api/v1/me` that returns information about the current user and their associated scout groups and troops. 
 
