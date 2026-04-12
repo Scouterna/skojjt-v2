@@ -690,6 +690,12 @@
     private int? _editingPatrolPersonId;
     private string? _editingPatrolValue;
 
+    /// <summary>
+    /// Known patrols in this troop, with their Scoutnet IDs (from import).
+    /// Used for autocomplete suggestions when editing patrol assignments.
+    /// </summary>
+    private List<(string Name, int? PatrolId)> _knownPatrols = [];
+
     // Remove confirmation state
     private int? _pendingRemovePersonId;
 
@@ -943,6 +949,31 @@
                 // Build set of current member IDs for quick lookup
                 _troopPersonIds = _troopPersons.Select(tp => tp.PersonId).ToHashSet();
 
+                // Build known patrols: start with current troop members, then merge
+                // historical patrols from the same Scoutnet troop (across all semesters).
+                // This ensures patrols that existed in previous semesters are available
+                // in the autocomplete with their Scoutnet IDs.
+                var currentPatrols = _troopPersons
+                    .Where(tp => !string.IsNullOrWhiteSpace(tp.Patrol))
+                    .GroupBy(tp => tp.Patrol!)
+                    .Select(g => (Name: g.Key, PatrolId: g.FirstOrDefault(tp => tp.PatrolId.HasValue)?.PatrolId))
+                    .ToDictionary(p => p.Name, p => p.PatrolId);
+
+                var historicalPatrols = await TroopRepository.GetKnownPatrolsAsync(_troop.ScoutnetId);
+                foreach (var (name, id) in historicalPatrols)
+                {
+                    // Only add if not already present, or if current entry has no ID
+                    if (!currentPatrols.TryGetValue(name, out var existingId) || !existingId.HasValue)
+                    {
+                        currentPatrols[name] = id;
+                    }
+                }
+
+                _knownPatrols = currentPatrols
+                    .Select(kvp => (Name: kvp.Key, PatrolId: kvp.Value))
+                    .OrderBy(p => p.Name)
+                    .ToList();
+
                 // Set new-meeting defaults from troop settings
                 _newMeetingDuration = _troop.DefaultDurationMinutes;
                 _newMeetingTime = _troop.DefaultStartTime.ToTimeSpan();
@@ -1054,35 +1085,41 @@
         _memberSearchResults.Clear();
     }
 
-    private async Task OnPatrolKeyDown(KeyboardEventArgs e, int personId)
-    {
-        if (e.Key == "Enter")
-        {
-            await SavePatrol(personId);
-        }
-        else if (e.Key == "Escape")
-        {
-            CancelPatrolEdit();
-        }
-    }
-
     private async Task SavePatrol(int personId)
     {
         if (_editingPatrolPersonId != personId) return;
-        
+
         var troopPerson = _troopPersons.FirstOrDefault(tp => tp.PersonId == personId);
         if (troopPerson == null) return;
-        
+
         var newPatrol = string.IsNullOrWhiteSpace(_editingPatrolValue) ? null : _editingPatrolValue.Trim();
-        
+
+        // Resolve patrol ID from the known patrols list
+        int? patrolId = null;
+        if (newPatrol != null)
+        {
+            var match = _knownPatrols.FirstOrDefault(p =>
+                string.Equals(p.Name, newPatrol, StringComparison.OrdinalIgnoreCase));
+            patrolId = match.PatrolId;
+        }
+
         try
         {
-            await TroopRepository.UpdatePatrolAsync(_troop!.Id, personId, newPatrol);
+            await TroopRepository.UpdatePatrolAsync(_troop!.Id, personId, newPatrol, patrolId);
             troopPerson.Patrol = newPatrol;
+            troopPerson.PatrolId = patrolId;
+
+            // Add to known patrols if new
+            if (newPatrol != null && !_knownPatrols.Any(p =>
+                    string.Equals(p.Name, newPatrol, StringComparison.OrdinalIgnoreCase)))
+            {
+                _knownPatrols.Add((newPatrol, patrolId));
+                _knownPatrols = _knownPatrols.OrderBy(p => p.Name).ToList();
+            }
 
             // Broadcast the change to other components
             await NotificationService.NotifyPatrolChangedAsync(_troop.Id, personId, newPatrol, _instanceId);
-            
+
             Snackbar.Add("Patrull uppdaterad", Severity.Success);
         }
         catch (Exception ex)
@@ -1093,6 +1130,18 @@
         {
             CancelPatrolEdit();
         }
+    }
+
+    private Task<IEnumerable<string>> SearchPatrols(string? value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult(_knownPatrols.Select(p => p.Name));
+
+        var results = _knownPatrols
+            .Where(p => p.Name.Contains(value, StringComparison.OrdinalIgnoreCase))
+            .Select(p => p.Name);
+
+        return Task.FromResult(results);
     }
 
     private async Task ToggleLeaderStatus(TroopPerson tp, bool newIsLeader)
@@ -1582,14 +1631,19 @@
                     @if (_editingPatrolPersonId == tp.PersonId)
                     {
                         <div class="d-flex align-center gap-1">
-                            <MudTextField @bind-Value="_editingPatrolValue" 
-                                          Variant="Variant.Text" 
-                                          Margin="Margin.Dense"
-                                          Class="patrol-input"
-                                          Placeholder="Patrull..."
-                                          Immediate="true"
-                                          OnKeyDown="@(async (e) => await OnPatrolKeyDown(e, tp.PersonId))"
-                                          AutoFocus="true" />
+                            <MudAutocomplete T="string"
+                                             @bind-Value="_editingPatrolValue"
+                                             SearchFunc="SearchPatrols"
+                                             Variant="Variant.Text"
+                                             Margin="Margin.Dense"
+                                             Class="patrol-input"
+                                             Placeholder="Patrull..."
+                                             Immediate="true"
+                                             CoerceText="false"
+                                             AutoFocus="true"
+                                             Dense="true"
+                                             MaxItems="10"
+                                             ResetValueOnEmptyText="true" />
                             <MudIconButton Icon="@Icons.Material.Filled.Check" 
                                            Size="Size.Small" 
                                            Color="Color.Success"

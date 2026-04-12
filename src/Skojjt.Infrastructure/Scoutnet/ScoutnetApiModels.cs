@@ -154,6 +154,7 @@ public class ScoutnetMember
     public string? GetDadEmail() => FathersEmail?.Value;
     public string? GetDadMobile() => FixCountryPrefix(FathersMobile?.Value);
     public string? GetPatrol() => Patrol?.Value;
+    public int? GetPatrolId() => int.TryParse(Patrol?.RawValue, out var result) ? result : null;
     public string? GetGroupRole() => GroupRole?.Value;
 
     public int? GetGroupId() => int.TryParse(Group?.RawValue, out var result) ? result : null;

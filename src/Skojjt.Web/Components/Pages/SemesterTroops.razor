@@ -11,6 +11,8 @@
 @inject ISemesterRepository SemesterRepository
 @inject ITroopRepository TroopRepository
 @inject ICurrentUserService CurrentUserService
+@inject IMembershipSyncService MembershipSyncService
+@inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 
 <PageTitle>Avdelningar - @(_semester?.DisplayName ?? "Termin") - Skojjt</PageTitle>
@@ -149,6 +151,26 @@
         @* Quick actions *@
         <MudDivider Class="my-6" />
         <MudExpansionPanels>
+            @if (_canSync)
+            {
+                <MudExpansionPanel Text="Scoutnet-synk" Icon="@Icons.Material.Filled.Sync">
+                    <MudText Typo="Typo.body2" Class="mb-3">
+                        Synka avdelnings- och patrulltillhörighet från Skojjt till Scoutnet.
+                        Ändringar du gjort i Skojjt (t.ex. flyttat en medlem till annan avdelning eller patrull) kan skickas tillbaka till Scoutnet.
+                    </MudText>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Sync"
+                               OnClick="PreviewMembershipSync"
+                               Disabled="_syncLoading">
+                        @if (_syncLoading)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        }
+                        Förhandsgranska ändringar
+                    </MudButton>
+                </MudExpansionPanel>
+            }
             <MudExpansionPanel Text="Rapporter & Export" Icon="@Icons.Material.Filled.Assessment">
                 <MudText Typo="Typo.subtitle2" Class="mb-2">Närvarorapporter per avdelning finns i respektive avdelnings vy.</MudText>
                 <MudGrid>
@@ -263,6 +285,147 @@
     </DialogActions>
 </MudDialog>
 
+@* Scoutnet Membership Sync Dialog *@
+<MudDialog @bind-Visible="_showSyncDialog" Options="_syncDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Sync" Class="mr-2" />
+            Synka med Scoutnet
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_syncPreview == null)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+        }
+        else if (_syncPreview.TotalChanges == 0)
+        {
+            <MudAlert Severity="Severity.Success" Dense="true">
+                Inga skillnader hittades — Skojjt och Scoutnet är synkade.
+            </MudAlert>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
+                @_syncPreview.TotalChanges ändring(ar) hittades som kan skickas till Scoutnet.
+            </MudAlert>
+
+            @if (_syncPreview.TroopChanges.Count > 0)
+            {
+                <MudText Typo="Typo.subtitle2" Class="mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Groups" Size="Size.Small" Class="mr-1" />
+                    Avdelningsbyten (@_syncPreview.TroopChanges.Count)
+                </MudText>
+                <MudSimpleTable Dense="true" Hover="true" Class="mb-4">
+                    <thead>
+                        <tr>
+                            <th>Medlem</th>
+                            <th>I Scoutnet</th>
+                            <th></th>
+                            <th>I Skojjt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var change in _syncPreview.TroopChanges)
+                        {
+                            <tr>
+                                <td>@change.MemberName</td>
+                                <td>@change.CurrentTroopName</td>
+                                <td><MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" /></td>
+                                <td><strong>@change.NewTroopName</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+
+            @if (_syncPreview.PatrolChanges.Count > 0)
+            {
+                <MudText Typo="Typo.subtitle2" Class="mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Flag" Size="Size.Small" Class="mr-1" />
+                    Patrullbyten (@_syncPreview.PatrolChanges.Count)
+                </MudText>
+                <MudSimpleTable Dense="true" Hover="true" Class="mb-4">
+                    <thead>
+                        <tr>
+                            <th>Medlem</th>
+                            <th>I Scoutnet</th>
+                            <th></th>
+                            <th>I Skojjt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var change in _syncPreview.PatrolChanges)
+                        {
+                            <tr>
+                                <td>@change.MemberName</td>
+                                <td>@change.CurrentPatrolName</td>
+                                <td><MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" /></td>
+                                <td><strong>@change.NewPatrolName</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+
+            @if (_syncPreview.UnmappedPatrolWarnings.Count > 0)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">
+                    <MudText Typo="Typo.body2">Följande patrulländringar kan inte synkas (saknar Scoutnet-ID):</MudText>
+                    <MudList T="string" Dense="true">
+                        @foreach (var warning in _syncPreview.UnmappedPatrolWarnings)
+                        {
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.Warning">@warning</MudListItem>
+                        }
+                    </MudList>
+                </MudAlert>
+            }
+        }
+
+        @if (_syncResult != null)
+        {
+            @if (_syncResult.Success)
+            {
+                <MudAlert Severity="Severity.Success" Class="mt-3">
+                    @_syncResult.UpdatedCount medlem(mar) uppdaterade i Scoutnet.
+                </MudAlert>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-3">
+                    @_syncResult.ErrorMessage
+                </MudAlert>
+                @if (_syncResult.Details.Count > 0)
+                {
+                    <MudPaper Class="mt-2 pa-3" Outlined="true" Style="max-height: 300px; overflow-y: auto; user-select: text;">
+                        @foreach (var detail in _syncResult.Details)
+                        {
+                            <MudText Typo="Typo.body2" Style="user-select: text;">@detail</MudText>
+                        }
+                    </MudPaper>
+                }
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showSyncDialog = false)">Stäng</MudButton>
+        @if (_syncPreview?.TotalChanges > 0 && _syncResult == null)
+        {
+            <MudButton Color="Color.Primary"
+                       Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.CloudUpload"
+                       OnClick="PushMembershipSync"
+                       Disabled="_syncPushing">
+                @if (_syncPushing)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                Skicka till Scoutnet
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
 <style>
     .hover-card {
         cursor: pointer;
@@ -312,6 +475,16 @@
     private bool _showGbgCsvDialog;
     private bool _gbgCsvUseSemesterMin = false;
 
+    // Membership sync state
+    private bool _isMemberRegistrar;
+    private bool _canSync;
+    private bool _showSyncDialog;
+    private bool _syncLoading;
+    private bool _syncPushing;
+    private MembershipSyncPreview? _syncPreview;
+    private MembershipSyncResult? _syncResult;
+    private DialogOptions _syncDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
     protected override async Task OnInitializedAsync()
     {
         _lastLoadedScoutGroupId = ScoutGroupId;
@@ -346,7 +519,8 @@
         {
             // Check if user has access to this scout group
             _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
-            
+            _isMemberRegistrar = CurrentUserService.IsMemberRegistrar(ScoutGroupId);
+
             if (!_hasAccess)
             {
                 _breadcrumbs = new List<BreadcrumbItem>
@@ -359,6 +533,12 @@
 
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
             _semester = await SemesterRepository.GetByIdAsync(SemesterId);
+
+            // Sync is only available for the current semester and when the API key is configured
+            _canSync = _isMemberRegistrar
+                       && _semester != null
+                       && _semester.Id == Semester.GetCurrentSemester().Id
+                       && !string.IsNullOrWhiteSpace(_scoutGroup?.ApiKeyUpdateMembership);
             
             if (_scoutGroup != null && _semester != null)
             {
@@ -448,5 +628,62 @@
         var url = $"/reports/gbg-csv?scoutGroupId={ScoutGroupId}&semesterId={SemesterId}&useSemesterMin={_gbgCsvUseSemesterMin}";
         NavigationManager.NavigateTo(url, forceLoad: true);
         _showGbgCsvDialog = false;
+    }
+
+    private async Task PreviewMembershipSync()
+    {
+        _syncLoading = true;
+        _syncPreview = null;
+        _syncResult = null;
+        _showSyncDialog = true;
+        StateHasChanged();
+
+        try
+        {
+            _syncPreview = await MembershipSyncService.PreviewChangesAsync(
+                ScoutGroupId, SemesterId);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte hämta data från Scoutnet: {ex.Message}", Severity.Error);
+            _showSyncDialog = false;
+        }
+        finally
+        {
+            _syncLoading = false;
+        }
+    }
+
+    private async Task PushMembershipSync()
+    {
+        if (_syncPreview == null) return;
+
+        _syncPushing = true;
+        StateHasChanged();
+
+        try
+        {
+            var allChanges = _syncPreview.TroopChanges
+                .Concat(_syncPreview.PatrolChanges)
+                .ToList();
+
+            _syncResult = await MembershipSyncService.PushChangesAsync(
+                ScoutGroupId, allChanges);
+
+            if (_syncResult.Success)
+            {
+                Snackbar.Add(
+                    $"{_syncResult.UpdatedCount} medlem(mar) uppdaterade i Scoutnet",
+                    Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel vid synkning: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _syncPushing = false;
+        }
     }
 }

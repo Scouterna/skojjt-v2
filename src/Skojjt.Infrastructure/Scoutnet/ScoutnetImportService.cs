@@ -329,7 +329,8 @@ public class ScoutnetImportService : IScoutnetImportService
                             Troop = troop,
                             PersonId = personId,
                             IsLeader = member.IsLeader(),
-                            Patrol = member.GetPatrol()
+                            Patrol = member.GetPatrol(),
+                            PatrolId = member.GetPatrolId()
                         };
                         _context.TroopPersons.Add(troopPerson);
                         existingTroopPersons.Add(troopPerson);
@@ -340,6 +341,7 @@ public class ScoutnetImportService : IScoutnetImportService
                         // Update existing membership
                         existingMembership.IsLeader = member.IsLeader();
                         existingMembership.Patrol = member.GetPatrol();
+                        existingMembership.PatrolId = member.GetPatrolId();
                     }
                 }
 

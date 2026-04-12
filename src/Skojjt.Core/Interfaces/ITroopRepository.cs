@@ -25,7 +25,19 @@ public interface ITroopRepository : IRepository<Troop, int>
     Task<IReadOnlyList<Troop>> GetByScoutGroupAndSemesterWithMembersAsync(int scoutGroupId, int semesterId, CancellationToken cancellationToken = default);
     
     Task<IReadOnlyList<Troop>> GetByScoutGroupAsync(int scoutGroupId, CancellationToken cancellationToken = default);
-    Task UpdatePatrolAsync(int troopId, int personId, string? patrol, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates the patrol assignment for a person in a troop.
+    /// If patrolId is null but the patrol name matches another member in the same troop
+    /// (or historically in the same Scoutnet troop), the PatrolId is resolved automatically.
+    /// </summary>
+    Task UpdatePatrolAsync(int troopId, int personId, string? patrol, int? patrolId = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all known patrol name/ID pairs for a Scoutnet troop across all semesters.
+    /// Used for autocomplete suggestions when editing patrol assignments.
+    /// </summary>
+    Task<IReadOnlyList<(string Name, int PatrolId)>> GetKnownPatrolsAsync(int scoutnetTroopId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Adds a person as a member of a troop.

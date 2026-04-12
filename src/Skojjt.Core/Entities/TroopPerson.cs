@@ -21,6 +21,13 @@ public class TroopPerson
     /// </summary>
     public string? Patrol { get; set; }
 
+    /// <summary>
+    /// Scoutnet patrol ID corresponding to <see cref="Patrol"/>.
+    /// Populated from the patrol raw_value during Scoutnet import.
+    /// Required for pushing patrol changes back to Scoutnet via UpdateGroupMembership.
+    /// </summary>
+    public int? PatrolId { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties

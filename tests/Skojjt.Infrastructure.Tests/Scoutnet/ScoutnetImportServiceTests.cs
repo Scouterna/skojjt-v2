@@ -572,6 +572,31 @@ public class ScoutnetImportServiceTests : IDisposable
         Assert.IsNotNull(updated.Patrol, "Patrol should be set after Scoutnet import");
     }
 
+    [TestMethod]
+    public async Task ImportFromResponseAsync_SetsPatrolId()
+    {
+        // Arrange
+        var semesterId = Semester.GenerateId(2025, true);
+        var response = ScoutnetTestDataGenerator.CreateMemberListResponse(3, TestScoutGroupId, includeLeaders: false);
+
+        // Act
+        var result = await _service.ImportFromResponseAsync(TestScoutGroupId, semesterId, response);
+
+        // Assert
+        Assert.IsTrue(result.Success, result.ErrorMessage);
+
+        var troopPersons = await _context.TroopPersons.ToListAsync();
+        Assert.IsNotEmpty(troopPersons, "Should have troop persons");
+
+        foreach (var tp in troopPersons)
+        {
+            if (tp.Patrol != null)
+            {
+                Assert.IsNotNull(tp.PatrolId, $"PatrolId should be set when Patrol is '{tp.Patrol}'");
+            }
+        }
+    }
+
     #endregion
 
     #region Duplicate Handling Tests

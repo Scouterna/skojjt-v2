@@ -29,6 +29,8 @@ public class ScoutGroup
 
     public string? ApiKeyAllMembers { get; set; }
 
+    public string? ApiKeyUpdateMembership { get; set; }
+
     public string? BankAccount { get; set; }
 
     public string? Address { get; set; }

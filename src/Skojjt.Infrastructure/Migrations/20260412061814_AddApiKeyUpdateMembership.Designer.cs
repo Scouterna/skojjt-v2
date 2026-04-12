@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Skojjt.Infrastructure.Data;
@@ -11,9 +12,11 @@ using Skojjt.Infrastructure.Data;
 namespace Skojjt.Infrastructure.Migrations
 {
     [DbContext(typeof(SkojjtDbContext))]
-    partial class SkojjtDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260412061814_AddApiKeyUpdateMembership")]
+    partial class AddApiKeyUpdateMembership
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -895,10 +898,6 @@ namespace Skojjt.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("patrol");
-
-                    b.Property<int?>("PatrolId")
-                        .HasColumnType("integer")
-                        .HasColumnName("patrol_id");
 
                     b.HasKey("TroopId", "PersonId");
 

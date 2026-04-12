@@ -197,6 +197,137 @@ public class ScoutnetApiClient : IScoutnetApiClient
 
         return null;
     }
+
+    public async Task<MembershipUpdateResult> UpdateMembershipAsync(
+        int groupId,
+        string apiKey,
+        Dictionary<int, MembershipUpdate> updates,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
+        if (updates.Count == 0)
+        {
+            throw new ArgumentException("At least one membership update is required.", nameof(updates));
+        }
+
+        // Build the JSON body: { "memberNo": { "status": "...", "troop_id": ..., "patrol_id": ... }, ... }
+        var payload = new Dictionary<string, Dictionary<string, object>>();
+        foreach (var (memberNo, update) in updates)
+        {
+            var fields = new Dictionary<string, object>();
+            if (update.Status is not null)
+            {
+                fields["status"] = update.Status;
+            }
+            if (update.TroopId is not null)
+            {
+                fields["troop_id"] = update.TroopId.Value;
+            }
+            if (update.PatrolId is not null)
+            {
+                fields["patrol_id"] = update.PatrolId.Value;
+            }
+
+            payload[memberNo.ToString()] = fields;
+        }
+
+        var url = $"api/organisation/update/membership?id={groupId}&key={Uri.EscapeDataString(apiKey)}";
+
+        _logger.LogInformation(
+            "Updating membership for {Count} member(s) in group {GroupId} via Scoutnet",
+            updates.Count, groupId);
+
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync(url, payload, cancellationToken);
+            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            _logger.LogDebug("Scoutnet UpdateMembership response ({StatusCode}): {Body}",
+                (int)response.StatusCode, responseBody);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return ParseUpdateMembershipSuccess(responseBody);
+            }
+
+            return ParseUpdateMembershipError(responseBody);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP error while updating membership for group {GroupId}", groupId);
+            throw new ScoutnetApiException($"Failed to update membership on Scoutnet: {ex.Message}", ex);
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            _logger.LogError(ex, "Timeout while updating membership for group {GroupId}", groupId);
+            throw new ScoutnetApiException("Request to Scoutnet API timed out", ex);
+        }
+    }
+
+    private static MembershipUpdateResult ParseUpdateMembershipSuccess(string responseBody)
+    {
+        var result = new MembershipUpdateResult { Success = true };
+
+        if (string.IsNullOrWhiteSpace(responseBody))
+            return result;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(responseBody);
+            if (doc.RootElement.TryGetProperty("updated", out var updatedArray) &&
+                updatedArray.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in updatedArray.EnumerateArray())
+                {
+                    if (item.TryGetInt32(out var memberNo))
+                    {
+                        result.UpdatedMemberNumbers.Add(memberNo);
+                    }
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Best-effort parsing; success is already set
+        }
+
+        return result;
+    }
+
+    private static MembershipUpdateResult ParseUpdateMembershipError(string responseBody)
+    {
+        var result = new MembershipUpdateResult { Success = false };
+
+        if (string.IsNullOrWhiteSpace(responseBody))
+            return result;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(responseBody);
+            if (doc.RootElement.TryGetProperty("errors", out var errorsElement) &&
+                errorsElement.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var memberProp in errorsElement.EnumerateObject())
+                {
+                    var fieldErrors = new Dictionary<string, string>();
+                    if (memberProp.Value.ValueKind == JsonValueKind.Object)
+                    {
+                        foreach (var fieldProp in memberProp.Value.EnumerateObject())
+                        {
+                            fieldErrors[fieldProp.Name] = fieldProp.Value.GetString() ?? string.Empty;
+                        }
+                    }
+                    result.Errors[memberProp.Name] = fieldErrors;
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Best-effort parsing
+        }
+
+        return result;
+    }
 }
 
 /// <summary>

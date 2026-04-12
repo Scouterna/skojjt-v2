@@ -20,32 +20,32 @@ public static class ScoutnetTestDataGenerator
     [
         "Andersson", "Johansson", "Karlsson", "Nilsson", "Eriksson", "Larsson",
         "Olsson", "Persson", "Svensson", "Gustafsson", "Pettersson", "Jonsson",
-        "Jansson", "Hansson", "Bengtsson", "Lindberg", "Lindqvist", "Lindström",
-        "Axelsson", "Bergström", "Sandberg", "Holmberg", "Lindgren", "Eklund"
+        "Jansson", "Hansson", "Bengtsson", "Lindberg", "Lindqvist", "LindstrÃ¶m",
+        "Axelsson", "BergstrÃ¶m", "Sandberg", "Holmberg", "Lindgren", "Eklund"
     ];
 
     private static readonly string[] TroopNames =
     [
-        "Nyckelpigan", "Trollsländan", "Humlorna", "Myrstacken", "Ekorrarna",
-        "Ugglorna", "Bävrarna", "Vildkattarna", "Räven", "Spåret"
+        "Nyckelpigan", "TrollslÃ¤ndan", "Humlorna", "Myrstacken", "Ekorrarna",
+        "Ugglorna", "BÃ¤vrarna", "Vildkattarna", "RÃ¤ven", "SpÃ¥ret"
     ];
 
     private static readonly string[] PatrolNames =
     [
-        "Örnen", "Vargen", "Björnen", "Lodjuret", "Älgen", "Räven",
-        "Falken", "Korpen", "Vesslan", "Grävlingen", "Uttern", "Järven"
+        "Ã–rnen", "Vargen", "BjÃ¶rnen", "Lodjuret", "Ã„lgen", "RÃ¤ven",
+        "Falken", "Korpen", "Vesslan", "GrÃ¤vlingen", "Uttern", "JÃ¤rven"
     ];
 
     private static readonly string[] Streets =
     [
-        "Storgatan", "Parkvägen", "Skogsstigen", "Ängsvägen", "Björkallén",
-        "Lindalléen", "Ekgatan", "Tallvägen", "Solvägen", "Månvägen"
+        "Storgatan", "ParkvÃ¤gen", "Skogsstigen", "Ã„ngsvÃ¤gen", "BjÃ¶rkallÃ©n",
+        "LindallÃ©en", "Ekgatan", "TallvÃ¤gen", "SolvÃ¤gen", "MÃ¥nvÃ¤gen"
     ];
 
     private static readonly string[] Cities =
     [
-        "Göteborg", "Stockholm", "Malmö", "Uppsala", "Västerås",
-        "Örebro", "Linköping", "Helsingborg", "Jönköping", "Norrköping"
+        "GÃ¶teborg", "Stockholm", "MalmÃ¶", "Uppsala", "VÃ¤sterÃ¥s",
+        "Ã–rebro", "LinkÃ¶ping", "Helsingborg", "JÃ¶nkÃ¶ping", "NorrkÃ¶ping"
     ];
 
     private static readonly Random _random = new(42); // Fixed seed for reproducible tests
@@ -57,7 +57,7 @@ public static class ScoutnetTestDataGenerator
 	public static ScoutnetMemberListResponse CreateMemberListResponse(
         int memberCount,
         int scoutGroupId = DefaultScoutGroupId,
-        string scoutGroupName = "Testscoutkåren",
+        string scoutGroupName = "TestscoutkÃ¥ren",
         int troopCount = 3,
         bool includeLeaders = true)
     {
@@ -90,7 +90,7 @@ public static class ScoutnetTestDataGenerator
     public static ScoutnetMember CreateMember(
         int memberId,
         int scoutGroupId = DefaultScoutGroupId,
-        string scoutGroupName = "Testscoutkåren",
+        string scoutGroupName = "TestscoutkÃ¥ren",
         int? troopId = null,
         string? troopName = null,
         bool isLeader = false,
@@ -117,7 +117,11 @@ public static class ScoutnetTestDataGenerator
                 : null,
             UnitRole = isLeader ? new ScoutnetValue { RawValue = "2", Value = "Avdelningsledare" } : null,
             Patrol = patrol != null || !isLeader 
-                ? new ScoutnetValue { Value = patrol ?? PatrolNames[_random.Next(PatrolNames.Length)] } 
+                ? new ScoutnetValue
+                {
+                    Value = patrol ?? PatrolNames[_random.Next(PatrolNames.Length)],
+                    RawValue = (50000 + memberId).ToString()
+                }
                 : null,
             Email = new ScoutnetValue { Value = $"{firstName.ToLower()}.{lastName.ToLower()}@example.com" },
             AltEmail = new ScoutnetValue { Value = $"{firstName.ToLower()}{_random.Next(100, 999)}@example.org" },
@@ -163,7 +167,7 @@ public static class ScoutnetTestDataGenerator
     /// </summary>
     public static ScoutnetMemberListResponse CreateMultiTroopResponse(
         int scoutGroupId = DefaultScoutGroupId,
-        string scoutGroupName = "Testscoutkåren")
+        string scoutGroupName = "TestscoutkÃ¥ren")
     {
         var response = new ScoutnetMemberListResponse();
         var troops = GenerateTroops(3, scoutGroupId);
@@ -212,7 +216,7 @@ public static class ScoutnetTestDataGenerator
 
         // Create a leader who is assigned to their primary troop
         var leaderMember = CreateMember(
-            1001, scoutGroupId, "Testscoutkåren",
+            1001, scoutGroupId, "TestscoutkÃ¥ren",
             troops[0].Id, troops[0].Name, isLeader: true);
 
         // Add additional troop role in the roles structure
@@ -238,7 +242,7 @@ public static class ScoutnetTestDataGenerator
 
         // Add a scout to the second troop
         response.Data["1002"] = CreateMember(
-            1002, scoutGroupId, "Testscoutkåren",
+            1002, scoutGroupId, "TestscoutkÃ¥ren",
             troops[1].Id, troops[1].Name, isLeader: false);
 
         return response;

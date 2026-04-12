@@ -38,6 +38,9 @@ public static class ServiceCollectionExtensions
         // Register import service
         services.AddScoped<IScoutnetImportService, ScoutnetImportService>();
 
+        // Register membership sync service (push troop/patrol changes to Scoutnet)
+        services.AddScoped<IMembershipSyncService, ScoutnetMembershipSyncService>();
+
         // Register waiting list registration service
         services.AddScoped<IScoutnetRegistrationService, ScoutnetRegistrationService>();
 

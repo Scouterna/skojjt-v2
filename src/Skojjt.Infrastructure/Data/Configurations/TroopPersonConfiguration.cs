@@ -27,6 +27,9 @@ public class TroopPersonConfiguration : IEntityTypeConfiguration<TroopPerson>
             .HasColumnName("patrol")
             .HasMaxLength(100);
 
+        builder.Property(e => e.PatrolId)
+            .HasColumnName("patrol_id");
+
         builder.Property(e => e.CreatedAt)
             .HasColumnName("created_at")
             .HasDefaultValueSql("NOW()");

@@ -124,11 +124,11 @@ public class ScoutnetApiModelsTests
     {
         var member = new ScoutnetMember
         {
-            Group = new ScoutnetValue { RawValue = "1137", Value = "Tynnereds Scoutkår" }
+            Group = new ScoutnetValue { RawValue = "1137", Value = "Tynnereds ScoutkÃ¥r" }
         };
 
         Assert.AreEqual(1137, member.GetGroupId());
-        Assert.AreEqual("Tynnereds Scoutkår", member.GetGroupName());
+        Assert.AreEqual("Tynnereds ScoutkÃ¥r", member.GetGroupName());
     }
 
     [TestMethod]
@@ -156,7 +156,7 @@ public class ScoutnetApiModelsTests
                     "ssno": {"value": "19740220-1234"},
                     "date_of_birth": {"value": "1974-02-20"},
                     "status": {"raw_value": "2", "value": "Aktiv"},
-                    "group": {"raw_value": "9999", "value": "Testscoutkåren"},
+                    "group": {"raw_value": "9999", "value": "TestscoutkÃ¥ren"},
                     "unit": {"raw_value": "11268", "value": "Ledare"},
                     "unit_role": {"raw_value": "3", "value": "Ledare"},
                     "email": {"value": "adam.ek@test.se"},
@@ -207,5 +207,26 @@ public class ScoutnetApiModelsTests
         Assert.AreEqual("Fatma Andersen", member.GetDadName());
         Assert.AreEqual("fatma@example.com", member.GetDadEmail());
         Assert.AreEqual("+46707744989", member.GetDadMobile());
+    }
+
+    [TestMethod]
+    public void ScoutnetMember_GetPatrolId_ParsesRawValue()
+    {
+        var member = new ScoutnetMember
+        {
+            Patrol = new ScoutnetValue { RawValue = "19018", Value = "4196 Kangchenjunga patrol" }
+        };
+
+        Assert.AreEqual(19018, member.GetPatrolId());
+        Assert.AreEqual("4196 Kangchenjunga patrol", member.GetPatrol());
+    }
+
+    [TestMethod]
+    public void ScoutnetMember_GetPatrolId_ReturnsNullWhenNoPatrol()
+    {
+        var member = new ScoutnetMember();
+
+        Assert.IsNull(member.GetPatrolId());
+        Assert.IsNull(member.GetPatrol());
     }
 }

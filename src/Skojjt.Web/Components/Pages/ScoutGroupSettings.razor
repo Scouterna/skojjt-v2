@@ -176,7 +176,7 @@
                                 <MudTextField @bind-Value="_scoutGroup.ApiKeyAllMembers" 
                                               Label="API-nyckel (Alla medlemmar)" 
                                               Variant="Variant.Outlined"
-                                              InputType="InputType.Password"
+                                              InputType="@(_showApiKey1 ? InputType.Text : InputType.Password)"
                                               Adornment="Adornment.End"
                                               AdornmentIcon="@(_showApiKey1 ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                               OnAdornmentClick="@(() => _showApiKey1 = !_showApiKey1)"
@@ -186,11 +186,21 @@
                                 <MudTextField @bind-Value="_scoutGroup.ApiKeyWaitinglist" 
                                               Label="API-nyckel (Väntelista)" 
                                               Variant="Variant.Outlined"
-                                              InputType="InputType.Password"
+                                              InputType="@(_showApiKey2 ? InputType.Text : InputType.Password)"
                                               Adornment="Adornment.End"
                                               AdornmentIcon="@(_showApiKey2 ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                               OnAdornmentClick="@(() => _showApiKey2 = !_showApiKey2)"
                                               HelperText="Nyckeln 'Väntelista (alla)'" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_scoutGroup.ApiKeyUpdateMembership" 
+                                              Label="API-nyckel (Uppdatera medlemskap)" 
+                                              Variant="Variant.Outlined"
+                                              InputType="@(_showApiKey3 ? InputType.Text : InputType.Password)"
+                                              Adornment="Adornment.End"
+                                              AdornmentIcon="@(_showApiKey3 ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                              OnAdornmentClick="@(() => _showApiKey3 = !_showApiKey3)"
+                                              HelperText="Nyckeln 'Uppdatera medlemskap (status, avdelning, patrull)'" />
                             </MudItem>
                         </MudGrid>
                     </MudPaper>
@@ -262,6 +272,7 @@
     private bool _formIsValid = false;
     private bool _showApiKey1 = false;
     private bool _showApiKey2 = false;
+    private bool _showApiKey3 = false;
     private bool _saving = false;
     private MudForm? _form;
     private List<BreadcrumbItem> _breadcrumbs = new();

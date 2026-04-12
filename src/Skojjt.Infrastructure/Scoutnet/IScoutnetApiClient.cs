@@ -30,4 +30,19 @@ public interface IScoutnetApiClient
         string apiKeyWaitinglist,
         Dictionary<string, string> formData,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates membership data (status, troop, patrol) for one or more members
+    /// via the Scoutnet UpdateGroupMembership API.
+    /// </summary>
+    /// <param name="groupId">The Scoutnet group ID.</param>
+    /// <param name="apiKey">The API key for the update membership endpoint.</param>
+    /// <param name="updates">Dictionary of member number → fields to update.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The result indicating which members were updated or any errors.</returns>
+    Task<MembershipUpdateResult> UpdateMembershipAsync(
+        int groupId,
+        string apiKey,
+        Dictionary<int, MembershipUpdate> updates,
+        CancellationToken cancellationToken = default);
 }
