@@ -39,6 +39,37 @@ public class Troop
 	/// </summary>
 	public bool IsLocked { get; set; } = false;
 
+	/// <summary>
+	/// Distinguishes regular troops from camps. Default is Regular (0).
+	/// </summary>
+	public TroopType TroopType { get; set; } = TroopType.Regular;
+
+	/// <summary>
+	/// First day of camp. Null for regular troops.
+	/// </summary>
+	public DateOnly? CampStartDate { get; set; }
+
+	/// <summary>
+	/// Last day of camp. Null for regular troops.
+	/// </summary>
+	public DateOnly? CampEndDate { get; set; }
+
+	/// <summary>
+	/// Scoutnet project/activity ID if imported from Scoutnet. Null for manually created troops/camps.
+	/// </summary>
+	public int? ScoutnetProjectId { get; set; }
+
+	/// <summary>
+	/// Scoutnet project checkin API key. Stored to enable pushing attendance
+	/// as check-in state back to Scoutnet. Null for non-Scoutnet camps.
+	/// </summary>
+	public string? ScoutnetCheckinApiKey { get; set; }
+
+	/// <summary>
+	/// Whether this troop is a camp.
+	/// </summary>
+	public bool IsCamp => TroopType == TroopType.Camp;
+
     // Navigation properties
     public ScoutGroup ScoutGroup { get; set; } = null!;
     public Semester Semester { get; set; } = null!;

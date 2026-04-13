@@ -104,3 +104,6 @@ Skojjt is a **Blazor Server** attendance tracking system for Swedish scout group
   - `6` = Roverscouter
   - `7` = Annat
   - `8` = Familjescouter
+
+## Person Flow Graph
+- Camp troops (TroopType = Camp) should not be included in the person flow graph.

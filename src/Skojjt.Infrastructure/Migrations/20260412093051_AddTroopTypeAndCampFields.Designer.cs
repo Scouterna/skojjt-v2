@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Skojjt.Infrastructure.Data;
@@ -11,9 +12,11 @@ using Skojjt.Infrastructure.Data;
 namespace Skojjt.Infrastructure.Migrations
 {
     [DbContext(typeof(SkojjtDbContext))]
-    partial class SkojjtDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260412093051_AddTroopTypeAndCampFields")]
+    partial class AddTroopTypeAndCampFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -594,11 +597,6 @@ namespace Skojjt.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("api_key_all_members");
 
-                    b.Property<string>("ApiKeyGroupProjects")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("api_key_group_projects");
-
                     b.Property<string>("ApiKeyUpdateMembership")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -828,11 +826,6 @@ namespace Skojjt.Infrastructure.Migrations
                     b.Property<int>("ScoutGroupId")
                         .HasColumnType("integer")
                         .HasColumnName("scout_group_id");
-
-                    b.Property<string>("ScoutnetCheckinApiKey")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("scoutnet_checkin_api_key");
 
                     b.Property<int>("ScoutnetId")
                         .HasColumnType("integer")

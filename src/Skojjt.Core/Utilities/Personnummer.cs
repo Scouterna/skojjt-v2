@@ -1,4 +1,4 @@
-﻿namespace Skojjt.Core.Utilities;
+namespace Skojjt.Core.Utilities;
 
 public class Personnummer : IEquatable<Personnummer>, IComparable<Personnummer>
 {
@@ -15,6 +15,10 @@ public class Personnummer : IEquatable<Personnummer>, IComparable<Personnummer>
 
 	public string ToFormattedString() // Format as YYYYMMDD-NNNN
 	{
+		if (_personnummer.Length != 12)
+		{
+			return _personnummer;
+		}
 		return $"{_personnummer.Substring(0, 8)}-{_personnummer.Substring(8, 4)}";
 	}
 

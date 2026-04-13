@@ -44,6 +44,9 @@ public static class ServiceCollectionExtensions
         // Register waiting list registration service
         services.AddScoped<IScoutnetRegistrationService, ScoutnetRegistrationService>();
 
+        // Register camp service (create camps, import from Scoutnet projects)
+        services.AddScoped<ICampService, CampService>();
+
         return services;
     }
 

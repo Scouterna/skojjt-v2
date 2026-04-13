@@ -32,10 +32,11 @@ public class PersonFlowService : IPersonFlowService
 
         await using var context = _contextFactory.CreateDbContext();
 
-        // Base query: load troops with a recognized scout unit type
+        // Base query: load troops with a recognized scout unit type, excluding camps
         IQueryable<Troop> query = context.Troops
             .Where(t => t.ScoutGroupId == scoutGroupId
                         && orderedIds.Contains(t.SemesterId)
+                        && t.TroopType == TroopType.Regular
                         && t.UnitTypeId.HasValue
                         && ScoutUnitTypes.ValidIds.Contains(t.UnitTypeId.Value))
             .Include(t => t.Semester)

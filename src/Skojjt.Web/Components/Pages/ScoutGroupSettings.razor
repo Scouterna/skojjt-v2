@@ -174,33 +174,43 @@
                         <MudGrid>
                             <MudItem xs="12" md="6">
                                 <MudTextField @bind-Value="_scoutGroup.ApiKeyAllMembers" 
-                                              Label="API-nyckel (Alla medlemmar)" 
+                                              Label="API-nyckel (Get a detailed list of all members)" 
                                               Variant="Variant.Outlined"
                                               InputType="@(_showApiKey1 ? InputType.Text : InputType.Password)"
                                               Adornment="Adornment.End"
                                               AdornmentIcon="@(_showApiKey1 ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                               OnAdornmentClick="@(() => _showApiKey1 = !_showApiKey1)"
-                                              HelperText="Nyckeln 'Medlemmar i Kår (alla)'" />
+                                              HelperText="api/group/memberlist" />
                             </MudItem>
                             <MudItem xs="12" md="6">
                                 <MudTextField @bind-Value="_scoutGroup.ApiKeyWaitinglist" 
-                                              Label="API-nyckel (Väntelista)" 
+                                              Label="API-nyckel (Register a group member on a waitinglist)" 
                                               Variant="Variant.Outlined"
                                               InputType="@(_showApiKey2 ? InputType.Text : InputType.Password)"
                                               Adornment="Adornment.End"
                                               AdornmentIcon="@(_showApiKey2 ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                               OnAdornmentClick="@(() => _showApiKey2 = !_showApiKey2)"
-                                              HelperText="Nyckeln 'Väntelista (alla)'" />
+                                              HelperText="api/organisation/register/member" />
                             </MudItem>
                             <MudItem xs="12" md="6">
                                 <MudTextField @bind-Value="_scoutGroup.ApiKeyUpdateMembership" 
-                                              Label="API-nyckel (Uppdatera medlemskap)" 
+                                              Label="API-nyckel (Update membership)" 
                                               Variant="Variant.Outlined"
                                               InputType="@(_showApiKey3 ? InputType.Text : InputType.Password)"
                                               Adornment="Adornment.End"
                                               AdornmentIcon="@(_showApiKey3 ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                               OnAdornmentClick="@(() => _showApiKey3 = !_showApiKey3)"
-                                              HelperText="Nyckeln 'Uppdatera medlemskap (status, avdelning, patrull)'" />
+                                              HelperText="api/organisation/update/membership" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_scoutGroup.ApiKeyGroupProjects" 
+                                              Label="API-nyckel (View info about projects the group is registered to)" 
+                                              Variant="Variant.Outlined"
+                                              InputType="@(_showApiKey4 ? InputType.Text : InputType.Password)"
+                                              Adornment="Adornment.End"
+                                              AdornmentIcon="@(_showApiKey4 ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                              OnAdornmentClick="@(() => _showApiKey4 = !_showApiKey4)"
+                                              HelperText="api/organisation/project — gör det möjligt att välja läger från en lista" />
                             </MudItem>
                         </MudGrid>
                     </MudPaper>
@@ -273,6 +283,7 @@
     private bool _showApiKey1 = false;
     private bool _showApiKey2 = false;
     private bool _showApiKey3 = false;
+    private bool _showApiKey4 = false;
     private bool _saving = false;
     private MudForm? _form;
     private List<BreadcrumbItem> _breadcrumbs = new();

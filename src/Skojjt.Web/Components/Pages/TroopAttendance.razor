@@ -19,6 +19,7 @@
 @inject AttendanceStateService StateService
 @inject IBadgeService BadgeService
 @inject ISensusSyncService SensusSyncService
+@inject ICampService CampService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
@@ -334,6 +335,17 @@
                                     Standardvärden
                         </MudButton>
                     </MudItem>
+                    @if (_troop!.IsCamp && !string.IsNullOrWhiteSpace(_troop.ScoutnetCheckinApiKey))
+                    {
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudButton Variant="Variant.Outlined" FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.HowToReg"
+                                       OnClick="@(() => _showCheckinDialog = true)"
+                                       Disabled="@(_troop.IsLocked || _troopPersons.Count == 0)">
+                                Synka checkin till Scoutnet
+                            </MudButton>
+                        </MudItem>
+                    }
                 </MudGrid>
             </MudExpansionPanel>
         </MudExpansionPanels>
@@ -565,6 +577,63 @@
     </DialogActions>
 </MudDialog>
 
+@* Scoutnet checkin push dialog *@
+<MudDialog @bind-Visible="_showCheckinDialog" Options="@(new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true })">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.HowToReg" Class="mr-2" />
+            Synka checkin till Scoutnet
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_checkinSyncing)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+
+        @if (_checkinResult == null)
+        {
+            <MudText Typo="Typo.body2" Class="mb-3">
+                Skicka närvarostatus för alla deltagare till Scoutnet-projektet.
+                Deltagare som har minst en närvarande dag markeras som incheckade.
+            </MudText>
+            <MudAlert Severity="Severity.Info" Dense="true">
+                @{
+                    var attended = _troopPersons.Count(tp => _meetings.Any(m => IsAttending(tp.PersonId, m.Id)));
+                }
+                @attended av @_troopPersons.Count deltagare har minst en närvarodag.
+            </MudAlert>
+        }
+        else if (_checkinResult.Success)
+        {
+            <MudAlert Severity="Severity.Success" Class="mb-3">
+                @_checkinResult.CheckedInCount incheckade, @_checkinResult.CheckedOutCount utcheckade, @_checkinResult.UnchangedCount oförändrade.
+            </MudAlert>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-3">
+                @_checkinResult.ErrorMessage
+            </MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        @if (_checkinResult != null)
+        {
+            <MudButton OnClick="CloseCheckinDialog" Color="Color.Primary" Variant="Variant.Filled">Stäng</MudButton>
+        }
+        else
+        {
+            <MudButton OnClick="CloseCheckinDialog">Avbryt</MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                       OnClick="PushCheckinToScoutnet"
+                       Disabled="_checkinSyncing">
+                Synka checkin
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
 <style>
     .attendance-grid-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .attendance-grid { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 600px; }
@@ -682,6 +751,12 @@
     private SensusSyncResult? _sensusSyncResult;
     private bool _sensusSyncing;
     private string? _sensusError;
+
+    // Scoutnet checkin push state
+    private bool _showCheckinDialog;
+    private bool _checkinSyncing;
+    private CampCheckinResult? _checkinResult;
+
     private readonly CancellationTokenSource _cts = new();
     private bool _disposed;
     private bool _initialized;
@@ -1388,7 +1463,8 @@
                     {
                         var meetingDate = startDate.AddDays(day);
 
-                        if (_semester != null && !_semester.IsValidDate(meetingDate))
+                        // Skip dates outside semester bounds — but allow for camp troops
+                        if (_semester != null && !(_troop?.IsCamp ?? false) && !_semester.IsValidDate(meetingDate))
                         {
                             skippedCount++;
                             continue;
@@ -1550,6 +1626,59 @@
         _sensusSyncResult = null;
         _sensusSyncing = false;
         _sensusError = null;
+    }
+
+    private async Task PushCheckinToScoutnet()
+    {
+        if (_troop == null) return;
+
+        _checkinSyncing = true;
+        StateHasChanged();
+
+        try
+        {
+            // Save any pending attendance changes first
+            if (_pendingChanges.Count > 0)
+            {
+                await SaveAttendanceChangesAsync();
+            }
+
+            // Build attendance state: a person is "attended" if they have at least one meeting marked
+            var attendanceState = _troopPersons
+                .Select(tp => (
+                    tp.PersonId,
+                    Attended: _meetings.Any(m => IsAttending(tp.PersonId, m.Id))))
+                .ToList();
+
+            _checkinResult = await CampService.PushCheckinAsync(
+                _troop.Id, attendanceState, _cts.Token);
+
+            if (_checkinResult.Success)
+            {
+                Snackbar.Add(
+                    $"Checkin synkad: {_checkinResult.CheckedInCount} in, {_checkinResult.CheckedOutCount} ut",
+                    Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            _checkinResult = new CampCheckinResult
+            {
+                Success = false,
+                ErrorMessage = $"Fel: {ex.Message}"
+            };
+        }
+        finally
+        {
+            _checkinSyncing = false;
+        }
+    }
+
+    private void CloseCheckinDialog()
+    {
+        _showCheckinDialog = false;
+        _checkinResult = null;
+        _checkinSyncing = false;
     }
 
     public async ValueTask DisposeAsync()

@@ -12,6 +12,7 @@
 @inject ITroopRepository TroopRepository
 @inject IUnitOfWork UnitOfWork
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Inställningar - @(_troop?.Name ?? "Avdelning") - Skojjt</PageTitle>
@@ -90,6 +91,33 @@
                     </MudPaper>
                 </MudItem>
 
+                @if (_isMemberRegistrar)
+                {
+                    <MudItem xs="12">
+                        <MudPaper Elevation="2" Class="pa-4" Style="border: 1px solid var(--mud-palette-error);">
+                            <div class="d-flex align-center mb-4">
+                                <MudIcon Icon="@Icons.Material.Filled.Warning" Class="mr-2" Color="Color.Error" />
+                                <MudText Typo="Typo.h6" Color="Color.Error">Farozon</MudText>
+                            </div>
+                            <MudText Typo="Typo.body2" Class="mb-3">
+                                Att ta bort @(_troop!.IsCamp ? "lägret" : "avdelningen") raderar alla möten, närvarodata och medlemskopplingar permanent.
+                                Detta går inte att ångra.
+                            </MudText>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Delete"
+                                       OnClick="DeleteTroop"
+                                       Disabled="_deleting">
+                                @if (_deleting)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                }
+                                Ta bort @(_troop.IsCamp ? "läger" : "avdelning")
+                            </MudButton>
+                        </MudPaper>
+                    </MudItem>
+                }
+
                 @* Save Button *@
                 <MudItem xs="12">
                     <div class="d-flex justify-end gap-4">
@@ -127,8 +155,10 @@
     private Semester? _semester;
     private bool _loading = true;
     private bool _hasAccess;
+    private bool _isMemberRegistrar;
     private bool _formIsValid = false;
     private bool _saving = false;
+    private bool _deleting = false;
     private MudForm? _form;
     private List<BreadcrumbItem> _breadcrumbs = new();
     private TimeSpan? _defaultStartTime;
@@ -149,6 +179,7 @@
         try
         {
             _hasAccess = CurrentUserService.HasTroopAccess(ScoutGroupId, TroopScoutnetId);
+            _isMemberRegistrar = CurrentUserService.IsMemberRegistrar(ScoutGroupId);
             if (!_hasAccess) return;
 
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
@@ -178,6 +209,39 @@
         finally
         {
             _loading = false;
+        }
+    }
+
+    private async Task DeleteTroop()
+    {
+        if (!_isMemberRegistrar || _troop == null) return;
+
+        var description = _troop.IsCamp ? "lägret" : "avdelningen";
+        var result = await DialogService.ShowMessageBoxAsync(
+            $"Ta bort {description}",
+            $"Är du säker på att du vill ta bort {description} \"{_troop.Name}\"? Alla möten, närvarodata och medlemskopplingar raderas permanent.",
+            yesText: "Ta bort",
+            cancelText: "Avbryt");
+
+        if (result == true)
+        {
+            _deleting = true;
+            StateHasChanged();
+
+            try
+            {
+                await TroopRepository.DeleteTroopAsync(_troop.Id);
+                Snackbar.Add($"{(_troop.IsCamp ? "Lägret" : "Avdelningen")} \"{_troop.Name}\" har tagits bort.", Severity.Success);
+                NavigationManager.NavigateTo($"/sk/{ScoutGroupId}/t/{SemesterId}");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Kunde inte ta bort: {ex.Message}", Severity.Error);
+            }
+            finally
+            {
+                _deleting = false;
+            }
         }
     }
 

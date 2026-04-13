@@ -52,6 +52,25 @@ public class TroopConfiguration : IEntityTypeConfiguration<Troop>
 			.HasColumnName("is_locked")
 			.HasDefaultValue(false);
 
+		builder.Property(e => e.TroopType)
+			.HasColumnName("troop_type")
+			.HasDefaultValue(TroopType.Regular);
+
+		builder.Property(e => e.CampStartDate)
+			.HasColumnName("camp_start_date");
+
+		builder.Property(e => e.CampEndDate)
+			.HasColumnName("camp_end_date");
+
+		builder.Property(e => e.ScoutnetProjectId)
+			.HasColumnName("scoutnet_project_id");
+
+		builder.Property(e => e.ScoutnetCheckinApiKey)
+			.HasColumnName("scoutnet_checkin_api_key")
+			.HasMaxLength(200);
+
+		builder.Ignore(e => e.IsCamp);
+
         // Relationships
         builder.HasOne(e => e.ScoutGroup)
             .WithMany(sg => sg.Troops)

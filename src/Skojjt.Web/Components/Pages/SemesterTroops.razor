@@ -1,17 +1,22 @@
 @page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Options
 @using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
 @using Skojjt.Core.Services
+@using Skojjt.Infrastructure.Scoutnet
 @attribute [Authorize]
 @rendermode InteractiveServer
+@inject IOptions<ScoutnetOptions> ScoutnetOptions
 @inject IScoutGroupRepository ScoutGroupRepository
 @inject IBadgeService BadgeService
 @inject ISemesterRepository SemesterRepository
 @inject ITroopRepository TroopRepository
 @inject ICurrentUserService CurrentUserService
 @inject IMembershipSyncService MembershipSyncService
+@inject ICampService CampService
+@inject IScoutnetApiClient ScoutnetApiClient
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 
@@ -78,6 +83,10 @@
                                 <MudCardHeader>
                                     <CardHeaderContent>
                                         <div class="d-flex align-center gap-2">
+                                            @if (troop.IsCamp)
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.Forest" Size="Size.Small" Color="Color.Tertiary" />
+                                            }
                                             <MudText Typo="Typo.h6">@troop.Name</MudText>
                                             @if (troop.IsLocked)
                                             {
@@ -94,13 +103,19 @@
                                     </CardHeaderActions>
                                 </MudCardHeader>
                                 <MudCardContent>
+                                    @if (troop.IsCamp && troop.CampStartDate.HasValue && troop.CampEndDate.HasValue)
+                                    {
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                                            @troop.CampStartDate.Value.ToString("d MMM") – @troop.CampEndDate.Value.ToString("d MMM yyyy")
+                                        </MudText>
+                                    }
                                     <div class="d-flex gap-4">
                                         <div>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Medlemmar</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@(troop.IsCamp ? "Deltagare" : "Medlemmar")</MudText>
                                             <MudText Typo="Typo.h6">@troop.TroopPersons.Count</MudText>
                                         </div>
                                         <div>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Möten</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@(troop.IsCamp ? "Lägerdagar" : "Möten")</MudText>
                                             <MudText Typo="Typo.h6">@troop.Meetings.Count</MudText>
                                         </div>
                                     </div>
@@ -151,6 +166,20 @@
         @* Quick actions *@
         <MudDivider Class="my-6" />
         <MudExpansionPanels>
+            @if (_isMemberRegistrar)
+            {
+                <MudExpansionPanel Text="Läger" Icon="@Icons.Material.Filled.Forest">
+                    <MudText Typo="Typo.body2" Class="mb-3">
+                        Importera deltagare från ett Scoutnet-projekt för att skapa ett läger.
+                    </MudText>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.CloudDownload"
+                               OnClick="OpenImportCampDialog">
+                        Importera från Scoutnet
+                    </MudButton>
+                </MudExpansionPanel>
+            }
             @if (_canSync)
             {
                 <MudExpansionPanel Text="Scoutnet-synk" Icon="@Icons.Material.Filled.Sync">
@@ -426,6 +455,177 @@
     </DialogActions>
 </MudDialog>
 
+@* Import Camp from Scoutnet Dialog *@
+<MudDialog @bind-Visible="_showImportCampDialog" Options="_syncDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.CloudDownload" Class="mr-2" />
+            Importera läger från Scoutnet
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_campImportResult != null)
+        {
+            @if (_campImportResult.Success)
+            {
+                <MudAlert Severity="Severity.Success" Class="mb-3">
+                    Läger skapat med @(_campImportResult.CampResult?.MeetingsCreated ?? 0) lägerdagar.
+                    @_campImportResult.ParticipantsImported deltagare importerade.
+                </MudAlert>
+                @if (_campImportResult.ParticipantsSkipped > 0)
+                {
+                    <MudAlert Severity="Severity.Warning" Dense="true">
+                        @_campImportResult.ParticipantsSkipped deltagare kunde inte importeras (saknas i databasen).
+                        Kör Scoutnet-import först för att lägga till dem.
+                    </MudAlert>
+                    <MudPaper Class="mt-2 pa-3" Outlined="true" Style="max-height: 200px; overflow-y: auto;">
+                        @foreach (var name in _campImportResult.SkippedNames)
+                        {
+                            <MudText Typo="Typo.body2">@name</MudText>
+                        }
+                    </MudPaper>
+                }
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Error">
+                    @_campImportResult.ErrorMessage
+                </MudAlert>
+            }
+        }
+        else if (_importPreviewParticipants == null)
+        {
+            @* Step 1: Enter project ID + API keys (with optional project picker) *@
+            @if (_projectsLoading)
+            {
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-3" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Hämtar arrangemang från Scoutnet...</MudText>
+            }
+            else if (_groupProjects is { Count: > 0 })
+            {
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Välj arrangemang</MudText>
+                <MudPaper Outlined="true" Class="mb-4" Style="max-height: 200px; overflow-y: auto;">
+                    <MudList T="ScoutnetGroupProject" Dense="true">
+                        @foreach (var project in _groupProjects)
+                        {
+                            <MudListItem T="ScoutnetGroupProject" OnClick="@(() => SelectProject(project))"
+                                         Icon="@(project.Id.HasValue && project.Id.Value == _importProjectId ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Event)">
+                                <div>
+                                    <MudText Typo="Typo.body1">@project.Name</MudText>
+                                    @if (project.Starts.HasValue && project.Ends.HasValue)
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                            @project.Starts.Value.ToString("d MMM yyyy") – @project.Ends.Value.ToString("d MMM yyyy")
+                                        </MudText>
+                                    }
+                                    @if (!project.Id.HasValue)
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Warning">
+                                            Projekt-ID saknas — ange det manuellt nedan
+                                        </MudText>
+                                    }
+                                </div>
+                            </MudListItem>
+                        }
+                    </MudList>
+                </MudPaper>
+                <MudDivider Class="mb-3" />
+            }
+            else
+            {
+                @if (_projectsError != null)
+                {
+                    <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">
+                        @_projectsError
+                    </MudAlert>
+                }
+                else if (string.IsNullOrWhiteSpace(_scoutGroup?.ApiKeyGroupProjects))
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
+                        <b>Tips:</b> Konfigurera API-nyckeln "Kårens arrangemang" i
+                        <MudLink Href="@($"/sk/{ScoutGroupId}/settings")" Target="_blank">kårinställningar</MudLink>
+                        för att kunna välja arrangemang från en lista.
+                    </MudAlert>
+                }
+            }
+
+            <MudText Typo="Typo.body2" Class="mb-3">
+                Ange Scoutnet projekt-ID och API-nycklar. Du hittar dessa på projektets API-sida i Scoutnet.
+                Se <MudLink Href="@($"{ScoutnetOptions.Value.BaseUrl}/organisation/group/home/{ScoutGroupId}#viewgroup_tabmenu_tab_activities_pane")" Target="_blank">kårens arrangemang i Scoutnet</MudLink>.
+            </MudText>
+            <MudForm @ref="_importCampForm">
+                <MudNumericField @bind-Value="_importProjectId" Label="Scoutnet projekt-ID" Variant="Variant.Outlined" Required="true" Min="1"
+                                 HelperText="Projekt-ID:t syns i URL:en, t.ex. /activities/view/1190 → 1190" />
+                <MudTextField @bind-Value="_importApiKey" Label="API-nyckel (get/participants)" Variant="Variant.Outlined" Required="true"
+                              InputType="InputType.Password"
+                              HelperText="&quot;Get a list of members who are registered on the project&quot;" />
+                <MudTextField @bind-Value="_importCheckinApiKey" Label="API-nyckel (checkin)" Variant="Variant.Outlined"
+                              InputType="InputType.Password"
+                              HelperText="Valfritt — synka närvarostatus tillbaka till Scoutnet" />
+            </MudForm>
+        }
+        else
+        {
+            @* Step 2: Preview participants + fill in camp details *@
+            <MudAlert Severity="Severity.Success" Dense="true" Class="mb-3">
+                @_importPreviewParticipants.Count deltagare hittade i Scoutnet-projektet.
+            </MudAlert>
+            <MudPaper Class="pa-3 mb-3" Outlined="true" Style="max-height: 150px; overflow-y: auto;">
+                @foreach (var p in _importPreviewParticipants)
+                {
+                    <MudText Typo="Typo.body2">
+                        @p.FullName
+                        @if (p.Cancelled)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Class="ml-1">Avbokad</MudChip>
+                        }
+                        else if (!p.ExistsInDatabase)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Error" Class="ml-1">Saknas i databasen</MudChip>
+                        }
+                    </MudText>
+                }
+            </MudPaper>
+            <MudForm @ref="_importCampForm">
+                <MudTextField @bind-Value="_campName" Label="Lägernamn" Variant="Variant.Outlined" Required="true" MaxLength="50" />
+                <MudTextField @bind-Value="_campLocation" Label="Plats" Variant="Variant.Outlined" Required="true" MaxLength="100" />
+                <MudDatePicker @bind-Date="_campStartDate" Label="Startdatum" DateFormat="yyyy-MM-dd" Variant="Variant.Outlined" Required="true" />
+                <MudDatePicker @bind-Date="_campEndDate" Label="Slutdatum" DateFormat="yyyy-MM-dd" Variant="Variant.Outlined" Required="true" />
+            </MudForm>
+        }
+    </DialogContent>
+    <DialogActions>
+        @if (_campImportResult != null)
+        {
+            <MudButton OnClick="@(() => { _showImportCampDialog = false; _campImportResult = null; })">Stäng</MudButton>
+        }
+        else if (_importPreviewParticipants == null)
+        {
+            <MudButton OnClick="@(() => _showImportCampDialog = false)">Avbryt</MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                       OnClick="FetchImportPreview" Disabled="_campCreating">
+                @if (_campCreating)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                Hämta deltagare
+            </MudButton>
+        }
+        else
+        {
+            <MudButton OnClick="@(() => { _importPreviewParticipants = null; })">Tillbaka</MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                       OnClick="ImportCampFromScoutnet" Disabled="_campCreating">
+                @if (_campCreating)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                Importera
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
 <style>
     .hover-card {
         cursor: pointer;
@@ -484,6 +684,23 @@
     private MembershipSyncPreview? _syncPreview;
     private MembershipSyncResult? _syncResult;
     private DialogOptions _syncDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    // Camp creation state
+    private bool _showImportCampDialog;
+    private bool _campCreating;
+    private MudForm? _importCampForm;
+    private string _campName = string.Empty;
+    private string _campLocation = string.Empty;
+    private DateTime? _campStartDate;
+    private DateTime? _campEndDate;
+    private int _importProjectId;
+    private string _importApiKey = string.Empty;
+    private string _importCheckinApiKey = string.Empty;
+    private List<CampParticipantPreview>? _importPreviewParticipants;
+    private CampImportResult? _campImportResult;
+    private List<ScoutnetGroupProject>? _groupProjects;
+    private bool _projectsLoading;
+    private string? _projectsError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -553,7 +770,8 @@
                 var allTroops = await TroopRepository.GetByScoutGroupAndSemesterWithMembersAsync(ScoutGroupId, SemesterId);
                 _troops = allTroops
                     .Where(t => CurrentUserService.HasTroopAccess(ScoutGroupId, t.ScoutnetId))
-                    .OrderBy(t => t.Name)
+                    .OrderBy(t => t.TroopType)
+                    .ThenBy(t => t.Name)
                     .ToList();
 
                 // Load badges for each troop
@@ -686,4 +904,155 @@
             _syncPushing = false;
         }
     }
-}
+
+    private async Task OpenImportCampDialog()
+    {
+        _campName = string.Empty;
+        _campLocation = _scoutGroup?.DefaultCampLocation ?? string.Empty;
+        _campStartDate = null;
+        _campEndDate = null;
+        _importProjectId = 0;
+        _importApiKey = string.Empty;
+        _importCheckinApiKey = string.Empty;
+        _importPreviewParticipants = null;
+        _campImportResult = null;
+        _groupProjects = null;
+        _projectsError = null;
+        _showImportCampDialog = true;
+
+        // Auto-fetch projects if the API key is configured
+        if (!string.IsNullOrWhiteSpace(_scoutGroup?.ApiKeyGroupProjects))
+        {
+            await FetchGroupProjects();
+        }
+    }
+
+    private async Task FetchGroupProjects()
+    {
+        if (_scoutGroup == null || string.IsNullOrWhiteSpace(_scoutGroup.ApiKeyGroupProjects))
+            return;
+
+        _projectsLoading = true;
+        _projectsError = null;
+        StateHasChanged();
+
+        try
+        {
+            _groupProjects = await ScoutnetApiClient.GetGroupProjectsAsync(
+                ScoutGroupId, _scoutGroup.ApiKeyGroupProjects);
+
+            if (_groupProjects.Count == 0)
+            {
+                _projectsError = "Inga arrangemang hittades. Kontrollera att medlemmar är registrerade på arrangemangen i Scoutnet.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _projectsError = $"Kunde inte hämta arrangemang: {ex.Message}";
+            _groupProjects = null;
+        }
+        finally
+        {
+            _projectsLoading = false;
+        }
+    }
+
+    private void SelectProject(ScoutnetGroupProject project)
+    {
+        if (project.Id.HasValue)
+        {
+            _importProjectId = project.Id.Value;
+        }
+        _campName = project.Name;
+        if (project.Starts.HasValue)
+        {
+            _campStartDate = project.Starts.Value;
+        }
+        if (project.Ends.HasValue)
+        {
+            _campEndDate = project.Ends.Value;
+        }
+    }
+
+    private async Task FetchImportPreview()
+    {
+        if (_importCampForm != null)
+        {
+            await _importCampForm.ValidateAsync();
+            if (!_importCampForm.IsValid || _importProjectId <= 0) return;
+        }
+
+        _campCreating = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await CampService.PreviewParticipantsAsync(
+                _importProjectId, _importApiKey);
+
+            if (result.Success)
+            {
+                _importPreviewParticipants = result.Participants;
+            }
+            else
+            {
+                Snackbar.Add(result.ErrorMessage ?? "Kunde inte hämta deltagare.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _campCreating = false;
+        }
+    }
+
+    private async Task ImportCampFromScoutnet()
+    {
+        if (_importCampForm != null)
+        {
+            await _importCampForm.ValidateAsync();
+            if (!_importCampForm.IsValid || !_campStartDate.HasValue || !_campEndDate.HasValue) return;
+        }
+
+        _campCreating = true;
+        StateHasChanged();
+
+        try
+        {
+            _campImportResult = await CampService.ImportFromScoutnetAsync(
+                ScoutGroupId,
+                SemesterId,
+                _importProjectId,
+                _importApiKey,
+                _campName,
+                _campLocation,
+                DateOnly.FromDateTime(_campStartDate!.Value),
+                DateOnly.FromDateTime(_campEndDate!.Value),
+                string.IsNullOrWhiteSpace(_importCheckinApiKey) ? null : _importCheckinApiKey);
+
+            if (_campImportResult.Success)
+            {
+                Snackbar.Add(
+                    $"Läger importerat med {_campImportResult.ParticipantsImported} deltagare!",
+                    Severity.Success);
+                await LoadData();
+            }
+        }
+        catch (Exception ex)
+        {
+            _campImportResult = new CampImportResult
+            {
+                Success = false,
+                ErrorMessage = $"Fel: {ex.Message}"
+            };
+        }
+        finally
+        {
+            _campCreating = false;
+        }
+    }
+
+    }

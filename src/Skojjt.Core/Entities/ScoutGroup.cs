@@ -31,6 +31,12 @@ public class ScoutGroup
 
     public string? ApiKeyUpdateMembership { get; set; }
 
+    /// <summary>
+    /// API key for the viewGroupProjects endpoint (api/organisation/project).
+    /// Used to fetch a list of projects/activities for the group.
+    /// </summary>
+    public string? ApiKeyGroupProjects { get; set; }
+
     public string? BankAccount { get; set; }
 
     public string? Address { get; set; }

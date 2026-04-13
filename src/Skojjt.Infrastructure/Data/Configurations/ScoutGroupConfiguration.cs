@@ -46,6 +46,10 @@ public class ScoutGroupConfiguration : IEntityTypeConfiguration<ScoutGroup>
             .HasColumnName("api_key_update_membership")
             .HasMaxLength(100);
 
+        builder.Property(e => e.ApiKeyGroupProjects)
+            .HasColumnName("api_key_group_projects")
+            .HasMaxLength(100);
+
         builder.Property(e => e.BankAccount)
             .HasColumnName("bank_account")
             .HasMaxLength(50);

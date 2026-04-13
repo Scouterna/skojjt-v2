@@ -1,22 +1,26 @@
 # Changelog
 
+## [2.2.0] - 2026-04-13
+* Importera aktivitet som en avdelning från ett Scoutnet-arrangemang, inte bara deltagare. Det innebär att lägerdagar skapas automatiskt i Skojjt baserat på arrangemangets datumintervall.
+* Changelog nu på svenska ;-)
+
 ## [2.1.2] - 2026-04-10
-* Synk sensus lista, send your attendance from skojjt directly to sensus e-tjanst.
+* Synka sensus lista, skicka din närvaro direkt till din elista på sensus e-tjanst.
 
 ## [2.1.1] - 2026-04-06
-* Added instruction video link to documentation.
-* New API endpoint `/api/v1/me` that returns information about the current user and their associated scout groups and troops. 
+* Instruktionsvideo tillagd i dokumentationen.
+* Nytt API-endpoint `/api/v1/me` som returnerar information om den inloggade användaren och dess scoutkårer och avdelningar.
 
 ## [2.1.0] - 2026-04-05
-* Allow all member register users to access badge templates
-* Fix: bug when you comple a badge row, the checkmark would be checked for the next person in the list.
-* Improved the documentation for badge templates and added a section about how to add badge images.
-* Improved the layout for documentation pages, with better spacing.
-* Fix: Date picker would sometimes start on Sunday, now it always starts on Monday, even if the user has a different culture set.
-* Fix: badge picture for the badge list was not showing, now it does.
+* Alla medlemsregistrerare kan nu se märkesmallar.
+* Fix: bugg där kryssrutan markerades för nästa person i listan när man fyllde i en märkesrad.
+* Förbättrad dokumentation för märkesmallar med nytt avsnitt om hur man lägger till märkesbilder.
+* Förbättrad layout för dokumentationssidor med bättre mellanrum.
+* Fix: datumväljaren kunde ibland starta på söndag — nu startar den alltid på måndag oavsett kulturinställning.
+* Fix: märkesbilden i märkeslistan visades inte, nu gör den det.
 
 ## [2.0.10] - 2026-04-01
-* Fix changelog parsing
+* Fix för parsning av changelog
 
 ## [2.0.9] - 2026-04-01
 * Fix för avdelningar med negativt ID (skapade i skojjt v1), url fungerade inte pga svenskt minus tecken, vad det nu är bra för.

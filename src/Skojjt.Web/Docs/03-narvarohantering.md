@@ -41,3 +41,4 @@ Använd patruller för att dela upp avdelningen i mindre listor och se närvaro 
 - Registrera närvaron direkt under eller efter sammankomsten så glömmer ni inte
 - Ledare som är närvarande räknas också – glöm inte att markera dem
 - Närvarodata används som underlag för DAK-exporten
+- För **läger** med automatiska lägerdagar, se [Läger](/hjalp/07-lager)

@@ -209,10 +209,23 @@ public class TroopRepository : Repository<Troop, int>, ITroopRepository
         await using var context = CreateContext();
         var troopPerson = await context.Set<TroopPerson>()
             .FirstOrDefaultAsync(tp => tp.TroopId == troopId && tp.PersonId == personId, cancellationToken);
-        
+
         if (troopPerson != null)
         {
             troopPerson.IsLeader = isLeader;
+            await context.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    public async Task DeleteTroopAsync(int troopId, CancellationToken cancellationToken = default)
+    {
+        await using var context = CreateContext();
+        var troop = await context.Set<Troop>()
+            .FirstOrDefaultAsync(t => t.Id == troopId, cancellationToken);
+
+        if (troop != null)
+        {
+            context.Set<Troop>().Remove(troop);
             await context.SaveChangesAsync(cancellationToken);
         }
     }

@@ -58,4 +58,9 @@ public interface ITroopRepository : IRepository<Troop, int>
     /// Updates the leader status for a person in a troop.
     /// </summary>
     Task SetLeaderStatusAsync(int troopId, int personId, bool isLeader, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes a troop and all its related data (members, meetings, attendances, badges).
+    /// </summary>
+    Task DeleteTroopAsync(int troopId, CancellationToken cancellationToken = default);
 }

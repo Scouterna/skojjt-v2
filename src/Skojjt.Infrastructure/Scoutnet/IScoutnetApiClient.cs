@@ -45,4 +45,43 @@ public interface IScoutnetApiClient
         string apiKey,
         Dictionary<int, MembershipUpdate> updates,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fetches participants for a specific Scoutnet project/activity.
+    /// Uses a project-level API key (not stored, entered per import).
+    /// </summary>
+    /// <param name="projectId">The Scoutnet project ID.</param>
+    /// <param name="apiKey">The project-level API key.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<ScoutnetProjectParticipantsResponse> GetProjectParticipantsAsync(
+        int projectId,
+        string apiKey,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates the check-in state for one or more participants on a Scoutnet project.
+    /// Uses the project-level checkin API key.
+    /// </summary>
+    /// <param name="projectId">The Scoutnet project ID.</param>
+    /// <param name="apiKey">The project checkin API key.</param>
+    /// <param name="memberCheckins">Dictionary of member number → checked_in state (true = check in, false = check out).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<ProjectCheckinResult> CheckinParticipantsAsync(
+        int projectId,
+        string apiKey,
+        Dictionary<int, bool> memberCheckins,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fetches the list of projects/activities associated with a scout group
+    /// via the viewGroupProjects endpoint (api/organisation/project).
+    /// Only projects that have group members registered to them will be returned.
+    /// </summary>
+    /// <param name="groupId">The Scoutnet group ID.</param>
+    /// <param name="apiKey">The API key for the viewGroupProjects endpoint.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<List<ScoutnetGroupProject>> GetGroupProjectsAsync(
+        int groupId,
+        string apiKey,
+        CancellationToken cancellationToken = default);
 }
