@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.2.1] - 2026-04-14
+* Licens ändrad till MIT.
+* Dokumentation uppdaterad.
+
 ## [2.2.0] - 2026-04-13
 * Importera aktivitet som en avdelning från ett Scoutnet-arrangemang, inte bara deltagare. Det innebär att lägerdagar skapas automatiskt i Skojjt baserat på arrangemangets datumintervall.
 * Changelog nu på svenska ;-)

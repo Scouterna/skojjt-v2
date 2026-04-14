@@ -62,10 +62,33 @@ Avdelningar importeras från Scoutnet. Varje avdelning har:
 
 ### Avdelningsinställningar
 
-Som ledare för en avdelning kan du ändra vissa inställningar:
+Varje avdelning har en inställningssida som nås via **kugghjulsikonen** på avdelningens närvarosida.
 
-- **Patruller** – skapa och hantera patruller inom avdelningen
-- **Medlemmar** – se vilka som tillhör avdelningen
+#### Standardvärden för möten
+
+Här ställer du in förvalen som används när nya sammankomster skapas:
+
+| Inställning | Beskrivning |
+|---|---|
+| **Starttid** | Standardstarttid för nya möten |
+| **Längd (minuter)** | Standardlängd i minuter (15–480) |
+| **Mötesplats** | Standardplats som fylls i automatiskt |
+
+Dessa värden sparar tid vid skapande av nya sammankomster — du behöver inte fylla i samma information varje gång.
+
+#### Åldersgrupp
+
+Välj avdelningens **avdelningstyp** (åldersgrupp) i listan. Tillgängliga typer:
+
+- Bäverscouter, Spårarscouter, Upptäckarscouter, Äventyrarscouter, Utmanarscouter, Roverscouter, Familjescouter, Annat
+
+Åldersgruppen används för att sortera avdelningar i [personflödesgrafen](/hjalp/10-grafer-statistik). Om din avdelning saknar åldersgrupp visas den inte i personflödet.
+
+> **Tips:** Åldersgruppen importeras normalt från Scoutnet. Om den saknas kan du ställa in den manuellt här.
+
+#### Ta bort avdelning (Farozon)
+
+**Registeransvariga** kan ta bort en avdelning permanent. Detta raderar alla möten, närvarodata och medlemskopplingar och går inte att ångra.
 
 ## Navigering
 
