@@ -597,6 +597,66 @@ public class ScoutnetImportServiceTests : IDisposable
         }
     }
 
+    [TestMethod]
+    public async Task ImportFromResponseAsync_PreservesTroopMembershipForRemovedPersons()
+    {
+        // Arrange - Create a person with a troop membership
+        var semesterId = Semester.GenerateId(2025, true);
+        var removedPersonId = 8888;
+
+        var troop = new Troop
+        {
+            ScoutnetId = 500,
+            ScoutGroupId = TestScoutGroupId,
+            SemesterId = semesterId,
+            Name = "Ekorrarna"
+        };
+        _context.Troops.Add(troop);
+
+        var person = new Person
+        {
+            Id = removedPersonId,
+            FirstName = "Quit",
+            LastName = "Person",
+            BirthDate = new DateOnly(2012, 5, 15)
+        };
+        _context.Persons.Add(person);
+        _context.ScoutGroupPersons.Add(new ScoutGroupPerson
+        {
+            PersonId = removedPersonId,
+            ScoutGroupId = TestScoutGroupId,
+            NotInScoutnet = false
+        });
+        _context.TroopPersons.Add(new TroopPerson
+        {
+            Troop = troop,
+            PersonId = removedPersonId,
+            IsLeader = false
+        });
+        await _context.SaveChangesAsync();
+
+        // Import without the removed person
+        var response = ScoutnetTestDataGenerator.CreateMemberListResponse(3, TestScoutGroupId);
+
+        // Act
+        var result = await _service.ImportFromResponseAsync(TestScoutGroupId, semesterId, response);
+
+        // Assert
+        Assert.IsTrue(result.Success, result.ErrorMessage);
+        Assert.AreEqual(1, result.PersonsRemoved);
+
+        // Person should be marked as not in Scoutnet
+        var sgp = await _context.ScoutGroupPersons
+            .FirstOrDefaultAsync(s => s.PersonId == removedPersonId && s.ScoutGroupId == TestScoutGroupId);
+        Assert.IsNotNull(sgp);
+        Assert.IsTrue(sgp.NotInScoutnet, "Person should be marked as NotInScoutnet");
+
+        // Troop membership should still exist (attendance data must be preserved)
+        var troopPerson = await _context.TroopPersons
+            .FirstOrDefaultAsync(tp => tp.PersonId == removedPersonId);
+        Assert.IsNotNull(troopPerson, "Troop membership should be preserved for removed persons to retain attendance data");
+    }
+
     #endregion
 
     #region Duplicate Handling Tests

@@ -415,17 +415,6 @@ public class ScoutnetImportService : IScoutnetImportService
                 }
             }
 
-            // Remove troop memberships for removed persons
-            var membershipsToRemove = existingTroopPersons
-                .Where(tp => !seenPersonIds.Contains(tp.PersonId))
-                .ToList();
-
-            foreach (var membership in membershipsToRemove)
-            {
-                _context.TroopPersons.Remove(membership);
-                result.TroopMembershipsRemoved++;
-            }
-
             // Update troop member/leader counts for created troops
             foreach (var createdTroop in result.CreatedTroops.ToList())
             {

@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.2.2] - 2026-04-17
+* Bugfix: Personer som slutar ska inte tas bort från avdelningen, utan bara markeras som borttagna (B). Det gör att deras närvaro fortfarande syns i avdelningen.
+
 ## [2.2.1] - 2026-04-14
 * Licens ändrad till MIT.
 * Dokumentation uppdaterad.
