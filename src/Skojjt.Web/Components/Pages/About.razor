@@ -123,7 +123,7 @@
                 </div>
                 @foreach (var section in _changelogSections)
                 {
-                    <MudText Typo="Typo.subtitle1" Class="mt-3 mb-1" Color="Color.Primary">
+                    <MudText Typo="Typo.subtitle1" Class="mt-3 mb-1" Color="Color.Primary" id="@(section.Anchor)">
                         @(section.Title)
                     </MudText>
                     @if (!string.IsNullOrEmpty(section.Subtitle))
@@ -192,7 +192,7 @@
         {
             if (line.StartsWith("## ", StringComparison.Ordinal))
             {
-                current = new ChangelogSection { Title = line[3..].Trim() };
+                current = new ChangelogSection { Title = line[3..].Trim(), Anchor = GenerateAnchor(line[3..].Trim()) };
                 sections.Add(current);
             }
             else if (line.StartsWith("### ", StringComparison.Ordinal))
@@ -205,7 +205,7 @@
                 // Skip link reference definitions (e.g. [2.0.9]: https://...)
                 if (line.Contains(": http", StringComparison.Ordinal))
                     continue;
-                current = new ChangelogSection { Title = line.Trim() };
+                current = new ChangelogSection { Title = line.Trim(), Anchor = GenerateAnchor(line.Trim()) };
                 sections.Add(current);
             }
             else if (line.StartsWith("* ", StringComparison.Ordinal) || line.StartsWith("- ", StringComparison.Ordinal))
@@ -234,9 +234,17 @@
         return html;
     }
 
+    private static string GenerateAnchor(string title)
+    {
+        // Extract version number from title like "[2.2.2] - 2026-04-17"
+        var match = System.Text.RegularExpressions.Regex.Match(title, @"\[([^\]]+)\]");
+        return match.Success ? match.Groups[1].Value : title.ToLowerInvariant().Replace(' ', '-');
+    }
+
     private sealed class ChangelogSection
     {
         public string Title { get; set; } = string.Empty;
+        public string Anchor { get; set; } = string.Empty;
         public string? Subtitle { get; set; }
         public List<string> Items { get; } = [];
     }
