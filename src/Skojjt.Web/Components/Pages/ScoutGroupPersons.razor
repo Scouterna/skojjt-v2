@@ -2,8 +2,10 @@
 @using Microsoft.AspNetCore.Authorization
 @using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
+@using System.Text
 @using Skojjt.Core.Interfaces
 @attribute [Authorize]
+@inject IJSRuntime JSRuntime
 @inject ICurrentUserService CurrentUserService
 @inject IScoutGroupRepository ScoutGroupRepository
 @inject IPersonRepository PersonRepository
@@ -43,7 +45,7 @@
                       Filter="FilterFunc"
                       FixedHeader="true"
                       Height="calc(100vh - 350px)"
-                      RowClassFunc="@((person, _) => person.Removed ? "mud-text-disabled" : "")">
+                      RowClassFunc="@((person, _) => person.Removed || IsNotInScoutnet(person) ? "mud-text-disabled" : string.Empty)">
                 <ToolBarContent>
                     <MudTextField @bind-Value="_searchString" 
                                   Placeholder="Sök namn, e-post, telefon..." 
@@ -123,6 +125,10 @@
                         {
                             <MudChip T="string" Size="Size.Small" Color="Color.Error">Borttagen</MudChip>
                         }
+                        else if (IsNotInScoutnet(context))
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning">Ej i Scoutnet</MudChip>
+                        }
                     </MudTd>
                 </RowTemplate>
                 <PagerContent>
@@ -197,8 +203,14 @@
     private void ApplyFilters()
     {
         _filteredPersons = _allPersons
-            .Where(p => _showRemoved || !p.Removed)
+            .Where(p => _showRemoved || (!p.Removed && !IsNotInScoutnet(p)))
             .ToList();
+    }
+
+    private bool IsNotInScoutnet(Person person)
+    {
+        return person.ScoutGroupPersons
+            .Any(sgp => sgp.ScoutGroupId == ScoutGroupId && sgp.NotInScoutnet);
     }
 
     private bool FilterFunc(Person person)
@@ -214,9 +226,38 @@
                (person.Mobile?.Contains(search) ?? false);
     }
 
-    private void ExportToCsv()
+    private async Task ExportToCsv()
     {
-        // TODO: Implement CSV export
-        Snackbar.Add("CSV-export kommer snart!", Severity.Info);
+        var sb = new StringBuilder();
+        sb.AppendLine("Förnamn;Efternamn;Födelsedatum;E-post;Mobil;Telefon;Adress;Postnummer;Ort;Status");
+
+        foreach (var p in _filteredPersons)
+        {
+            var status = p.Removed ? "Borttagen" : IsNotInScoutnet(p) ? "Ej i Scoutnet" : string.Empty;
+            sb.Append(CsvEscape(p.FirstName)).Append(';');
+            sb.Append(CsvEscape(p.LastName)).Append(';');
+            sb.Append(p.BirthDate?.ToString("yyyy-MM-dd")).Append(';');
+            sb.Append(CsvEscape(p.Email)).Append(';');
+            sb.Append(CsvEscape(p.Mobile)).Append(';');
+            sb.Append(CsvEscape(p.Phone)).Append(';');
+            sb.Append(CsvEscape(p.Street)).Append(';');
+            sb.Append(CsvEscape(p.ZipCode)).Append(';');
+            sb.Append(CsvEscape(p.ZipName)).Append(';');
+            sb.AppendLine(status);
+        }
+
+        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+        var base64 = Convert.ToBase64String(bytes);
+        var filename = $"medlemmar-{_scoutGroup?.Name ?? "export"}-{DateTime.Now:yyyy-MM-dd}.csv";
+
+        await JSRuntime.InvokeVoidAsync("skojjtExport.downloadFileFromBase64", filename, "text/csv", base64);
+    }
+
+    private static string CsvEscape(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
+            return $"\"{value.Replace("\"", "\"\"")}\"";
+        return value;
     }
 }

@@ -11,5 +11,5 @@ public interface IPersonRepository : IRepository<Person>
     Task<IReadOnlyList<Person>> GetByScoutGroupAsync(int scoutGroupId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Person>> GetByTroopAsync(int troopId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Person>> GetActiveByScoutGroupAsync(int scoutGroupId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Person>> SearchByNameAsync(int scoutGroupId, string searchTerm, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Person>> SearchByNameAsync(int scoutGroupId, string searchTerm, bool includeNotInScoutnet = false, CancellationToken cancellationToken = default);
 }

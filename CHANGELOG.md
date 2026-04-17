@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.2.3] - 2026-04-17
+* Bugfix: Lägg till person i avdelning funkar med borttagna personer.
+* CSV export från sidan med alla personer är implementerad.
+
 ## [2.2.2] - 2026-04-17
 * Bugfix: Personer som slutar ska inte tas bort från avdelningen, utan bara markeras som borttagna (B). Det gör att deras närvaro fortfarande syns i avdelningen.
 

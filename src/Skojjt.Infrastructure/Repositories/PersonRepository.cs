@@ -24,6 +24,7 @@ public class PersonRepository : Repository<Person>, IPersonRepository
     {
         await using var context = CreateContext();
         return await context.Set<Person>()
+            .Include(p => p.ScoutGroupPersons.Where(sgp => sgp.ScoutGroupId == scoutGroupId))
             .Where(p => p.ScoutGroupPersons.Any(sgp => sgp.ScoutGroupId == scoutGroupId))
             .OrderBy(p => p.LastName)
             .ThenBy(p => p.FirstName)
@@ -52,14 +53,23 @@ public class PersonRepository : Repository<Person>, IPersonRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Person>> SearchByNameAsync(int scoutGroupId, string searchTerm, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Person>> SearchByNameAsync(int scoutGroupId, string searchTerm, bool includeNotInScoutnet = false, CancellationToken cancellationToken = default)
     {
         await using var context = CreateContext();
         var lowerSearch = searchTerm.ToLower();
-        return await context.Set<Person>()
-            .Where(p => p.ScoutGroupPersons.Any(sgp => sgp.ScoutGroupId == scoutGroupId) && !p.Removed)
+        var query = context.Set<Person>()
+            .Include(p => p.ScoutGroupPersons.Where(sgp => sgp.ScoutGroupId == scoutGroupId))
+            .Where(p => p.ScoutGroupPersons.Any(sgp => sgp.ScoutGroupId == scoutGroupId))
             .Where(p => p.FirstName.ToLower().Contains(lowerSearch) || 
-                        p.LastName.ToLower().Contains(lowerSearch))
+                        p.LastName.ToLower().Contains(lowerSearch));
+
+        if (!includeNotInScoutnet)
+        {
+            query = query.Where(p => !p.Removed &&
+                !p.ScoutGroupPersons.Any(sgp => sgp.ScoutGroupId == scoutGroupId && sgp.NotInScoutnet));
+        }
+
+        return await query
             .OrderBy(p => p.LastName)
             .ThenBy(p => p.FirstName)
             .ToListAsync(cancellationToken);

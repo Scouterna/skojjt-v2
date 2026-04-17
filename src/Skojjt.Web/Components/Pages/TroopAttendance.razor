@@ -405,39 +405,81 @@
         {
             <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mt-2" />
         }
-        else if (_memberSearchResults.Count > 0)
+        else if (_memberSearchResults.Count > 0 || _removedMemberSearchResults.Count > 0)
         {
-            <MudList T="Person" Dense="true" Class="mt-2">
-                @foreach (var person in _memberSearchResults)
-                {
-                    var isAlreadyMember = _troopPersonIds.Contains(person.Id);
-                    <MudListItem T="Person" Class="@(isAlreadyMember ? "mud-text-disabled" : "")">
-                        <div class="d-flex align-center justify-space-between w-100">
-                            <div>
-                                <MudText>@person.FullName</MudText>
-                                @if (person.Age > 0)
+            @if (_memberSearchResults.Count > 0)
+            {
+                <MudList T="Person" Dense="true" Class="mt-2">
+                    @foreach (var person in _memberSearchResults)
+                    {
+                        var isAlreadyMember = _troopPersonIds.Contains(person.Id);
+                        <MudListItem T="Person" Class="@(isAlreadyMember ? "mud-text-disabled" : "")">
+                            <div class="d-flex align-center justify-space-between w-100">
+                                <div>
+                                    <MudText>@person.FullName</MudText>
+                                    @if (person.Age > 0)
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@person.Age år</MudText>
+                                    }
+                                </div>
+                                @if (isAlreadyMember)
                                 {
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@person.Age år</MudText>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Default">Redan medlem</MudChip>
+                                }
+                                else
+                                {
+                                    <MudButton Variant="Variant.Text" 
+                                               Color="Color.Primary" 
+                                               Size="Size.Small"
+                                               StartIcon="@Icons.Material.Filled.Add"
+                                               OnClick="@(() => AddMemberToTroop(person))">
+                                        Lägg till
+                                    </MudButton>
                                 }
                             </div>
-                            @if (isAlreadyMember)
-                            {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Default">Redan medlem</MudChip>
-                            }
-                            else
-                            {
-                                <MudButton Variant="Variant.Text" 
-                                           Color="Color.Primary" 
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Filled.Add"
-                                           OnClick="@(() => AddMemberToTroop(person))">
-                                    Lägg till
-                                </MudButton>
-                            }
-                        </div>
-                    </MudListItem>
-                }
-            </MudList>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+
+            @if (_removedMemberSearchResults.Count > 0)
+            {
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.subtitle2" Color="Color.Warning" Class="mb-1">
+                    <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" Class="mr-1" />
+                    Ej i Scoutnet
+                </MudText>
+                <MudList T="Person" Dense="true">
+                    @foreach (var person in _removedMemberSearchResults)
+                    {
+                        var isAlreadyMember = _troopPersonIds.Contains(person.Id);
+                        <MudListItem T="Person" Class="@(isAlreadyMember ? "mud-text-disabled" : "")">
+                            <div class="d-flex align-center justify-space-between w-100">
+                                <div>
+                                    <MudText>@person.FullName</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Warning">
+                                        Borttagen från Scoutnet@(person.Age > 0 ? $" · {person.Age} år" : "")
+                                    </MudText>
+                                </div>
+                                @if (isAlreadyMember)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Default">Redan medlem</MudChip>
+                                }
+                                else
+                                {
+                                    <MudButton Variant="Variant.Text" 
+                                               Color="Color.Warning" 
+                                               Size="Size.Small"
+                                               StartIcon="@Icons.Material.Filled.Restore"
+                                               OnClick="@(() => AddMemberToTroop(person))">
+                                        Lägg till
+                                    </MudButton>
+                                }
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
         }
         else if (!string.IsNullOrWhiteSpace(_memberSearchText) && _memberSearchText.Length >= 2)
         {
@@ -738,6 +780,7 @@
     private bool _showAddMemberDialog = false;
     private string _memberSearchText = "";
     private List<Person> _memberSearchResults = new();
+    private List<Person> _removedMemberSearchResults = new();
     private HashSet<int> _troopPersonIds = new();
     private bool _searchingMembers = false;
     private MudForm? _meetingForm;
@@ -1102,25 +1145,40 @@
     private async Task OnMemberSearchTextChanged(string searchText)
     {
         _memberSearchText = searchText;
-        
+
         if (string.IsNullOrWhiteSpace(searchText) || searchText.Length < 2)
         {
             _memberSearchResults.Clear();
+            _removedMemberSearchResults.Clear();
             return;
         }
-        
+
         _searchingMembers = true;
         StateHasChanged();
-        
+
         try
         {
-            var results = await PersonRepository.SearchByNameAsync(ScoutGroupId, searchText);
-            _memberSearchResults = results.Take(20).ToList(); // Limit to 20 results
+            // Single query returning both active and inactive (removed / NotInScoutnet) members;
+            // partition in-memory to avoid a second round-trip.
+            var allResults = await PersonRepository.SearchByNameAsync(ScoutGroupId, searchText, includeNotInScoutnet: true);
+
+            _memberSearchResults = allResults
+                .Where(p => !p.Removed
+                    && !p.ScoutGroupPersons.Any(sgp => sgp.ScoutGroupId == ScoutGroupId && sgp.NotInScoutnet))
+                .Take(20)
+                .ToList();
+
+            var activeIds = _memberSearchResults.Select(p => p.Id).ToHashSet();
+            _removedMemberSearchResults = allResults
+                .Where(p => !activeIds.Contains(p.Id))
+                .Take(10)
+                .ToList();
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Sökning misslyckades: {ex.Message}", Severity.Error);
             _memberSearchResults.Clear();
+            _removedMemberSearchResults.Clear();
         }
         finally
         {
@@ -1145,6 +1203,7 @@
             
             // Clear search results but keep dialog open for adding more
             _memberSearchResults.Clear();
+            _removedMemberSearchResults.Clear();
             _memberSearchText = "";
         }
         catch (Exception ex)
@@ -1158,6 +1217,7 @@
         _showAddMemberDialog = false;
         _memberSearchText = "";
         _memberSearchResults.Clear();
+        _removedMemberSearchResults.Clear();
     }
 
     private async Task SavePatrol(int personId)

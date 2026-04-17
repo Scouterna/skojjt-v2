@@ -78,10 +78,34 @@ window.skojjtExport = {
             console.error('Export download error:', error);
             return {
                 success: false,
-                error: 'Nätverksfel',
+                error: 'NÃ¤tverksfel',
                 message: error.message || 'Kunde inte ladda ner filen',
                 configurationUrl: null
             };
         }
+    },
+
+    /**
+     * Download a file from a byte array (base64-encoded).
+     * @param {string} filename - The filename for the download
+     * @param {string} contentType - The MIME type
+     * @param {string} base64 - The base64-encoded file content
+     */
+    downloadFileFromBase64: function (filename, contentType, base64) {
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: contentType });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
     }
 };
