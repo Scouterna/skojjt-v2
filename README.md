@@ -1,6 +1,7 @@
 # Skojjt
 
 Skojjt is a web-based attendance tracking system for Swedish scout groups (_scoutkårer_). It allows troop leaders to register meeting attendance, manage members, and export reports for municipal activity grants (aktivitetsbidrag / DAK).
+Live server: [https://skojjt.scouterna.net/](https://skojjt.scouterna.net/).
 
 ## Features
 
