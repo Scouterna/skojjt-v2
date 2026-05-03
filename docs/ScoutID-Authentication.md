@@ -4,20 +4,81 @@ This document describes the authentication flow for ScoutID integration in Skojj
 
 ## Overview
 
-ScoutID is an OAuth 2.0 / OpenID Connect (OIDC) authentication service provided by Scouterna (Swedish Scouting). It allows users to authenticate using their Scoutnet credentials and provides claims about their scout group membership and roles.
+ScoutID is the single sign-on service for Scouterna (Swedish Scouting) that authenticates users against Scoutnet and exposes Scoutnet member data (member number, primary group, roles, troops, etc.) as authentication claims. Skojjt uses these claims to determine which scout groups and troops a user can access.
+
+There are **two ScoutID generations**, and Skojjt v2 can connect to either one:
+
+| Generation | Protocol | Status | Skojjt config section |
+|------------|----------|--------|------------------------|
+| **Legacy ScoutID** (SimpleSAMLphp) | SAML 2.0 | **Currently used by production Skojjt** | `ScoutIdSaml` |
+| **New ScoutID** (Keycloak + [`scoutid-keycloak-provider`](https://github.com/Scouterna/scoutid-keycloak-provider)) | OAuth 2.0 / OpenID Connect | Available, will eventually replace the SAML version | `ScoutId` |
+
+The legacy SAML-based ScoutID is what production Skojjt currently authenticates against. The newer Keycloak-based ScoutID is fully supported in code and is expected to become the default once Scouterna fully transitions. Both paths are normalized so that the rest of the application sees the same set of claims (see [Application Claims](#application-claims)).
 
 **Key Resources:**
 - ScoutID Documentation: https://etjanster.scout.se/programkatalog/scoutid/
-- ScoutID Source: https://github.com/Scouterna/scoutid
+- Legacy ScoutID (SimpleSAMLphp) source: https://github.com/Scouterna/scoutid
+- New ScoutID Keycloak deployment: https://github.com/Scouterna/scoutid-keycloak
+- New ScoutID Keycloak provider (Scoutnet auth + claim mappers): https://github.com/Scouterna/scoutid-keycloak-provider
+- New ScoutID Keycloak theme: https://github.com/Scouterna/scoutid-keycloak-theme
 
 ## Authentication Flow
 
-### Production Flow (ScoutID OIDC)
+Which flow is used at runtime depends on configuration:
+
+- If `ScoutIdSaml:Enabled` is `true` → **Legacy ScoutID (SAML 2.0)** is used (current production setup).
+- Else if `ScoutId:ClientId` is set → **New ScoutID (Keycloak / OIDC)** is used.
+- Else, in `Development`, the **Simulated ScoutID** flow is used.
+
+See [`Program.cs`](../src/Skojjt.Web/Program.cs) for the selection logic.
+
+### Production Flow (Legacy ScoutID — SimpleSAML / SAML 2.0)
+
+This is the flow currently used by production Skojjt. The SAML response is processed by `Sustainsys.Saml2`, then normalized by `SamlClaimsNormalizer` so that the downstream `ScoutIdClaimsTransformation` produces the same application claims as the OIDC path.
+
+```
++-------------+     +-------------+     +---------------------+     +-------------+
+|   Browser   |     |  Skojjt Web |     | ScoutID (SimpleSAML)|     |   Scoutnet  |
+|   (User)    |     |   Server    |     |   (SAML 2.0 IdP)    |     |  (Identity) |
++-------------+     +-------------+     +---------------------+     +-------------+
+       |                   |                       |                       |
+       | 1. Access /       |                       |                       |
+       |------------------>|                       |                       |
+       |                   |                       |                       |
+       | 2. Not authenticated — Redirect (SAML AuthnRequest, HTTP-Redirect)|
+       |<------------------|                       |                       |
+       |                                           |                       |
+       | 3. SAML AuthnRequest                      |                       |
+       |------------------------------------------>|                       |
+       |                                           |                       |
+       |                                           | 4. Validate user      |
+       |                                           |---------------------->|
+       |                                           |                       |
+       |                                           | 5. User attributes    |
+       |                                           |<----------------------|
+       |                                           |                       |
+       | 6. SAML Response (POST to ACS) with signed assertion              |
+       |<------------------------------------------|                       |
+       |                   |                       |                       |
+       | 7. POST /Saml2/Acs|                       |                       |
+       |------------------>|                       |                       |
+       |                   | 8. Validate signature,|                       |
+       |                   |    normalize claims,  |                       |
+       |                   |    issue cookie       |                       |
+       |<------------------|                       |                       |
+       |                   |                       |                       |
+       | 9. Authenticated requests                 |                       |
+       |------------------>|                       |                       |
+```
+
+### Production Flow (New ScoutID — Keycloak / OIDC)
+
+This is the OIDC flow against the Keycloak-based ScoutID. It is fully supported in Skojjt and is enabled by setting `ScoutId:ClientId` (and leaving `ScoutIdSaml:Enabled` unset/false).
 
 ```
 +-------------+     +-------------+     +-------------+     +-------------+
 |   Browser   |     |  Skojjt Web |     |   ScoutID   |     |   Scoutnet  |
-|   (User)    |     |   Server    |     |   (OIDC)    |     |  (Identity) |
+|   (User)    |     |   Server    |     |  (Keycloak) |     |  (Identity) |
 +-------------+     +-------------+     +-------------+     +-------------+
        |                   |                   |                   |
        | 1. Access /       |                   |                   |
@@ -101,29 +162,47 @@ In development mode, a simulated ScoutID service allows testing without connecti
 
 ## ScoutID Claims
 
-When a user authenticates, ScoutID provides the following claims:
+When a user authenticates, the ScoutID Keycloak provider issues the claims listed below. To receive the Scoutnet-specific attributes the client must request the `scoutnet` client scope (e.g. `scope=openid scoutnet`). See the provider's [README](https://github.com/Scouterna/scoutid-keycloak-provider) for the full list of mappers.
 
 ### Standard OIDC Claims
 | Claim | Description | Example |
 |-------|-------------|---------|
-| `sub` | Subject (user identifier) | `"12345"` |
+| `sub` | Subject (Keycloak user identifier, or Scoutnet member number if mapped) | `"12345"` |
 | `name` | Display name | `"Anna Andersson"` |
 | `email` | Email address | `"anna@example.com"` |
+| `birthdate` | Date of birth (mapped from `scoutnet_dob`) | `"1985-04-12"` |
+| `picture` | Profile picture URL | `"https://..."` |
 
-### ScoutID-Specific Claims
+### ScoutID / Scoutnet Claims (from the `scoutnet` client scope)
 | Claim | Description | Example |
 |-------|-------------|---------|
-| `uid` | Scoutnet user/member ID | `"12345"` |
-| `group_no` | Scout group number | `"123"` |
-| `group_id` | Scout group ID (numeric) | `1001` |
-| `roles` | Role assignments (JSON) | `{"group": {"1001": ["9", "1"]}}` |
+| `scoutnet_member_no` | Scoutnet member number | `"12345"` |
+| `scoutnet_primary_group_no` | Primary scout group number | `"123"` |
+| `scoutnet_primary_group_name` | Primary scout group name | `"Exempel Scoutkår"` |
+| `scoutnet_roles` | Multi-valued list of role strings (see below) | `["group:1001:member_registrar", "troop:9876:leader"]` |
+| `scoutnet_troops` | JSON object describing the user's troops | `{ ... }` |
+| `scoutnet_definitions` | JSON dictionary with translations / lookup tables | `{ ... }` |
+| `scouterna_email` | Scouterna-issued email address | `"anna@scouterna.se"` |
+| `group_emails_json` | JSON object with group mailing addresses | `{ ... }` |
 
-### Role Codes
-| Code | Role Name | Description |
-|------|-----------|-------------|
-| `1` | Group Leader (K�rledare) | Overall group leadership |
-| `2` | Assistant Group Leader | Assists group leader |
-| `9` | Member Registrar (Medlemsregistrerare) | Can manage member data |
+### Role Claim Format
+
+Roles are emitted as strings inside `scoutnet_roles` (and exposed via the standard `role` claim type). Skojjt understands these formats:
+
+| Pattern | Meaning |
+|---------|---------|
+| `group:<group_id>:<role_name>` | Role granted at the scout group level |
+| `troop:<troop_scoutnet_id>:<role_name>` | Role granted for a single troop (resolved to its parent group via DB lookup) |
+| `organisation:<org_id>:scoutid_admin` | ScoutID system administrator |
+
+Recognized role names (see `ScoutIdClaimsTransformation`):
+
+| Role name | Description |
+|-----------|-------------|
+| `member_registrar` | Medlemsregistrerare — full access to the group, including member management |
+| `leader` | Avdelningsledare |
+| `assistant_leader` | Biträdande avdelningsledare |
+| `other_leader` | Övrig ledare |
 
 ## Application Claims
 
@@ -131,13 +210,14 @@ After claims transformation (`ScoutIdClaimsTransformation`), the following custo
 
 | Claim Type | Description |
 |------------|-------------|
-| `scoutid/uid` | Scoutnet user ID |
+| `scoutid/uid` | Scoutnet user ID (from the OIDC `sub` / name identifier) |
 | `scoutid/display_name` | Display name |
-| `scoutid/group_no` | Primary group number |
-| `scoutid/group_id` | Primary group ID |
-| `scoutid/accessible_groups` | Comma-separated list of group IDs user can access |
-| `scoutid/member_registrar_groups` | Comma-separated list of groups where user is registrar |
-| `scoutid/group_roles` | JSON dictionary of roles per group |
+| `scoutid/accessible_groups` | Comma-separated list of scout group IDs the user can access |
+| `scoutid/accessible_troops` | Comma-separated list of troop Scoutnet IDs the user can access (for troop-level roles) |
+| `scoutid/member_registrar_groups` | Comma-separated list of groups where the user is `member_registrar` |
+| `scoutid/admin` | `"true"` if the user is a ScoutID system administrator |
+
+For troop-level role claims (`troop:<id>:<role>`), the transformation looks up the troop's parent scout group from the database (cached in a static `ConcurrentDictionary`) so that both the group and the troop end up in the accessible-claims lists.
 
 ## Access Control
 
@@ -176,25 +256,56 @@ if (currentUserService.IsMemberRegistrar(scoutGroupId))
 
 ## Configuration
 
-### Production Configuration (appsettings.json)
+Skojjt selects the authentication backend based on configuration (see [`Program.cs`](../src/Skojjt.Web/Program.cs)):
+
+1. `ScoutIdSaml:Enabled = true` → legacy SAML ScoutID (current production).
+2. Otherwise `ScoutId:ClientId` set → new Keycloak ScoutID (OIDC).
+3. Otherwise (Development only) → simulated ScoutID.
+
+### Legacy ScoutID Configuration — SimpleSAML (`ScoutIdSaml`)
+
+This is what **production Skojjt currently uses**. The SAML metadata, signing certificate, and SLO endpoint come from the SimpleSAML-based ScoutID IdP.
 
 ```json
 {
-  "ScoutId": {
-    "Authority": "https://scoutid.se",
-    "ClientId": "your-client-id",
-    "ClientSecret": "your-client-secret",
-    "Scope": "scoutid"
+  "ScoutIdSaml": {
+    "Enabled": true,
+    "SpEntityId": "https://skojjt.example.se/Saml2",
+    "IdpEntityId": "https://scoutid.scout.se/saml2/idp/metadata.php",
+    "IdpSsoUrl":   "https://scoutid.scout.se/saml2/idp/SSOService.php",
+    "IdpSloUrl":   "https://scoutid.scout.se/saml2/idp/SingleLogoutService.php",
+    "IdpMetadataUrl": "https://scoutid.scout.se/saml2/idp/metadata.php"
   }
 }
 ```
 
-### Development Configuration
+Implementation: [`SamlAuthenticationExtensions`](../src/Skojjt.Infrastructure/Authentication/SamlAuthenticationExtensions.cs). Incoming SAML attributes are normalized by `SamlClaimsNormalizer` so the rest of the pipeline is identical to the OIDC path.
 
-When `ScoutId:ClientId` is not configured, the system automatically uses the development authentication:
+### New ScoutID Configuration — Keycloak / OIDC (`ScoutId`)
+
+ScoutID Keycloak is hosted as a Keycloak realm. `Authority` should point at that realm and `Scope` must include `scoutnet` to receive the Scoutnet-specific claims.
 
 ```json
 {
+  "ScoutIdSaml": { "Enabled": false },
+  "ScoutId": {
+    "Authority": "https://scoutid.scout.se/realms/scoutid",
+    "ClientId": "your-client-id",
+    "ClientSecret": "your-client-secret",
+    "Scope": "openid scoutnet"
+  }
+}
+```
+
+The client must be registered in the ScoutID Keycloak realm with the `scoutnet` client scope assigned (Default or Optional). See [scoutid-keycloak-provider/docs/client_config_guide.md](https://github.com/Scouterna/scoutid-keycloak-provider/tree/main/docs) for the full client setup.
+
+### Development Configuration
+
+In `Development`, when neither `ScoutIdSaml:Enabled` is `true` nor `ScoutId:ClientId` is set, Skojjt falls back to cookie-based fake authentication backed by `FakeScoutIdService`:
+
+```json
+{
+  "ScoutIdSaml": { "Enabled": false },
   "ScoutId": {
     "Authority": "",
     "ClientId": "",
@@ -212,7 +323,7 @@ The `FakeScoutIdService` provides these default test users:
 | Test Admin | admin@test.scout.se | Member Registrar | 1001 | 1001, 1002 |
 | Test Ledare | ledare@test.scout.se | Leader | 1001 | No |
 | Multi Grupp | multi@test.scout.se | Multi-group Registrar | 1002 | 1001, 1002 |
-| L�sare | readonly@test.scout.se | Read-only | 1001 | No |
+| Läsare | readonly@test.scout.se | Read-only | 1001 | No |
 
 ### Accessing the Login Page
 
@@ -240,26 +351,26 @@ The unified login page at `/login` automatically adapts to the environment:
 
 ```
 src/
-??? Skojjt.Core/
-?   ??? Authentication/
-?       ??? ICurrentUserService.cs      # Interface for accessing current user
-?       ??? ScoutIdClaimTypes.cs        # Custom claim type constants
-?       ??? ScoutIdClaims.cs            # Claims model & role constants
-?
-??? Skojjt.Infrastructure/
-?   ??? Authentication/
-?       ??? CurrentUserService.cs       # Implementation of ICurrentUserService
-?       ??? ScoutIdClaimsTransformation.cs  # Transforms OIDC claims
-?       ??? IScoutIdSimulator.cs        # Interface for simulated service
-?       ??? FakeScoutIdService.cs       # Development/test implementation
-?
-??? Skojjt.Web/
-    ??? Program.cs                      # Authentication configuration
-    ??? Controllers/
-    ?   ??? AuthController.cs           # Unified auth endpoints (login/logout)
-    ?   ??? DevAuthController.cs        # Development login form handlers
-    ??? Components/Pages/
-        ??? Login.razor                 # Unified login page (dev + production)
+├── Skojjt.Core/
+│   └── Authentication/
+│       ├── ICurrentUserService.cs      # Interface for accessing current user
+│       ├── ScoutIdClaimTypes.cs        # Custom claim type constants
+│       └── ScoutIdClaims.cs            # Claims model & role constants
+│
+├── Skojjt.Infrastructure/
+│   └── Authentication/
+│       ├── CurrentUserService.cs       # Implementation of ICurrentUserService
+│       ├── ScoutIdClaimsTransformation.cs  # Transforms OIDC claims
+│       ├── IScoutIdSimulator.cs        # Interface for simulated service
+│       └── FakeScoutIdService.cs       # Development/test implementation
+│
+└── Skojjt.Web/
+    ├── Program.cs                      # Authentication configuration
+    ├── Controllers/
+    │   ├── AuthController.cs           # Unified auth endpoints (login/logout)
+    │   └── DevAuthController.cs        # Development login form handlers
+    └── Components/Pages/
+        └── Login.razor                 # Unified login page (dev + production)
 ```
 
 ### Service Registration
@@ -348,8 +459,8 @@ GET /auth/logout ? OpenIdConnect signout ? ScoutID logout ? Cookie cleared
 
 The V1 system (Python/Flask on Google App Engine) used Google Auth with `UserPrefs` entities. Migration considerations:
 
-1. **User Mapping**: Users are identified by email, which should match between systems
+1. **User Mapping**: Users are identified by their Scoutnet member number (`scoutnet_member_no` / OIDC `sub`), not by email
 2. **Group Access**: ScoutID determines access based on Scoutnet roles, not stored preferences
-3. **Admin Access**: The `is_admin` flag is now determined by the `MemberRegistrar` role
+3. **Admin Access**: The `is_admin` flag is now determined by the ScoutID `scoutid_admin` organisation role; per-group elevated access comes from the `member_registrar` role
 
 The V1 source code is preserved in the `v1/` folder for reference during migration.
