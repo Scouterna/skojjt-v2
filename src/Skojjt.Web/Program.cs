@@ -470,6 +470,36 @@ if (app.Environment.IsDevelopment())
 // Map health check endpoint (unauthenticated, for Azure monitoring)
 app.MapHealthChecks("/healthz");
 
+// Dynamic sitemap.xml listing only publicly accessible pages (no login required).
+// Helps search engines index the public landing/about/help pages and reduces 404s.
+app.MapGet("/sitemap.xml", (HttpContext ctx, DocumentationService docs) =>
+{
+    var baseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
+    var today = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    var urls = new List<string>
+    {
+        $"{baseUrl}/",
+        $"{baseUrl}/about",
+        $"{baseUrl}/hjalp",
+    };
+    urls.AddRange(docs.GetPages().Select(p => $"{baseUrl}/hjalp/{Uri.EscapeDataString(p.Slug)}"));
+
+    var sb = new System.Text.StringBuilder();
+    sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    sb.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
+    foreach (var url in urls)
+    {
+        sb.AppendLine("  <url>");
+        sb.AppendLine($"    <loc>{System.Net.WebUtility.HtmlEncode(url)}</loc>");
+        sb.AppendLine($"    <lastmod>{today}</lastmod>");
+        sb.AppendLine("  </url>");
+    }
+    sb.AppendLine("</urlset>");
+
+    return Results.Content(sb.ToString(), "application/xml; charset=utf-8");
+}).AllowAnonymous();
+
 // Map API controllers
 app.MapControllers();
 
