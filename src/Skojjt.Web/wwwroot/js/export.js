@@ -93,11 +93,7 @@ window.skojjtExport = {
      */
     downloadFileFromBase64: function (filename, contentType, base64) {
         const byteCharacters = atob(base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
+        const byteArray = Uint8Array.from(byteCharacters, c => c.charCodeAt(0));
         const blob = new Blob([byteArray], { type: contentType });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
