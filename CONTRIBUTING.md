@@ -141,4 +141,4 @@ When reporting a bug, please include:
 
 ## License
 
-By contributing to Skojjt, you agree that your contributions will be licensed under the [Apache License 2.0](LICENSE).
+By contributing to Skojjt, you agree that your contributions will be licensed under the [MIT License](LICENSE).
