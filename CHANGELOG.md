@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.2.4] - 2026-07-07
+* Bugfix: Undvik fel 431 Request Header Fields Too Large, för användare med många claims.
+* Notera senaste import från scoutnet, visa en knapp för import om det är en gammal import.
+
 ## [2.2.3] - 2026-04-17
 * Bugfix: Lägg till person i avdelning funkar med borttagna personer.
 * CSV export från sidan med alla personer är implementerad.

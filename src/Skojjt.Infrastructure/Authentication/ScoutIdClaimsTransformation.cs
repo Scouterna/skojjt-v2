@@ -54,6 +54,59 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
         return principal;
     }
 
+    /// <summary>
+    /// OIDC protocol and profile claims that ScoutID (and <c>GetClaimsFromUserInfoEndpoint</c>)
+    /// add to the token but that Skojjt never reads. They are pure ticket bloat once the compact
+    /// <c>scoutid/*</c> claims exist, so they are dropped to keep the persisted ticket small.
+    /// Deliberately excludes <c>name</c> and <see cref="ClaimTypes.Name"/> (surface
+    /// <see cref="System.Security.Principal.IIdentity.Name"/>, used in logging/status),
+    /// <see cref="ClaimTypes.NameIdentifier"/>, <see cref="ClaimTypes.Email"/>, and
+    /// <see cref="ClaimTypes.Role"/> (drives authorization policies) — all of which are still read.
+    /// </summary>
+    private static readonly HashSet<string> s_trimmableClaimTypes = new(StringComparer.Ordinal)
+    {
+        // OIDC protocol claims (token/validation metadata)
+        "iss", "aud", "exp", "iat", "nbf", "auth_time", "nonce", "azp",
+        "at_hash", "c_hash", "s_hash", "sid", "jti", "acr", "amr",
+        // Profile/scope claims we do not use (display name comes from scoutid/display_name)
+        "given_name", "family_name", "middle_name", "nickname", "preferred_username",
+        "profile", "picture", "website", "gender", "birthdate", "zoneinfo",
+        "locale", "updated_at", "email_verified", "phone_number", "phone_number_verified",
+        "address",
+    };
+
+    /// <summary>
+    /// Removes claims that are redundant once the compact <c>scoutid/*</c> claims have been
+    /// produced, so the persisted auth ticket stays small and request headers can't overflow
+    /// (HTTP 431). Two categories are trimmed:
+    /// <list type="number">
+    ///   <item>Raw ScoutID role claims — any claim whose value starts with <c>group:</c>,
+    ///   <c>troop:</c>, or <c>organisation:</c> (e.g. "troop:999:other_leader"). This also
+    ///   removes the duplicate <see cref="ClaimTypes.Role"/> copies of those values, which are
+    ///   the dominant cost for a user who leads many troops.</item>
+    ///   <item>Unused OIDC protocol/profile claims (<see cref="s_trimmableClaimTypes"/>).</item>
+    /// </list>
+    /// The synthesized <see cref="ClaimTypes.Role"/> values ("Admin", "MemberRegistrar"), the
+    /// identity claims (uid, email, name), and the compact <c>scoutid/*</c> claims are preserved
+    /// because they are read at runtime. Only call this after condensing has run and the compact
+    /// claims are present; on later requests <see cref="TransformAsync"/> is a no-op once
+    /// <see cref="ScoutIdClaimTypes.ScoutnetUid"/> exists, so the trimmed raw claims are not needed.
+    /// </summary>
+    public static void TrimRedundantRoleClaims(ClaimsIdentity identity)
+    {
+        var redundant = identity.Claims
+            .Where(c => c.Value.StartsWith("group:", StringComparison.Ordinal)
+                     || c.Value.StartsWith("troop:", StringComparison.Ordinal)
+                     || c.Value.StartsWith("organisation:", StringComparison.Ordinal)
+                     || s_trimmableClaimTypes.Contains(c.Type))
+            .ToList();
+
+        foreach (var claim in redundant)
+        {
+            identity.TryRemoveClaim(claim);
+        }
+    }
+
     private async Task<bool> ExtractSignInAttributesAsync(ClaimsIdentity identity)
     {
         var nameIdentifier = identity.FindFirst(ClaimTypes.NameIdentifier);

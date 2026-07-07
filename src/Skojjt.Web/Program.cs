@@ -23,6 +23,16 @@ using Skojjt.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Raise Kestrel's request-header size limit as defense-in-depth against HTTP 431
+// (Request Header Fields Too Large). The primary fix is the server-side auth ticket
+// store configured below, which keeps the auth cookie tiny; this headroom also covers
+// large cookies from other sources and the extra forwarded headers added by the
+// Azure App Service reverse proxy.
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestHeadersTotalSize = 64 * 1024; // 64 KB (default 32 KB)
+});
+
 // Add Application Insights for production telemetry (exceptions, requests, dependencies)
 builder.Services.AddApplicationInsightsTelemetry();
 builder.Services.AddSingleton<Microsoft.ApplicationInsights.Extensibility.ITelemetryInitializer, UserTelemetryInitializer>();
@@ -151,16 +161,16 @@ builder.Services.AddScoped<BadgeNotificationService>();
 // AddDbContextFactory registers both IDbContextFactory<T> AND DbContext for direct injection
 builder.Services.AddDbContextFactory<SkojjtDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-	npgsqlOptions =>
-	{
-		npgsqlOptions.EnableRetryOnFailure(
-			maxRetryCount: 5,
-			maxRetryDelay: TimeSpan.FromSeconds(30),
-			errorCodesToAdd: null);
-		npgsqlOptions.CommandTimeout(180);  // 3 minutes for long import operations
-		npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-	}
-	));
+    npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorCodesToAdd: null);
+        npgsqlOptions.CommandTimeout(180);  // 3 minutes for long import operations
+        npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+    }
+    ));
 
 // Register repositories
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -185,7 +195,7 @@ builder.Services.AddExportServices();
 builder.Services.AddSingleton<DocumentationService>();
 
 // Configure authentication based on environment and configuration
-var useDevAuth = builder.Environment.IsDevelopment() && 
+var useDevAuth = builder.Environment.IsDevelopment() &&
     string.IsNullOrEmpty(builder.Configuration["ScoutId:ClientId"]) &&
     !builder.Configuration.GetValue<bool>("ScoutIdSaml:Enabled");
 var useSaml = builder.Configuration.GetValue<bool>("ScoutIdSaml:Enabled");
@@ -200,11 +210,12 @@ if (useDevAuth)
 {
     // Use cookie-based fake authentication for development without ScoutID
     builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-        .AddCookie(options =>
-        {
-            options.LoginPath = "/login";
-            options.LogoutPath = "/auth/signout";
-        });
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/login";
+        options.LogoutPath = "/auth/signout";
+        ScoutIdCookieEvents.Configure(options);
+    });
 
     // Register simulated ScoutID service for development
     builder.Services.AddSingleton<IScoutIdSimulator, FakeScoutIdService>();
@@ -222,6 +233,7 @@ else if (useSaml)
     {
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
+        ScoutIdCookieEvents.Configure(options);
     })
     .AddScoutIdSaml(builder.Configuration, builder.Environment.IsDevelopment());
 }
@@ -237,47 +249,50 @@ else
     {
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
+        ScoutIdCookieEvents.Configure(options);
     })
-	.AddOpenIdConnect(options =>
-	{
-		options.Authority = builder.Configuration["ScoutId:Authority"];
-		options.ClientId = builder.Configuration["ScoutId:ClientId"];
-		options.ClientSecret = builder.Configuration["ScoutId:ClientSecret"];
-		options.ResponseType = OpenIdConnectResponseType.Code;
-		options.SaveTokens = true;
-		options.GetClaimsFromUserInfoEndpoint = true;
+    .AddOpenIdConnect(options =>
+    {
+        options.Authority = builder.Configuration["ScoutId:Authority"];
+        options.ClientId = builder.Configuration["ScoutId:ClientId"];
+        options.ClientSecret = builder.Configuration["ScoutId:ClientSecret"];
+        options.ResponseType = OpenIdConnectResponseType.Code;
+        // Do not persist ID/access/refresh tokens in the auth ticket. They are not used
+        // server-side and previously bloated the cookie, contributing to HTTP 431.
+        options.SaveTokens = false;
+        options.GetClaimsFromUserInfoEndpoint = true;
 
-		// Disable Pushed Authorization Requests (PAR) - ScoutID advertises PAR
-		// support but rejects the requests with 'invalid_request'
-		options.PushedAuthorizationBehavior = PushedAuthorizationBehavior.Disable;
-      
+        // Disable Pushed Authorization Requests (PAR) - ScoutID advertises PAR
+        // support but rejects the requests with 'invalid_request'
+        options.PushedAuthorizationBehavior = PushedAuthorizationBehavior.Disable;
+
         // Allow HTTP for local development (e.g., http://localhost:8080)
         // In production, Authority should always use HTTPS
         if (builder.Environment.IsDevelopment())
         {
             options.RequireHttpsMetadata = false;
         }
-        
-        
+
+
         // Configure OIDC scopes - clear defaults to avoid duplicates
         options.Scope.Clear();
         var scoutIdScope = builder.Configuration["ScoutId:Scope"];
-		if (!string.IsNullOrEmpty(scoutIdScope))
-		{
-			foreach (var scope in scoutIdScope.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-			{
-				options.Scope.Add(scope);
-			}
-		}
-		else
-		{
-			// Default OIDC scopes
-			options.Scope.Add("openid");
-			options.Scope.Add("profile");
-			options.Scope.Add("email");
-		}
+        if (!string.IsNullOrEmpty(scoutIdScope))
+        {
+            foreach (var scope in scoutIdScope.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                options.Scope.Add(scope);
+            }
+        }
+        else
+        {
+            // Default OIDC scopes
+            options.Scope.Add("openid");
+            options.Scope.Add("profile");
+            options.Scope.Add("email");
+        }
 
-		options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
         {
             NameClaimType = "name",
             // Use full URI to match mapped claim types (MapInboundClaims=true by default)
@@ -291,7 +306,7 @@ else
                 var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
                 var name = context.Principal?.Identity?.Name ?? "unknown";
                 logger.LogInformation("User {Name} authenticated via ScoutID", name);
-                
+
                 // Log all claims for debugging
                 if (context.Principal != null)
                 {
@@ -323,6 +338,17 @@ builder.Services.AddAuthentication()
 
 // Add claims transformation to convert ScoutID claims to application claims
 builder.Services.AddTransient<IClaimsTransformation, ScoutIdClaimsTransformation>();
+
+// Store authentication tickets server-side so the browser cookie only holds a small
+// session key instead of every ScoutID claim and saved token. This is the robust fix
+// for HTTP 431: the cookie stays tiny no matter how many groups/troops/roles a user has.
+// NOTE: AddDistributedMemoryCache is per-instance and cleared on restart. Blazor Server
+// already relies on sticky sessions, so a single instance serves a given user; swap in
+// AddStackExchangeRedisCache for shared, restart-durable storage across instances.
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSingleton<ITicketStore, DistributedCacheTicketStore>();
+builder.Services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
+    .Configure<ITicketStore>((options, ticketStore) => options.SessionStore = ticketStore);
 
 builder.Services.AddAuthorization(options =>
 {
@@ -392,6 +418,13 @@ app.Logger.LogInformation("Application built successfully. Configuring middlewar
 // Without processing X-Forwarded-Proto first, UseHsts sees HTTP and never
 // emits the Strict-Transport-Security header, causing Chrome to show "Not secure".
 app.UseForwardedHeaders();
+
+// Defensive self-heal for users still carrying a large auth cookie issued before the
+// server-side ticket store was introduced (e.g. leaders in many troops). If the inbound
+// auth cookie approaches the request-header limit, clear it and redirect to sign-out so
+// the browser stops resending it, preventing a hard HTTP 431. Runs after UseForwardedHeaders
+// (so IsHttps is correct for cookie deletion) and before auth / redirects.
+app.UseStaleAuthCookieGuard();
 
 // Redirect non-canonical hostnames (e.g. skojjt.azurewebsites.net) to the
 // canonical domain (skojjt.scouterna.net). This runs early so SAML/auth

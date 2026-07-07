@@ -102,6 +102,9 @@ public class ScoutGroupConfiguration : IEntityTypeConfiguration<ScoutGroup>
             .HasColumnName("next_local_troop_id")
             .HasDefaultValue(250);
 
+        builder.Property(e => e.LastScoutnetImportAt)
+            .HasColumnName("last_scoutnet_import_at");
+
         builder.Property(e => e.CreatedAt)
             .HasColumnName("created_at")
             .HasDefaultValueSql("NOW()");

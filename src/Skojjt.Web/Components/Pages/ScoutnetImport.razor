@@ -58,6 +58,25 @@
                     else
                     {
                         <MudStack Spacing="3">
+                            @if (_scoutGroup.LastScoutnetImportAt.HasValue)
+                            {
+                                var lastImportLocal = _scoutGroup.LastScoutnetImportAt.Value.ToLocalTime();
+                                var daysAgo = (int)Math.Floor((DateTime.UtcNow - _scoutGroup.LastScoutnetImportAt.Value).TotalDays);
+                                <MudAlert Severity="@GetLastImportSeverity(daysAgo)" Dense="true">
+                                    <MudText Typo="Typo.body2">
+                                        Senaste import: @lastImportLocal.ToString("yyyy-MM-dd HH:mm") (@daysAgo dagar sedan)
+                                    </MudText>
+                                </MudAlert>
+                            }
+                            else
+                            {
+                                <MudAlert Severity="Severity.Warning" Dense="true">
+                                    <MudText Typo="Typo.body2">
+                                        Ingen tidigare import från Scoutnet är registrerad för denna kår.
+                                    </MudText>
+                                </MudAlert>
+                            }
+
                             <MudSelect T="int" 
                                        @bind-Value="_selectedSemesterId" 
                                        Label="Termin"
@@ -485,6 +504,13 @@
             {
                 AddLog($"Import slutförd! {_importResult.PersonsCreated} nya, {_importResult.PersonsUpdated} uppdaterade, {_importResult.PersonsRemoved} borttagna", LogSeverity.Success);
                 Snackbar.Add($"Import slutförd för {_scoutGroup.Name}", Severity.Success);
+
+                // Refresh scout group so the displayed "last import" timestamp updates.
+                var refreshed = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+                if (refreshed != null)
+                {
+                    _scoutGroup = refreshed;
+                }
             }
             else
             {
@@ -526,6 +552,13 @@
         LogSeverity.Warning => "#dcdcaa",
         LogSeverity.Error => "#f14c4c",
         _ => "#d4d4d4"
+    };
+
+    private static Severity GetLastImportSeverity(int daysAgo) => daysAgo switch
+    {
+        >= 90 => Severity.Error,
+        >= 30 => Severity.Warning,
+        _ => Severity.Success
     };
 
     public void Dispose()

@@ -73,6 +73,13 @@ public class ScoutGroup
     /// </summary>
     public int NextLocalTroopId { get; set; } = 250;
 
+    /// <summary>
+    /// Timestamp (UTC) of the most recent successful Scoutnet member import for this group.
+    /// Null if no import has ever been performed.
+    /// Used to warn member registrars when the member register is becoming stale.
+    /// </summary>
+    public DateTime? LastScoutnetImportAt { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

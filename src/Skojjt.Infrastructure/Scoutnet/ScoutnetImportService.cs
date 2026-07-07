@@ -434,6 +434,18 @@ public class ScoutnetImportService : IScoutnetImportService
                 }
             }
 
+            // Record the time of this successful import on the scout group itself so we can
+            // warn users when the member register is becoming stale. FindAsync reuses the
+            // ScoutGroup already tracked by the change tracker (no extra database query), and
+            // the timestamp is persisted together with the member data in one atomic save.
+            var importedScoutGroup = await _context.ScoutGroups.FindAsync([scoutGroupId], cancellationToken);
+            if (importedScoutGroup != null)
+            {
+                var now = DateTime.UtcNow;
+                importedScoutGroup.LastScoutnetImportAt = now;
+                importedScoutGroup.UpdatedAt = now;
+            }
+
             progress?.Report("Saving changes to database...");
             await _context.SaveChangesAsync(cancellationToken);
 
