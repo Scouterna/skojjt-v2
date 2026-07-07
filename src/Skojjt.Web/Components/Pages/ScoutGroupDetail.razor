@@ -38,6 +38,28 @@
             </MudText>
         }
 
+        @if (_isMemberRegistrar && _showStaleImportWarning)
+        {
+            <MudAlert Severity="@_staleImportSeverity"
+                      Class="mb-4"
+                      ShowCloseIcon="false">
+                <div class="d-flex align-center" style="width: 100%; gap: 12px; flex-wrap: wrap;">
+                    <div style="flex: 1 1 auto;">
+                        <MudText Typo="Typo.body2">
+                            @_staleImportMessage
+                        </MudText>
+                    </div>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.CloudDownload"
+                               Href="@($"/sk/{ScoutGroupId}/import")">
+                        Importera nu
+                    </MudButton>
+                </div>
+            </MudAlert>
+        }
+
         <MudGrid>
             @* Semesters Section *@
             <MudItem xs="12" md="6">
@@ -194,6 +216,16 @@
     private bool _isMemberRegistrar;
     private List<BreadcrumbItem> _breadcrumbs = [];
 
+    // Stale Scoutnet import warning state
+    private bool _showStaleImportWarning;
+    private Severity _staleImportSeverity = Severity.Info;
+    private string _staleImportMessage = string.Empty;
+
+    // Show a warning when the last Scoutnet import is older than this threshold,
+    // and escalate to an error when it is older than the error threshold.
+    private static readonly TimeSpan StaleImportWarningThreshold = TimeSpan.FromDays(30);
+    private static readonly TimeSpan StaleImportErrorThreshold = TimeSpan.FromDays(90);
+
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
@@ -230,6 +262,8 @@
                 var semesters = await SemesterRepository.GetByScoutGroupAsync(ScoutGroupId);
                 _semesters = semesters.ToList();
 
+                EvaluateStaleImportWarning(_scoutGroup);
+
                 _breadcrumbs =
                 [
                     new BreadcrumbItem("Scoutkårer", href: "/sk"),
@@ -241,5 +275,39 @@
         {
             _loading = false;
         }
+    }
+
+    private void EvaluateStaleImportWarning(ScoutGroup scoutGroup)
+    {
+        _showStaleImportWarning = false;
+        _staleImportMessage = string.Empty;
+        _staleImportSeverity = Severity.Info;
+
+        // Only nag the people who can actually act on it.
+        if (!_isMemberRegistrar)
+            return;
+
+        var lastImport = scoutGroup.LastScoutnetImportAt;
+        if (lastImport == null)
+        {
+            _showStaleImportWarning = true;
+            _staleImportSeverity = Severity.Warning;
+            _staleImportMessage = "Ingen import från Scoutnet har gjorts ännu för denna kår. " +
+                                  "Importera medlemmar från Scoutnet för att hålla medlemsregistret uppdaterat.";
+            return;
+        }
+
+        var age = DateTime.UtcNow - lastImport.Value;
+        if (age < StaleImportWarningThreshold)
+            return;
+
+        var lastImportLocal = lastImport.Value.ToLocalTime();
+        var daysAgo = (int)Math.Floor(age.TotalDays);
+
+        _showStaleImportWarning = true;
+        _staleImportSeverity = age >= StaleImportErrorThreshold ? Severity.Error : Severity.Warning;
+        _staleImportMessage = $"Senaste importen från Scoutnet gjordes {lastImportLocal:yyyy-MM-dd HH:mm} " +
+                              $"({daysAgo} dagar sedan). Medlemsregistret i Skojjt kan vara inaktuellt jämfört med Scoutnet. " +
+                              "Kör en ny import för att hålla det synkroniserat.";
     }
 }
