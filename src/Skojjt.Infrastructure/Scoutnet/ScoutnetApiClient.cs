@@ -281,7 +281,13 @@ public class ScoutnetApiClient : IScoutnetApiClient
             response.EnsureSuccessStatusCode();
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var result = await response.Content.ReadFromJsonAsync<ScoutnetProjectParticipantsResponse>(options, cancellationToken);
+            // Buffer the whole response before deserializing. Streaming deserialization
+            // (ReadFromJsonAsync) reads in chunks, and a custom JsonConverter that uses
+            // reader.Skip() is not reliably re-entrant when a value (e.g. an empty
+            // primary_membership_info array) straddles an async read-buffer boundary.
+            // Reading into a string first guarantees the entire value is buffered.
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var result = JsonSerializer.Deserialize<ScoutnetProjectParticipantsResponse>(json, options);
 
             if (result == null)
             {

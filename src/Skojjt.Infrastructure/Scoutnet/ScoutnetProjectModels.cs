@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Skojjt.Infrastructure.Scoutnet;
@@ -65,9 +66,33 @@ public class ScoutnetProjectParticipant
     /// Use this instead of the deprecated top-level group_id/group_name fields.
     /// </summary>
     [JsonPropertyName("primary_membership_info")]
+    [JsonConverter(typeof(TolerantObjectConverter<ScoutnetPrimaryMembershipInfo>))]
     public ScoutnetPrimaryMembershipInfo? PrimaryMembershipInfo { get; set; }
 
     public string FullName => $"{FirstName} {LastName}";
+}
+
+/// <summary>
+/// Deserializes an object, but tolerates Scoutnet returning a non-object value
+/// (such as an empty array <c>[]</c>) when no data is present, mapping it to <c>null</c>.
+/// </summary>
+public class TolerantObjectConverter<T> : JsonConverter<T?> where T : class
+{
+    public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.StartObject)
+        {
+            reader.Skip();
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<T>(ref reader, options);
+    }
+
+    public override void Write(Utf8JsonWriter writer, T? value, JsonSerializerOptions options)
+    {
+        JsonSerializer.Serialize(writer, value, options);
+    }
 }
 
 /// <summary>

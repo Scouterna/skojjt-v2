@@ -229,4 +229,69 @@ public class ScoutnetApiModelsTests
         Assert.IsNull(member.GetPatrolId());
         Assert.IsNull(member.GetPatrol());
     }
+
+    [TestMethod]
+    public void ProjectParticipants_Deserializes_PrimaryMembershipInfoAsEmptyArray()
+    {
+        // Reproduces the Scoutnet payload where primary_membership_info is an empty array
+        // instead of an object. Previously this threw a JsonException.
+        const string json = """
+        {
+            "participants": {
+                "3292644": {
+                    "member_no": 3292644,
+                    "first_name": "Alva",
+                    "last_name": "Svensson",
+                    "primary_membership_info": []
+                }
+            }
+        }
+        """;
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var result = JsonSerializer.Deserialize<ScoutnetProjectParticipantsResponse>(json, options);
+
+        Assert.IsNotNull(result);
+        var participant = result.Participants["3292644"];
+        Assert.AreEqual(3292644, participant.MemberNo);
+        Assert.AreEqual("Alva Svensson", participant.FullName);
+        Assert.IsNull(participant.PrimaryMembershipInfo);
+    }
+
+    [TestMethod]
+    public void ProjectParticipants_Deserializes_PrimaryMembershipInfoAsObject()
+    {
+        const string json = """
+        {
+            "participants": {
+                "3292644": {
+                    "member_no": 3292644,
+                    "first_name": "Alva",
+                    "last_name": "Svensson",
+                    "primary_membership_info": {
+                        "group_id": 42,
+                        "group_name": "Testkåren",
+                        "troop_id": 999,
+                        "troop_name": "Spårarna",
+                        "patrol_id": 7,
+                        "patrol_name": "Ugglan"
+                    }
+                }
+            }
+        }
+        """;
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var result = JsonSerializer.Deserialize<ScoutnetProjectParticipantsResponse>(json, options);
+
+        Assert.IsNotNull(result);
+        var info = result.Participants["3292644"].PrimaryMembershipInfo;
+        Assert.IsNotNull(info);
+        Assert.AreEqual(42, info.GroupId);
+        Assert.AreEqual("Testkåren", info.GroupName);
+        Assert.AreEqual(999, info.TroopId);
+        Assert.AreEqual("Spårarna", info.TroopName);
+        Assert.AreEqual(7, info.PatrolId);
+        Assert.AreEqual("Ugglan", info.PatrolName);
+    }
 }

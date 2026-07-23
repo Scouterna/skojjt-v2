@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.2.5] - 2026-07-08
+* Bugfix: Importera läger från Scoutnet fungerade inte för Jamboree26, bug med tomma arrayer i JSON.
+
 ## [2.2.4] - 2026-07-07
 * Bugfix: Undvik fel 431 Request Header Fields Too Large, för användare med många claims.
 * Notera senaste import från scoutnet, visa en knapp för import om det är en gammal import.
