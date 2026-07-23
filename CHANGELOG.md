@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.2.6] - 2026-07-08
+## [2.2.7] - 2026-07-08
 * Lutande text för mötesnamn som i Skojjt v1. Tidigare visades bara datum för möten. En del avdelningar använder mötesnamet för att veta vems som tänte lyktan senast osv.
 
 ## [2.2.5] - 2026-07-08

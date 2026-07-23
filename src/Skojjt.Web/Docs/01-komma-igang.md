@@ -49,6 +49,45 @@ När du har loggat in:
 3. **Välj avdelning** – du ser de avdelningar du har behörighet till
 4. Börja föra **närvaro** på sammankomster!
 
+## Har du använt en egen instans av Skojjt v1?
+
+En del avancerade användare har kört en **egen instans av Skojjt v1** på Google App Engine. Om du vill ta med dig din gamla data (terminer, avdelningar, medlemmar, sammankomster och närvaro) in i Skojjt v2 kan den migreras över. Migreringen görs i två steg: först **exporterar** du datan från den gamla App Engine-databasen (Google Cloud Datastore), sedan **importeras** den till Skojjt v2. Import kräver **Skojjt-adminbehörighet**.
+
+> **Obs:** Detta är enbart för dig som driftat en egen Skojjt v1-instans. Har du bara använt en delad/gemensam Skojjt behöver du inte göra något – din data hämtas i stället från Scoutnet.
+
+### 1. Exportera den gamla datan från Skojjt v1
+
+Exporten hämtar datan ur Google Cloud Datastore och omvandlar den till JSON-filer som Skojjt v2 kan läsa in. Du behöver [Google Cloud SDK (`gcloud`)](https://cloud.google.com/sdk) och Python installerat, samt läsbehörighet till det gamla projektet.
+
+Kör följande från katalogen `scripts/migration` i Skojjt v2-repot (byt ut `skojjt` mot ditt eget App Engine-projekt-id):
+
+```bash
+pip install google-cloud-datastore protobuf
+gcloud auth application-default login
+python export_live.py --project <ditt-projekt-id> --output-dir ./raw_export
+python transform_data.py --input-dir ./raw_export --output-dir ./json_export
+```
+
+Resultatet blir en mapp `json_export/` med JSON-filer. En mer detaljerad beskrivning (inklusive alternativ export via Datastore-managed export) finns i `scripts/migration/README.md` i repot.
+
+### 2. Importera datan till Skojjt v2
+
+Importen körs mot ett Skojjt v2-API och kräver att du är inloggad som **Skojjt-admin**. Har du inte adminbehörighet själv kan du skicka `json_export/`-filerna till en annan Skojjt-admin som kör importen åt dig.
+
+1. Se till att Skojjt v2 kör och att databasen är migrerad.
+2. Lägg `json_export/`-mappen på en plats som servern kommer åt.
+3. Anropa importendpointen som admin:
+
+```bash
+curl -N -X POST "http://localhost:5286/api/v1/admin/migrate" \
+  -H "Content-Type: application/json" \
+  -d '{"importDirectory":"C:/sökväg/till/json_export"}'
+```
+
+Endpointen strömmar förloppet steg för steg, så du ser varje importsteg allt eftersom det blir klart. Om `importDirectory` utelämnas används `scripts/migration/json_export` relativt lösningens rot.
+
+> **Tips:** Vill du inte köra importen själv – kontakta en Skojjt-admin, bifoga dina exporterade JSON-filer och be dem köra importsteget ovan.
+
 ## Behöver du hjälp?
 
 Om du har frågor eller stöter på problem kan du:
