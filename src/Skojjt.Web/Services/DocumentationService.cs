@@ -66,6 +66,81 @@ public sealed class DocumentationService
         return ReadResource(resourceName);
     }
 
+    /// <summary>
+    /// Returns a short plain-text description for a page, suitable for a
+    /// <c>&lt;meta name="description"&gt;</c> tag. Uses the first regular
+    /// paragraph of the markdown (skipping the title heading), stripped of
+    /// markdown formatting and truncated to roughly 160 characters.
+    /// </summary>
+    public string? GetPageDescription(string slug)
+    {
+        var markdown = GetPageMarkdown(slug);
+        if (markdown is null)
+            return null;
+
+        return ExtractDescription(markdown);
+    }
+
+    private static string? ExtractDescription(string markdown)
+    {
+        var paragraph = new StringBuilder();
+
+        foreach (var rawLine in markdown.Split('\n'))
+        {
+            var line = rawLine.Trim();
+
+            // Skip headings, empty lines before content, and common block markers.
+            if (line.Length == 0)
+            {
+                if (paragraph.Length > 0)
+                    break; // paragraph finished
+                continue;
+            }
+
+            if (line.StartsWith('#') || line.StartsWith('>') || line.StartsWith("---", StringComparison.Ordinal)
+                || line.StartsWith('|') || line.StartsWith("```", StringComparison.Ordinal))
+            {
+                if (paragraph.Length > 0)
+                    break;
+                continue;
+            }
+
+            if (paragraph.Length > 0)
+                paragraph.Append(' ');
+            paragraph.Append(line);
+        }
+
+        if (paragraph.Length == 0)
+            return null;
+
+        var text = StripMarkdown(paragraph.ToString());
+        return Truncate(text, 160);
+    }
+
+    private static string StripMarkdown(string text)
+    {
+        // Links: [label](url) -> label
+        text = Regex.Replace(text, @"\[([^\]]+)\]\([^)]*\)", "$1");
+        // Emphasis / inline code markers
+        text = Regex.Replace(text, @"[*_`~]", string.Empty);
+        // Collapse whitespace
+        text = Regex.Replace(text, @"\s+", " ").Trim();
+        return text;
+    }
+
+    private static string Truncate(string text, int maxLength)
+    {
+        if (text.Length <= maxLength)
+            return text;
+
+        var slice = text[..maxLength];
+        var lastSpace = slice.LastIndexOf(' ');
+        if (lastSpace > 0)
+            slice = slice[..lastSpace];
+
+        return slice.TrimEnd() + "…";
+    }
+
     private string? ReadResource(string resourceName)
     {
         using var stream = _assembly.GetManifestResourceStream(resourceName);

@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.3.1] - 2026-07-24
+* Förbättrad sökmotorindexering av hjälpsidorna. Varje hjälpsida får nu en egen metabeskrivning (`meta description`), en kanonisk länk (`canonical`) och explicit `robots: index,follow`. Startsidan `/hjalp` visar nu en riktig innehållsförteckning istället för att omdirigera, vilket gör att sökmotorer kan indexera och länka till varje enskild hjälpsida. Länk till hjälpsidorna: https://skojjt.scouterna.net/hjalp/
+
 ## [2.3.0] - 2026-07-24
 * Import av DAK-filer (Digitalt Aktivitetskort) från andra system. Det innebär att man kan importera möten och närvaro från en DAK-fil till en avdelning och termin i Skojjt. Importen är inkrementell – den lägger till möten som saknas och rör inte befintliga möten om de är identiska. Skiljer sig ett möte får du välja vilken version som gäller.
 

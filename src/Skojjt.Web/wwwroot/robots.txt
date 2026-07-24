@@ -1,8 +1,4 @@
 User-agent: *
-Allow: /$
-Allow: /about
-Allow: /hjalp
-Allow: /hjalp/
-Disallow: /
+Allow: /
 
 Sitemap: https://skojjt.scouterna.net/sitemap.xml

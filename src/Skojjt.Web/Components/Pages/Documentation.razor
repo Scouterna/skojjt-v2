@@ -7,6 +7,18 @@
 
 <PageTitle>@(_currentTitle ?? "Hjälp") - Skojjt</PageTitle>
 
+<HeadContent>
+    <meta name="robots" content="index,follow" />
+    @if (_metaDescription is not null)
+    {
+        <meta name="description" content="@_metaDescription" />
+    }
+    @if (_canonicalUrl is not null)
+    {
+        <link rel="canonical" href="@_canonicalUrl" />
+    }
+</HeadContent>
+
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-8">
     <MudText Typo="Typo.h4" Class="mb-4">
         <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Class="mr-2" />
@@ -82,6 +94,8 @@
     private IReadOnlyList<DocPage> _pages = [];
     private string? _htmlContent;
     private string? _currentTitle;
+    private string? _metaDescription;
+    private string? _canonicalUrl;
 
     protected override void OnInitialized()
     {
@@ -95,11 +109,15 @@
             _htmlContent = DocService.GetPageHtml(Slug);
             _currentTitle = _pages.FirstOrDefault(p =>
                 string.Equals(p.Slug, Slug, StringComparison.OrdinalIgnoreCase))?.Title ?? "Hjälp";
+            _metaDescription = DocService.GetPageDescription(Slug);
+            _canonicalUrl = NavigationManager.ToAbsoluteUri($"/hjalp/{Slug}").AbsoluteUri;
         }
-        else if (_pages.Count > 0)
+        else
         {
-            // Auto-navigate to first page
-            NavigationManager.NavigateTo($"/hjalp/{_pages[0].Slug}", replace: true);
+            _htmlContent = null;
+            _currentTitle = "Hjälp";
+            _metaDescription = "Hjälp och dokumentation för Skojjt – närvarosystemet för scoutkårer. Här hittar du guider om närvarohantering, medlemshantering, DAK-export och mer.";
+            _canonicalUrl = NavigationManager.ToAbsoluteUri("/hjalp").AbsoluteUri;
         }
     }
 }
