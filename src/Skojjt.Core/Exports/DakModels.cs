@@ -205,6 +205,13 @@ public class DakSammankomst
     public string Typ { get; set; } = "Moete";
 
     /// <summary>
+    /// Location (lokal) for this specific meeting. The DAK schema allows a Lokal
+    /// per Sammankomst, so this makes <see cref="Skojjt.Core.Entities.Meeting.Location"/>
+    /// round-trip through export/import. Empty falls back to the card-level Lokal.
+    /// </summary>
+    public string Lokal { get; set; } = string.Empty;
+
+    /// <summary>
     /// Attending participants (non-leaders).
     /// </summary>
     public List<DakDeltagare> Deltagare { get; set; } = [];
@@ -243,4 +250,61 @@ public class DakSammankomst
     /// Get all persons attending this meeting.
     /// </summary>
     public IEnumerable<DakDeltagare> GetAllPersons() => Ledare.Concat(Deltagare);
+}
+
+/// <summary>
+/// Helpers for encoding Skojjt-specific meeting flags that the DAK schema has no
+/// native field for. Currently only <c>IsHike</c>, which is encoded as a trailing
+/// <c>#hike</c> tag in the Aktivitet string. Encoding and decoding are symmetric so
+/// that an export followed by an import is a no-op.
+/// </summary>
+public static class DakActivityTags
+{
+    /// <summary>
+    /// The tag appended to the Aktivitet string to mark a meeting as a hike (utflykt/vandring).
+    /// </summary>
+    public const string HikeTag = "#hike";
+
+    /// <summary>
+    /// Append the hike tag to the activity name when <paramref name="isHike"/> is true.
+    /// Idempotent: an already-tagged activity is returned unchanged.
+    /// </summary>
+    public static string Encode(string aktivitet, bool isHike)
+    {
+        aktivitet ??= string.Empty;
+
+        if (!isHike)
+            return aktivitet;
+
+        if (DecodeIsHike(aktivitet))
+            return aktivitet;
+
+        return aktivitet.Length == 0 ? HikeTag : $"{aktivitet} {HikeTag}";
+    }
+
+    /// <summary>
+    /// Returns true if the activity string carries the hike tag.
+    /// </summary>
+    public static bool DecodeIsHike(string? aktivitet)
+    {
+        if (string.IsNullOrEmpty(aktivitet))
+            return false;
+
+        return aktivitet.AsSpan().TrimEnd().EndsWith(HikeTag, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Removes the hike tag from the activity string, returning the clean meeting name.
+    /// </summary>
+    public static string StripTag(string? aktivitet)
+    {
+        if (string.IsNullOrEmpty(aktivitet))
+            return string.Empty;
+
+        var trimmed = aktivitet.TrimEnd();
+        if (!trimmed.EndsWith(HikeTag, StringComparison.OrdinalIgnoreCase))
+            return aktivitet;
+
+        return trimmed[..^HikeTag.Length].TrimEnd();
+    }
 }

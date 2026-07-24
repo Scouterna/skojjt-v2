@@ -179,6 +179,19 @@
                         Importera från Scoutnet
                     </MudButton>
                 </MudExpansionPanel>
+
+                <MudExpansionPanel Text="DAK-import" Icon="@Icons.Material.Filled.UploadFile">
+                    <MudText Typo="Typo.body2" Class="mb-3">
+                        Har du en DAK-fil från gamla Skojjt eller ett annat närvarosystem?
+                        Importera den för att föra över möten och närvaro till denna termin.
+                    </MudText>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.UploadFile"
+                               Href="@(Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/dak-import"))">
+                        Importera DAK-fil
+                    </MudButton>
+                </MudExpansionPanel>
             }
             @if (_canSync)
             {

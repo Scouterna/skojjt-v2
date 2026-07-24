@@ -1,0 +1,398 @@
+@page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/dak-import"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Skojjt.Core.Authentication
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Exports
+@using Skojjt.Core.Interfaces
+@using Skojjt.Core.Services
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
+@inject IScoutGroupRepository ScoutGroupRepository
+@inject ISemesterRepository SemesterRepository
+@inject ITroopRepository TroopRepository
+@inject IDakImportService DakImportService
+@inject ISnackbar Snackbar
+
+<PageTitle>DAK-import - @(_scoutGroup?.Name ?? "Scoutkår") - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
+    <MudBreadcrumbs Items="_breadcrumbs" Class="mb-4" />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">
+            Du har inte behörighet att importera DAK-filer. Endast registeransvariga har tillgång.
+        </MudAlert>
+    }
+    else if (_scoutGroup == null)
+    {
+        <MudAlert Severity="Severity.Error">Scoutkåren kunde inte hittas.</MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Class="mb-2">DAK-import</MudText>
+        <MudText Typo="Typo.subtitle1" Color="Color.Secondary" Class="mb-6">
+            @_scoutGroup.Name @(_semester is not null ? $"– {_semester.DisplayName}" : string.Empty)
+        </MudText>
+
+        <MudAlert Severity="Severity.Info" Class="mb-4">
+            Ladda upp en DAK-fil (t.ex. exporterad från gamla Skojjt eller ett annat närvarosystem)
+            för att importera möten och närvaro till en avdelning och termin. Möten som redan finns
+            och skiljer sig får du välja version för. Deltagare som inte finns som medlemmar i Skojjt hoppas över.
+        </MudAlert>
+
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string" Label="Termin" Value="@(_semester?.DisplayName ?? string.Empty)"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="int" Label="Avdelning" @bind-Value="_selectedTroopId"
+                               Variant="Variant.Outlined" Dense="true" @bind-Value:after="OnSelectionChanged"
+                               Disabled="@(_troops.Count == 0)">
+                        @foreach (var t in _troops)
+                        {
+                            <MudSelectItem Value="@t.Id">@t.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+            @if (_troops.Count == 0)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mt-3">
+                    Inga avdelningar finns för den valda terminen. Importera från Scoutnet först.
+                </MudAlert>
+            }
+            else
+            {
+                <div class="mt-4">
+                    <MudFileUpload T="IBrowserFile" Accept=".xml" FilesChanged="OnFileChanged" MaximumFileCount="1">
+                        <CustomContent Context="fileUpload">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.UploadFile"
+                                       OnClick="@fileUpload.OpenFilePickerAsync"
+                                       Disabled="@(_selectedTroopId == 0 || _isBusy)">
+                                @(_fileName ?? "Välj DAK XML-fil")
+                            </MudButton>
+                        </CustomContent>
+                    </MudFileUpload>
+                </div>
+            }
+        </MudPaper>
+
+        @if (_isBusy)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-2" />
+        }
+
+        @if (_preview is not null)
+        {
+            @if (_preview.Errors.Count > 0)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">
+                    <MudText Typo="Typo.subtitle2">DAK-filen kunde inte importeras:</MudText>
+                    <ul class="mt-1">
+                        @foreach (var err in _preview.Errors)
+                        {
+                            <li>@err</li>
+                        }
+                    </ul>
+                </MudAlert>
+            }
+            else
+            {
+                <MudPaper Elevation="2" Class="pa-4 mb-4">
+                    <MudText Typo="Typo.h6" Class="mb-2">Förhandsgranskning</MudText>
+                    <MudStack Row="true" Spacing="4" Wrap="Wrap.Wrap" Class="mb-2">
+                        <MudChip T="string" Color="Color.Success" Icon="@Icons.Material.Filled.Add">
+                            @_preview.NewMeetings.Count nya möten
+                        </MudChip>
+                        <MudChip T="string" Color="Color.Warning" Icon="@Icons.Material.Filled.CompareArrows">
+                            @_preview.Conflicts.Count konflikter
+                        </MudChip>
+                        <MudChip T="string" Color="Color.Default" Icon="@Icons.Material.Filled.CheckCircle">
+                            @_preview.UnchangedMeetings.Count oförändrade
+                        </MudChip>
+                        <MudChip T="string" Color="Color.Secondary" Icon="@Icons.Material.Filled.PersonOff">
+                            @_preview.SkippedPersons.Count överhoppade personer
+                        </MudChip>
+                    </MudStack>
+
+                    @if (_preview.Warnings.Count > 0)
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-2">
+                            <ul>
+                                @foreach (var w in _preview.Warnings)
+                                {
+                                    <li>@w</li>
+                                }
+                            </ul>
+                        </MudAlert>
+                    }
+                </MudPaper>
+
+                @if (_preview.Conflicts.Count > 0)
+                {
+                    <MudPaper Elevation="2" Class="pa-4 mb-4">
+                        <MudText Typo="Typo.h6" Class="mb-3">Konflikter – välj vilken version som gäller</MudText>
+                        @foreach (var conflict in _preview.Conflicts)
+                        {
+                            <MudCard Outlined="true" Class="mb-3">
+                                <MudCardContent>
+                                    <MudText Typo="Typo.subtitle1">
+                                        @conflict.Imported.Date.ToString("yyyy-MM-dd") – @conflict.Existing.Name
+                                    </MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">Skillnader:</MudText>
+                                    <ul class="mb-3">
+                                        @foreach (var diff in conflict.Differences)
+                                        {
+                                            <li>@diff</li>
+                                        }
+                                    </ul>
+                                    <MudRadioGroup T="MeetingImportChoice"
+                                                   Value="@GetChoice(conflict.Imported.Date)"
+                                                   ValueChanged="@(v => SetChoice(conflict.Imported.Date, v))">
+                                        <MudRadio T="MeetingImportChoice" Value="@MeetingImportChoice.KeepExisting" Color="Color.Primary">
+                                            Behåll data i Skojjt
+                                        </MudRadio>
+                                        <MudRadio T="MeetingImportChoice" Value="@MeetingImportChoice.UseImported" Color="Color.Warning">
+                                            Använd data från DAK-filen
+                                        </MudRadio>
+                                    </MudRadioGroup>
+                                </MudCardContent>
+                            </MudCard>
+                        }
+                    </MudPaper>
+                }
+
+                @if (_preview.SkippedPersons.Count > 0)
+                {
+                    <MudExpansionPanels Class="mb-4">
+                        <MudExpansionPanel Text="@($"Överhoppade personer ({_preview.SkippedPersons.Count})")">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                                Dessa personer i DAK-filen finns inte som medlemmar i Skojjt och hoppas över.
+                            </MudText>
+                            <ul>
+                                @foreach (var p in _preview.SkippedPersons)
+                                {
+                                    <li>@p.Name (@p.Uid)</li>
+                                }
+                            </ul>
+                        </MudExpansionPanel>
+                    </MudExpansionPanels>
+                }
+
+                @if (_preview.OutOfRangeMeetings.Count > 0)
+                {
+                    <MudExpansionPanels Class="mb-4">
+                        <MudExpansionPanel Text="@($"Möten utanför terminen ({_preview.OutOfRangeMeetings.Count})")">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                                Dessa möten i DAK-filen ligger utanför @(_semester?.DisplayName) och importeras inte.
+                                Kontrollera att du valt rätt termin.
+                            </MudText>
+                            <ul>
+                                @foreach (var m in _preview.OutOfRangeMeetings)
+                                {
+                                    <li>@m.Date.ToString("yyyy-MM-dd") – @m.Name</li>
+                                }
+                            </ul>
+                        </MudExpansionPanel>
+                    </MudExpansionPanels>
+                }
+
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.CloudUpload"
+                           OnClick="Apply" Disabled="@_isBusy">
+                    Importera
+                </MudButton>
+            }
+        }
+
+        @if (_result is not null && _result.Success)
+        {
+            <MudAlert Severity="Severity.Success" Class="mt-4">
+                Import slutförd: @_result.AddedMeetings tillagda, @_result.UpdatedMeetings uppdaterade,
+                @_result.UnchangedMeetings oförändrade, @_result.SkippedPersons överhoppade personer.
+            </MudAlert>
+        }
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public int ScoutGroupId { get; set; }
+    [Parameter] public int SemesterId { get; set; }
+
+    private bool _loading = true;
+    private bool _hasAccess;
+    private bool _isBusy;
+    private ScoutGroup? _scoutGroup;
+    private Semester? _semester;
+
+    private List<Troop> _troops = [];
+    private int _selectedTroopId;
+
+    private byte[]? _fileContent;
+    private string? _fileName;
+
+    private DakImportPreview? _preview;
+    private DakImportResult? _result;
+    private readonly Dictionary<DateOnly, MeetingImportChoice> _decisions = [];
+
+    private List<BreadcrumbItem> _breadcrumbs = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        try
+        {
+            _hasAccess = CurrentUserService.IsMemberRegistrar(ScoutGroupId);
+            if (!_hasAccess) return;
+
+            _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
+            if (_scoutGroup is null) return;
+
+            _semester = await SemesterRepository.GetByIdAsync(SemesterId);
+            if (_semester is null) return;
+
+            _breadcrumbs =
+            [
+                new BreadcrumbItem("Scoutkårer", href: "/sk"),
+                new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
+                new BreadcrumbItem(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
+                new BreadcrumbItem("DAK-import", href: null, disabled: true)
+            ];
+
+            await LoadTroops();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadTroops()
+    {
+        var troops = await TroopRepository.GetByScoutGroupAndSemesterAsync(ScoutGroupId, SemesterId);
+        _troops = troops.OrderBy(t => t.Name).ToList();
+        if (_troops.All(t => t.Id == _selectedTroopId))
+            _selectedTroopId = _troops.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private async Task OnSelectionChanged()
+    {
+        ResetPreview();
+        await LoadTroops();
+    }
+
+    private void ResetPreview()
+    {
+        _preview = null;
+        _result = null;
+        _fileContent = null;
+        _fileName = null;
+        _decisions.Clear();
+    }
+
+    private async Task OnFileChanged(IBrowserFile? file)
+    {
+        if (file is null || _selectedTroopId == 0) return;
+
+        _result = null;
+        _preview = null;
+        _decisions.Clear();
+        _fileName = file.Name;
+        _isBusy = true;
+
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            _fileContent = ms.ToArray();
+
+            _preview = await DakImportService.BuildPreviewAsync(
+                ScoutGroupId, _selectedTroopId, SemesterId, _fileContent, _fileName);
+
+            if (_preview.Errors.Count > 0)
+            {
+                Snackbar.Add("DAK-filen innehåller fel — se detaljer nedan.", Severity.Warning);
+            }
+            else
+            {
+                // Default all conflicts to keeping existing Skojjt data.
+                foreach (var conflict in _preview.Conflicts)
+                    _decisions[conflict.Imported.Date] = MeetingImportChoice.KeepExisting;
+
+                Snackbar.Add(
+                    $"Inläst: {_preview.NewMeetings.Count} nya, {_preview.Conflicts.Count} konflikter.",
+                    Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel vid inläsning: {ex.Message}", Severity.Error);
+            _preview = null;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private MeetingImportChoice GetChoice(DateOnly date)
+        => _decisions.TryGetValue(date, out var c) ? c : MeetingImportChoice.KeepExisting;
+
+    private void SetChoice(DateOnly date, MeetingImportChoice choice)
+        => _decisions[date] = choice;
+
+    private async Task Apply()
+    {
+        if (_fileContent is null || _preview is null || _preview.Errors.Count > 0)
+            return;
+
+        _isBusy = true;
+        try
+        {
+            var request = new DakImportApplyRequest
+            {
+                ScoutGroupId = ScoutGroupId,
+                TroopId = _selectedTroopId,
+                SemesterId = SemesterId,
+                FileContent = _fileContent,
+                FileName = _fileName ?? string.Empty,
+                Decisions = new Dictionary<DateOnly, MeetingImportChoice>(_decisions)
+            };
+
+            _result = await DakImportService.ApplyAsync(request);
+
+            if (_result.Success)
+            {
+                Snackbar.Add("DAK-import slutförd.", Severity.Success);
+                _preview = null;
+                _fileContent = null;
+                _fileName = null;
+                _decisions.Clear();
+            }
+            else
+            {
+                Snackbar.Add($"Import misslyckades: {string.Join("; ", _result.Errors)}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel vid import: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+}

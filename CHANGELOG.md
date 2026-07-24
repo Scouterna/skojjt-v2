@@ -1,9 +1,12 @@
 # Changelog
 
-## [2.2.7] - 2026-07-08
+## [2.3.0] - 2026-07-24
+* Import av DAK-filer (Digitalt Aktivitetskort) från andra system. Det innebär att man kan importera möten och närvaro från en DAK-fil till en avdelning och termin i Skojjt. Importen är inkrementell – den lägger till möten som saknas och rör inte befintliga möten om de är identiska. Skiljer sig ett möte får du välja vilken version som gäller.
+
+## [2.2.7] - 2026-07-23
 * Lutande text för mötesnamn som i Skojjt v1. Tidigare visades bara datum för möten. En del avdelningar använder mötesnamet för att veta vems som tänte lyktan senast osv.
 
-## [2.2.5] - 2026-07-08
+## [2.2.5] - 2026-07-23
 * Bugfix: Importera läger från Scoutnet fungerade inte för Jamboree26, bug med tomma arrayer i JSON.
 
 ## [2.2.4] - 2026-07-07

@@ -89,7 +89,10 @@ public class DakXmlExporter : IAttendanceExporter
                 GetMeetingCode(meeting, data.Troop),
                 meeting.MeetingDate.ToDateTime(meeting.StartTime),
                 meeting.DurationMinutes,
-                meeting.Name);
+                DakActivityTags.Encode(meeting.Name, meeting.IsHike))
+            {
+                Lokal = meeting.Location
+            };
 
             // Add attending persons to meeting
             foreach (var personId in meetingInfo.AttendingPersonIds)
@@ -245,7 +248,7 @@ public class DakXmlExporter : IAttendanceExporter
         writer.WriteElementString("StartTid", sammankomst.GetStartTimeString());
         writer.WriteElementString("StoppTid", sammankomst.GetStopTimeString());
         writer.WriteElementString("Aktivitet", sammankomst.Aktivitet);
-        writer.WriteElementString("Lokal", lokal);
+        writer.WriteElementString("Lokal", string.IsNullOrWhiteSpace(sammankomst.Lokal) ? lokal : sammankomst.Lokal);
         writer.WriteElementString("Typ", sammankomst.Typ);
         writer.WriteElementString("Metod", "Add");
 

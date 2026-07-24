@@ -454,7 +454,7 @@ public static class DakXmlReader
                     break;
 
                 case "Lokal":
-                    reader.ReadElementContentAsString();
+                    sammankomst.Lokal = reader.ReadElementContentAsString();
                     break;
 
                 case "Typ":

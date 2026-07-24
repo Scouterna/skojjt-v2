@@ -76,6 +76,9 @@ public static class ServiceCollectionExtensions
         // Register DAK analysis service
         services.AddScoped<IDakAnalysisService, DakAnalysisService>();
 
+        // Register incremental DAK import service (import DAK files into a troop + semester)
+        services.AddScoped<IDakImportService, DakImportService>();
+
         // Register attendance stats service (charts)
         services.AddScoped<IAttendanceStatsService, AttendanceStatsService>();
 
