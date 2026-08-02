@@ -1829,7 +1829,7 @@
     {
         var sgp = _scoutGroupPersonLookup.GetValueOrDefault(tp.PersonId);
         bool removed = (sgp == null || sgp.NotInScoutnet);
-        <tr class="@(tp.IsLeader ? "leader-row" : "")">
+        <tr @key="tp.PersonId" class="@(tp.IsLeader ? "leader-row" : "")">
             <td class="sticky-col name-col">
                 <a href="@($"/sk/{ScoutGroupId}/p/{tp.PersonId}")" class="person-link">
                     @tp.Person.FullName
