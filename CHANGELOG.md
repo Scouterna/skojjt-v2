@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.3.2] - 2026-08-03
+* Bugfix: Rätt sidtitel i webbläsarflik och sökresultat. Den statiska standardtiteln i `App.razor` renderades tidigare efter sidans egen `PageTitle`, vilket kunde göra att den generiska titeln "Skojjt - Närvarosystem för scouter" användes istället för den sidspecifika.
+* Bugfix: När man gör en person till ledare så stannar checkmark kvar i listan men personen flyttar upp.
+
 ## [2.3.1] - 2026-07-24
 * Förbättrad sökmotorindexering av hjälpsidorna. Varje hjälpsida får nu en egen metabeskrivning (`meta description`), en kanonisk länk (`canonical`) och explicit `robots: index,follow`. Startsidan `/hjalp` visar nu en riktig innehållsförteckning istället för att omdirigera, vilket gör att sökmotorer kan indexera och länka till varje enskild hjälpsida. Länk till hjälpsidorna: https://skojjt.scouterna.net/hjalp/
 
