@@ -47,6 +47,9 @@ public static class ServiceCollectionExtensions
         // Register camp service (create camps, import from Scoutnet projects)
         services.AddScoped<ICampService, CampService>();
 
+        // Register troop management service (create local troops not in Scoutnet)
+        services.AddScoped<ITroopManagementService, TroopManagementService>();
+
         return services;
     }
 

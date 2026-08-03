@@ -323,7 +323,7 @@
         {
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
             _semester = await SemesterRepository.GetByIdAsync(SemesterId);
-            _troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(TroopScoutnetId, SemesterId);
+            _troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(ScoutGroupId, TroopScoutnetId, SemesterId);
             _badge = await BadgeService.GetBadgeWithPartsAsync(BadgeId);
 
             if (_badge != null && _troop != null)

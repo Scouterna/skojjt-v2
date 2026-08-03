@@ -114,7 +114,7 @@ public class DakXmlExporterTests
     }
 
     [TestMethod]
-    public async Task ExportAsync_MeetingKodIsValidInt32()
+    public async Task ExportAsync_MeetingKodMeetsLengthRequirements()
     {
         // The DAK schema requires the kod attribute to be a string with minLength=3
         var result = await _exporter.ExportAsync(_testData);
@@ -128,6 +128,44 @@ public class DakXmlExporterTests
         // Verify it meets minimum length requirement (3 characters)
         Assert.IsGreaterThanOrEqualTo(3, kodValue.Length, $"Meeting kod '{kodValue}' should be at least 3 characters");
         Assert.IsLessThanOrEqualTo(50, kodValue.Length, $"Meeting kod '{kodValue}' should be shorter than 50 characters");
+    }
+
+    [TestMethod]
+    public async Task ExportAsync_MeetingKodIncludesScoutGroupId()
+    {
+        // The troop ScoutnetId is not globally unique, so the scout group id must be part of the kod.
+        var result = await _exporter.ExportAsync(_testData);
+        var xml = System.Text.Encoding.UTF8.GetString(result.Data);
+
+        var expectedKod =
+            $"{_testData.Troop.ScoutGroupId}-{_testData.Troop.ScoutnetId}-{_testData.Troop.SemesterId}-0315";
+
+        Assert.Contains($"kod=\"{expectedKod}\"", xml);
+    }
+
+    [TestMethod]
+    public async Task ExportAsync_MeetingKodIsUniqueAcrossScoutGroups_WithSameScoutnetId()
+    {
+        var firstGroupData = CreateTestData();
+        firstGroupData.Troop.ScoutGroupId = 1;
+
+        var secondGroupData = CreateTestData();
+        secondGroupData.Troop.ScoutGroupId = 2;
+        // Same ScoutnetId as the first troop (local troops can collide across groups).
+        secondGroupData.Troop.ScoutnetId = firstGroupData.Troop.ScoutnetId;
+
+        static string ExtractKod(byte[] data)
+        {
+            var xml = System.Text.Encoding.UTF8.GetString(data);
+            var kodStart = xml.IndexOf("kod=\"") + 5;
+            var kodEnd = xml.IndexOf("\"", kodStart);
+            return xml.Substring(kodStart, kodEnd - kodStart);
+        }
+
+        var firstResult = await _exporter.ExportAsync(firstGroupData);
+        var secondResult = await _exporter.ExportAsync(secondGroupData);
+
+        Assert.AreNotEqual(ExtractKod(firstResult.Data), ExtractKod(secondResult.Data));
     }
 
     [TestMethod]
@@ -158,6 +196,7 @@ public class DakXmlExporterTests
         var troop = new Troop 
         { 
             Id = 1, 
+            ScoutGroupId = scoutGroup.Id,
             ScoutnetId = 100, 
             Name = "Test Troop", 
             SemesterId = semester.Id 

@@ -73,11 +73,12 @@ public class ReportsController : ControllerBase
     /// <param name="semesterId">Semester ID</param>
     [HttpGet("dak")]
     public async Task<IActionResult> ExportDak(
+        [FromQuery] int scoutGroupId,
         [FromQuery] int scoutnetId,
         [FromQuery] int semesterId,
         CancellationToken cancellationToken)
     {
-        return await ExportFormat("dak", scoutnetId, semesterId, cancellationToken);
+        return await ExportFormat("dak", scoutGroupId, scoutnetId, semesterId, cancellationToken);
     }
 
     /// <summary>
@@ -87,11 +88,12 @@ public class ReportsController : ControllerBase
     /// <param name="semesterId">Semester ID</param>
     [HttpGet("json")]
     public async Task<IActionResult> ExportJson(
+        [FromQuery] int scoutGroupId,
         [FromQuery] int scoutnetId,
         [FromQuery] int semesterId,
         CancellationToken cancellationToken)
     {
-        return await ExportFormat("json", scoutnetId, semesterId, cancellationToken);
+        return await ExportFormat("json", scoutGroupId, scoutnetId, semesterId, cancellationToken);
     }
 
     /// <summary>
@@ -101,11 +103,12 @@ public class ReportsController : ControllerBase
     /// <param name="semesterId">Semester ID</param>
     [HttpGet("excel-gbg")]
     public async Task<IActionResult> ExportExcelGothenburg(
+        [FromQuery] int scoutGroupId,
         [FromQuery] int scoutnetId,
         [FromQuery] int semesterId,
         CancellationToken cancellationToken)
     {
-        return await ExportFormat("excel-gbg", scoutnetId, semesterId, cancellationToken);
+        return await ExportFormat("excel-gbg", scoutGroupId, scoutnetId, semesterId, cancellationToken);
     }
 
     /// <summary>
@@ -115,11 +118,12 @@ public class ReportsController : ControllerBase
     /// <param name="semesterId">Semester ID</param>
     [HttpGet("excel-sthlm")]
     public async Task<IActionResult> ExportExcelStockholm(
+        [FromQuery] int scoutGroupId,
         [FromQuery] int scoutnetId,
         [FromQuery] int semesterId,
         CancellationToken cancellationToken)
     {
-        return await ExportFormat("excel-sthlm", scoutnetId, semesterId, cancellationToken);
+        return await ExportFormat("excel-sthlm", scoutGroupId, scoutnetId, semesterId, cancellationToken);
     }
 
     /// <summary>
@@ -168,20 +172,23 @@ public class ReportsController : ControllerBase
     /// Generic export endpoint supporting all formats.
     /// </summary>
     /// <param name="format">Export format (dak, json, excel-gbg, excel-sthlm)</param>
+    /// <param name="scoutGroupId">Scout group ID</param>
     /// <param name="scoutnetId">Scoutnet troop ID</param>
     /// <param name="semesterId">Semester ID</param>
     [HttpGet("{format}")]
     public async Task<IActionResult> Export(
         string format,
+        [FromQuery] int scoutGroupId,
         [FromQuery] int scoutnetId,
         [FromQuery] int semesterId,
         CancellationToken cancellationToken)
     {
-        return await ExportFormat(format, scoutnetId, semesterId, cancellationToken);
+        return await ExportFormat(format, scoutGroupId, scoutnetId, semesterId, cancellationToken);
     }
 
     private async Task<IActionResult> ExportFormat(
         string format,
+        int scoutGroupId,
         int scoutnetId,
         int semesterId,
         CancellationToken cancellationToken)
@@ -193,11 +200,11 @@ public class ReportsController : ControllerBase
             return BadRequest($"Unknown export format: {format}. Available formats: {string.Join(", ", _exportService.GetExporters().Select(e => e.ExporterId))}");
         }
 
-        // Get troop by ScoutnetId and SemesterId
-        var troop = await _troopRepository.GetByScoutnetIdAndSemesterAsync(scoutnetId, semesterId, cancellationToken);
+        // Get troop by ScoutGroupId, ScoutnetId and SemesterId
+        var troop = await _troopRepository.GetByScoutnetIdAndSemesterAsync(scoutGroupId, scoutnetId, semesterId, cancellationToken);
         if (troop == null)
         {
-            return NotFound($"Troop not found with ScoutnetId={scoutnetId} and SemesterId={semesterId}");
+            return NotFound($"Troop not found with ScoutGroupId={scoutGroupId}, ScoutnetId={scoutnetId} and SemesterId={semesterId}");
         }
 
         // Verify the current user has access to the troop's scout group

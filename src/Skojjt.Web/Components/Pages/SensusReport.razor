@@ -494,7 +494,7 @@ else
             _verksamhetsAr = _semester.Year.ToString();
         }
 
-        var troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(TroopScoutnetId, SemesterId);
+        var troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(ScoutGroupId, TroopScoutnetId, SemesterId);
         if (troop == null)
         {
             _loading = false;

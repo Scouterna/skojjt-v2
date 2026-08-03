@@ -54,11 +54,31 @@ Välj termin för att se avdelningarna och deras sammankomster.
 
 ## Avdelningar
 
-Avdelningar importeras från Scoutnet. Varje avdelning har:
+Avdelningar importeras normalt från Scoutnet. Varje avdelning har:
 
 - **Namn** – t.ex. "Spårarna", "Upptäckarna"
 - **Medlemmar** – deltagare och ledare
 - **Sammankomster** – de möten som registreras
+
+### Skapa en lokal avdelning
+
+Ibland behöver du en avdelning som **inte finns i Scoutnet**, till exempel en tillfällig grupp eller en lokal indelning som bara används i Skojjt. **Registeransvariga** kan skapa sådana avdelningar direkt i Skojjt.
+
+1. Gå till terminens översikt för kåren (`/sk/{kår-id}/t/{termin-id}`)
+2. Öppna panelen **Skapa avdelning**
+3. Klicka på knappen **Skapa avdelning**
+4. Fyll i:
+   - **Namn** (obligatoriskt)
+   - **Avdelningstyp** (åldersgrupp, valfritt – används för sortering i personflödesgrafen)
+   - **Mötesplats** (valfritt)
+   - **Standardtid** och **Längd (minuter)** som förval för nya sammankomster
+5. Klicka på **Skapa avdelning**
+
+Avdelningen får ett **lokalt ID** som är unikt inom kåren och kan sedan hanteras precis som en avdelning importerad från Scoutnet – du lägger till medlemmar, registrerar närvaro och exporterar rapporter på vanligt sätt.
+
+> **Notera:** Lokala avdelningar skapas bara i Skojjt och synkas inte tillbaka till Scoutnet. Medlemmar läggs till manuellt eller flyttas in från andra avdelningar.
+
+> **Notera:** Du kan importera läger och aktiviteter från Scoutnet som en lokal avdelning i Skojjt. Se [Importera läger som avdelning](/hjalp/07-lager) för mer information.
 
 ### Avdelningsinställningar
 

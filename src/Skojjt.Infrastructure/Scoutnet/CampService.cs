@@ -128,8 +128,14 @@ public class CampService : ICampService
             }
 
             // Allocate local troop ID
-            var localId = scoutGroup.NextLocalTroopId;
-            scoutGroup.NextLocalTroopId = localId + 1;
+            if (!scoutGroup.TryAllocateNextLocalTroopId(out var localId))
+            {
+                return new CampCreationResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Det lokala avdelnings-ID-intervallet (250–{ScoutGroup.MaxLocalTroopId}) är slut för denna scoutkår."
+                };
+            }
 
             var troop = new Troop
             {

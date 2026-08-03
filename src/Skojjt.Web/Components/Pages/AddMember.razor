@@ -362,7 +362,7 @@
 
             if (HasTroopContext)
             {
-                _troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(TroopScoutnetId!.Value, SemesterId!.Value);
+                _troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(ScoutGroupId, TroopScoutnetId!.Value, SemesterId!.Value);
                 _breadcrumbs =
                 [
                     new BreadcrumbItem("Scoutkårer", href: "/sk"),

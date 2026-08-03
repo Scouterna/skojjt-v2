@@ -147,24 +147,29 @@ public class DakXmlExporter : IAttendanceExporter
         return troop.ScoutnetId * 1000 + semester.Id;
     }
 
-    /// <summary>
-    /// Generate a meeting code that meets DAK schema requirements.
-    /// The schema requires kod to be a string with minLength=3 and maxLength=50.
-    /// </summary>
-    private static string GetMeetingCode(Core.Entities.Meeting meeting, Core.Entities.Troop troop)
-    {
+	/// <summary>
+	/// Generate a meeting code that meets DAK schema requirements.
+	/// The schema requires kod to be a string with minLength=3 and maxLength=50.
+	/// </summary>
+	private static string GetMeetingCode(Core.Entities.Meeting meeting, Core.Entities.Troop troop)
+	{
 		//
-		// get_short_key returns a unique string for this meeting.
+		// Returns a unique string for this meeting.
 		//
-		// It does not have to be an signed int as before (bug fixed in Gothenburg kommun)
-		// It is a string with the max length of 50 chars(see DAK 2.2 specification) and should be unique for each meeting.
+		// It does not have to be a signed int as before (bug fixed in Gothenburg kommun).
+		// It is a string with a max length of 50 chars (see DAK 2.2 specification) and must be unique for each meeting.
 		//
-		// It should also be deterministic, so the same meeting will always get the same short key, even if the meeting is deleted and recreated.
-		var toopid = troop.ScoutnetId;
+		// The troop ScoutnetId is not globally unique (local troops can share a ScoutnetId across scout groups),
+		// so the scout group id is included to guarantee uniqueness across groups.
+		//
+		// It should also be deterministic, so the same meeting will always get the same key, even if the
+		// meeting is deleted and recreated.
+		var groupid = troop.ScoutGroupId;
+		var troopid = troop.ScoutnetId;
 		var semesterid = troop.SemesterId;
 		var datestr = meeting.MeetingDate.ToString("MMdd");
-		return $"{toopid}-{semesterid}-{datestr}";
-    }
+		return $"{groupid}-{troopid}-{semesterid}-{datestr}";
+	}
 
     private static string GenerateXml(DakData dak)
     {

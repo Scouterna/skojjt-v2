@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.4.0] - 2026-08-03
+* Skapa en avdelning som inte finns i Scoutnet. Registeransvariga kan nu skapa lokala avdelningar direkt i Skojjt via panelen **Skapa avdelning** på terminens översikt, till exempel för tillfälliga eller lokala grupper. Avdelningen får ett lokalt ID och kan hanteras precis som en avdelning importerad från Scoutnet.
+* Bugfix: Läger kunde visas för fel scoutkår.
+
 ## [2.3.2] - 2026-08-03
 * Bugfix: Rätt sidtitel i webbläsarflik och sökresultat. Den statiska standardtiteln i `App.razor` renderades tidigare efter sidans egen `PageTitle`, vilket kunde göra att den generiska titeln "Skojjt - Närvarosystem för scouter" användes istället för den sidspecifika.
 * Bugfix: När man gör en person till ledare så stannar checkmark kvar i listan men personen flyttar upp.

@@ -8,6 +8,7 @@ Skojjt is a web-based attendance tracking system for Swedish scout groups (_scou
 
 - **Attendance tracking** — Register attendance per meeting with auto-save and real-time sync across browsers.
 - **Troop & member management** — Organize scouts into troops, assign patrols, and manage leader roles.
+- **Local troops** — Create troops that don't exist in Scoutnet (e.g. temporary or local groups) directly in Skojjt.
 - **Hike / camp support** — Separate tracking for hikes and camps.
 - **Badge management** — Assign and track badge progress per troop.
 - **DAK export** — Export attendance data in the DAK XML format required by Swedish municipalities.

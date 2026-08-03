@@ -9,13 +9,13 @@ public interface ITroopRepository : IRepository<Troop, int>
 {
     Task<Troop?> GetWithMembersAsync(int id, CancellationToken cancellationToken = default);
     Task<Troop?> GetWithMeetingsAsync(int id, CancellationToken cancellationToken = default);
-    Task<Troop?> GetByScoutnetIdAndSemesterAsync(int scoutnetId, int semesterId, CancellationToken cancellationToken = default);
+    Task<Troop?> GetByScoutnetIdAndSemesterAsync(int scoutGroupId, int scoutnetId, int semesterId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets a troop by its Scoutnet ID and semester, with members and related data loaded.
     /// Combines the lookup of GetByScoutnetIdAndSemesterAsync with the includes of GetWithMembersAsync.
     /// </summary>
-    Task<Troop?> GetWithMembersByScoutnetIdAsync(int scoutnetId, int semesterId, CancellationToken cancellationToken = default);
+    Task<Troop?> GetWithMembersByScoutnetIdAsync(int scoutGroupId, int scoutnetId, int semesterId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Troop>> GetByScoutGroupAndSemesterAsync(int scoutGroupId, int semesterId, CancellationToken cancellationToken = default);
     
     /// <summary>

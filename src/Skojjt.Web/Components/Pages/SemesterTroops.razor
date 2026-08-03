@@ -1,6 +1,7 @@
 @page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Extensions.Options
+@using Skojjt.Core
 @using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
@@ -16,6 +17,7 @@
 @inject ICurrentUserService CurrentUserService
 @inject IMembershipSyncService MembershipSyncService
 @inject ICampService CampService
+@inject ITroopManagementService TroopManagementService
 @inject IScoutnetApiClient ScoutnetApiClient
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
@@ -168,6 +170,19 @@
         <MudExpansionPanels>
             @if (_isMemberRegistrar)
             {
+                <MudExpansionPanel Text="Skapa avdelning" Icon="@Icons.Material.Filled.GroupAdd">
+                    <MudText Typo="Typo.body2" Class="mb-3">
+                        Skapa en avdelning som inte finns i Scoutnet, till exempel en tillfällig
+                        eller lokal grupp. Avdelningen får ett lokalt ID och kan hanteras som vanligt.
+                    </MudText>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.GroupAdd"
+                               OnClick="OpenCreateTroopDialog">
+                        Skapa avdelning
+                    </MudButton>
+                </MudExpansionPanel>
+
                 <MudExpansionPanel Text="Läger" Icon="@Icons.Material.Filled.Forest">
                     <MudText Typo="Typo.body2" Class="mb-3">
                         Importera deltagare från ett Scoutnet-projekt för att skapa ett läger.
@@ -283,6 +298,62 @@
     <DialogActions>
         <MudButton OnClick="@(() => _showLagerbidragDialog = false)">Avbryt</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="GenerateLagerbidrag">Generera rapport</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@* Create Local Troop Dialog *@
+<MudDialog @bind-Visible="_showCreateTroopDialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.GroupAdd" Class="mr-2" />
+            Skapa avdelning
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-3">
+            Skapa en avdelning som inte finns i Scoutnet. Avdelningen får ett lokalt ID.
+        </MudText>
+        <MudForm @ref="_createTroopForm">
+            <MudTextField @bind-Value="_newTroopName"
+                          Label="Namn"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Ange ett namn för avdelningen." />
+            <MudSelect T="int?" @bind-Value="_newTroopUnitTypeId"
+                       Label="Avdelningstyp"
+                       Variant="Variant.Outlined"
+                       Class="mt-3"
+                       HelperText="Scoutnet-åldersgrupp. Används för sortering i personflödesgrafen."
+                       Clearable="true">
+                @foreach (var ut in ScoutUnitTypes.All)
+                {
+                    <MudSelectItem T="int?" Value="@ut.Id">@ut.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudTextField @bind-Value="_newTroopLocation"
+                          Label="Mötesplats (valfritt)"
+                          Variant="Variant.Outlined"
+                          Class="mt-3" />
+            <div class="d-flex gap-4 mt-3">
+                <MudTimePicker @bind-Time="_newTroopStartTime"
+                               Label="Standardtid"
+                               Variant="Variant.Outlined" />
+                <MudNumericField @bind-Value="_newTroopDurationMinutes"
+                                 Label="Längd (minuter)"
+                                 Variant="Variant.Outlined"
+                                 Min="1" />
+            </div>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showCreateTroopDialog = false)" Disabled="_creatingTroop">Avbryt</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="CreateLocalTroop" Disabled="_creatingTroop">
+            @if (_creatingTroop)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Skapa avdelning
+        </MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -715,6 +786,16 @@
     private bool _projectsLoading;
     private string? _projectsError;
 
+    // Local troop creation state
+    private bool _showCreateTroopDialog;
+    private bool _creatingTroop;
+    private MudForm? _createTroopForm;
+    private string _newTroopName = string.Empty;
+    private int? _newTroopUnitTypeId;
+    private string _newTroopLocation = string.Empty;
+    private TimeSpan? _newTroopStartTime = new TimeOnly(18, 30).ToTimeSpan();
+    private int _newTroopDurationMinutes = 90;
+
     protected override async Task OnInitializedAsync()
     {
         _lastLoadedScoutGroupId = ScoutGroupId;
@@ -915,6 +996,59 @@
         finally
         {
             _syncPushing = false;
+        }
+    }
+
+    private void OpenCreateTroopDialog()
+    {
+        _newTroopName = string.Empty;
+        _newTroopUnitTypeId = null;
+        _newTroopLocation = string.Empty;
+        _newTroopStartTime = new TimeOnly(18, 30).ToTimeSpan();
+        _newTroopDurationMinutes = 90;
+        _showCreateTroopDialog = true;
+    }
+
+    private async Task CreateLocalTroop()
+    {
+        if (_createTroopForm != null)
+        {
+            await _createTroopForm.ValidateAsync();
+            if (!_createTroopForm.IsValid) return;
+        }
+
+        _creatingTroop = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await TroopManagementService.CreateLocalTroopAsync(
+                ScoutGroupId,
+                SemesterId,
+                _newTroopName,
+                _newTroopUnitTypeId,
+                _newTroopStartTime.HasValue ? TimeOnly.FromTimeSpan(_newTroopStartTime.Value) : null,
+                _newTroopDurationMinutes,
+                string.IsNullOrWhiteSpace(_newTroopLocation) ? null : _newTroopLocation);
+
+            if (result.Success)
+            {
+                _showCreateTroopDialog = false;
+                Snackbar.Add($"Avdelningen \"{result.Troop!.Name}\" skapades.", Severity.Success);
+                await LoadData();
+            }
+            else
+            {
+                Snackbar.Add(result.ErrorMessage ?? "Kunde inte skapa avdelningen.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _creatingTroop = false;
         }
     }
 

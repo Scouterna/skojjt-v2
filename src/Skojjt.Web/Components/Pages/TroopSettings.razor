@@ -184,7 +184,7 @@
 
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
             _semester = await SemesterRepository.GetByIdAsync(SemesterId);
-            _troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(TroopScoutnetId, SemesterId);
+            _troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(ScoutGroupId, TroopScoutnetId, SemesterId);
 
             // Verify the troop actually belongs to the requested group
             if (_troop != null && _troop.ScoutGroupId != ScoutGroupId)

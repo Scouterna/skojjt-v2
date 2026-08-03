@@ -106,11 +106,9 @@ public class TroopsController : ControllerBase
             if (scoutGroup == null)
                 return NotFound($"Scout group {scoutGroupId} not found");
 
-            if (scoutGroup.NextLocalTroopId > 1000)
-                return Conflict("Local troop ID range (250-1000) exhausted for this scout group");
+            if (!scoutGroup.TryAllocateNextLocalTroopId(out scoutnetId))
+                return Conflict($"Local troop ID range (250-{ScoutGroup.MaxLocalTroopId}) exhausted for this scout group");
 
-            scoutnetId = scoutGroup.NextLocalTroopId;
-            scoutGroup.NextLocalTroopId++;
             await _unitOfWork.ScoutGroups.UpdateAsync(scoutGroup);
         }
 

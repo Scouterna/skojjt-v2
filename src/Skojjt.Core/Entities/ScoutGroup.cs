@@ -74,6 +74,30 @@ public class ScoutGroup
     public int NextLocalTroopId { get; set; } = 250;
 
     /// <summary>
+    /// Inclusive upper bound for locally created troop ScoutnetIds.
+    /// No real Scoutnet troop IDs exist below 7043, so 250–7000 is safe from collisions.
+    /// </summary>
+    public const int MaxLocalTroopId = 7000;
+
+    /// <summary>
+    /// Allocates the next available local troop ScoutnetId from this group's reserved range
+    /// and advances the counter. Returns false if the range (250–<see cref="MaxLocalTroopId"/>)
+    /// is exhausted, in which case <paramref name="troopId"/> is 0 and the counter is unchanged.
+    /// </summary>
+    public bool TryAllocateNextLocalTroopId(out int troopId)
+    {
+        if (NextLocalTroopId > MaxLocalTroopId)
+        {
+            troopId = 0;
+            return false;
+        }
+
+        troopId = NextLocalTroopId;
+        NextLocalTroopId++;
+        return true;
+    }
+
+    /// <summary>
     /// Timestamp (UTC) of the most recent successful Scoutnet member import for this group.
     /// Null if no import has ever been performed.
     /// Used to warn member registrars when the member register is becoming stale.

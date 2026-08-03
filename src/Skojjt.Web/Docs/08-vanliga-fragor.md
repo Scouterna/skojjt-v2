@@ -34,6 +34,10 @@ Medlemsimport är tillgänglig för registeransvariga. Gå till kårens sida och
 
 Ja, registeransvariga kan lägga till medlemmar manuellt via **Lägg till medlem** på kårens sida.
 
+## Kan jag skapa en avdelning som inte finns i Scoutnet?
+
+Ja, registeransvariga kan skapa en lokal avdelning direkt i Skojjt via panelen **Skapa avdelning** på terminens översikt. Avdelningen får ett lokalt ID och kan hanteras som vanligt. Se [Scoutkårer & avdelningar](/hjalp/02-scoutkar-avdelningar) för mer detaljer.
+
 ## Vad händer med borttagna medlemmar?
 
 Medlemmar som tas bort från Scoutnet försvinner inte från Skojjt. De markeras som borttagna men deras historiska närvarodata bevaras. Du kan manuellt ta bort dem från en avdelning om de inte längre ska vara med.
