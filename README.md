@@ -52,7 +52,7 @@ docs/                     # Design documents and notes
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/<your-org>/skojjt-v2.git
+   git clone https://github.com/Scouterna/skojjt-v2.git
    cd skojjt-v2
    git submodule update --init --recursive
    ```
