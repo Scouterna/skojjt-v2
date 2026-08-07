@@ -738,7 +738,15 @@
     .patrol-display:hover .patrol-edit-icon { opacity: 0.7; }
     .patrol-placeholder { color: var(--mud-palette-text-disabled); font-style: italic; font-size: 0.85em; }
     .patrol-input { max-width: 100px; }
-    .patrol-input .mud-input-slot { padding: 2px 4px !important; font-size: 0.875rem; }
+    .patrol-input .mud-input-slot { padding: 2px 4px !important; font-size: 0.875rem; color: var(--mud-palette-text-primary); }
+    .patrol-input .mud-input-slot input { color: var(--mud-palette-text-primary) !important; }
+    /* Keep patrol input text readable on the tinted leader rows */
+    .leader-row .patrol-input .mud-input-slot,
+    .leader-row .patrol-input .mud-input-slot input { color: #0D47A1 !important; }
+    :root[data-mud-dark-mode="true"] .leader-row .patrol-input .mud-input-slot,
+    :root[data-mud-dark-mode="true"] .leader-row .patrol-input .mud-input-slot input,
+    .mud-theme-dark .leader-row .patrol-input .mud-input-slot,
+    .mud-theme-dark .leader-row .patrol-input .mud-input-slot input { color: #FFFFFF !important; }
     
     /* Patrol group header row */
     .patrol-header-row { background: var(--mud-palette-background-gray) !important; }
@@ -1872,6 +1880,7 @@
                                              Placeholder="Patrull..."
                                              Immediate="true"
                                              CoerceText="false"
+                                             CoerceValue="true"
                                              AutoFocus="true"
                                              Dense="true"
                                              MaxItems="10"
