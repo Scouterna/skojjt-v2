@@ -79,6 +79,17 @@ docs/                     # Design documents and notes
    ```
    The app will be available at `https://localhost:7224` (or `http://localhost:5286`).
 
+## Manual deployment to Azure App Service
+
+When deploying manually to Azure App Service, use the following commands:
+
+```powershell
+az login
+dotnet publish src/Skojjt.Web/Skojjt.Web.csproj -c Release -o ./publish
+Compress-Archive -Path ./publish/* -DestinationPath ./publish.zip -Force
+az webapp deploy --resource-group "skojjt-v2" --name skojjt --src-path ./publish.zip --type zip
+```
+
 ## Configuration
 
 Application settings are in `src/Skojjt.Web/appsettings.json`. Key sections:
