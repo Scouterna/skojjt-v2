@@ -90,6 +90,11 @@ public class DevAuthController : Controller
 
         if (isAdmin)
         {
+            // Both are needed. The role claim satisfies [Authorize(Roles = "Admin")],
+            // while CurrentUserService reads ScoutIdClaims.IsAdmin from this claim.
+            // ScoutIdClaimsTransformation would normally add it, but it returns early
+            // when ScoutnetUid is already present -- which dev logins always set.
+            claims.Add(new Claim(ScoutIdClaimTypes.Admin, "true"));
             claims.Add(new Claim(ClaimTypes.Role, "Admin"));
         }
 
