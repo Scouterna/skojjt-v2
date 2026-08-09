@@ -1197,8 +1197,11 @@ public record TroopBadgeImport(
     int? SortOrder
     );
 
+// PersonId is long, as in MeetingAttendanceImport: v1 sometimes keyed Person on
+// a personnummer (e.g. 200806048724), which overflows Int32. The import filters
+// those out, but only if deserialization gets far enough to run the check.
 public record BadgePartDoneImport(
-    int PersonId,
+    long PersonId,
     int BadgeId,
     int PartIndex,
     bool? IsScoutPart,
@@ -1207,7 +1210,7 @@ public record BadgePartDoneImport(
 );
 
 public record BadgeCompletedImport(
-    int PersonId,
+    long PersonId,
     int BadgeId,
     string? Examiner,
     string? CompletedDate
