@@ -511,6 +511,31 @@ class DataTransformer:
         """Normalize an integer to a signed 32-bit int."""
         return ((val & 0xffffffff) ^ 0x80000000) - 0x80000000
 
+    # Real Scoutnet troop IDs are auto-increment and sit far below this bound.
+    # Larger values come from v1's manual troop creation, which used
+    # `troop_id = hash(troopname)` (start.py) and left scoutnetID at 0. Those
+    # hashes are randomized per process, so they carry no meaning at all.
+    MAX_PLAUSIBLE_SCOUTNET_ID = 100000
+
+    @classmethod
+    def _is_plausible_scoutnet_id(cls, raw_id) -> bool:
+        """True if raw_id looks like a real Scoutnet troop ID rather than a hash."""
+        if raw_id is None:
+            return False
+        sid = str(raw_id)
+        if not sid.lstrip('-').isdigit():
+            return False
+        return 0 < int(sid) <= cls.MAX_PLAUSIBLE_SCOUTNET_ID
+
+    @staticmethod
+    def _normalize_troop_name(name: str) -> str:
+        """Key used when matching the same troop across semesters.
+
+        Separators drift over time ('Primusgastarna-Nord' in one semester,
+        'Primusgastarna Nord' in another), so collapse them before comparing.
+        """
+        return ' '.join(str(name or '').replace('-', ' ').split()).casefold()
+
     def _get_local_troop_id(self, troop_name: str, scout_group_id: int) -> int:
         """Assign an ID from the reserved range 250-1000 for a local troop.
 
@@ -518,7 +543,7 @@ class DataTransformer:
         Real Scoutnet IDs are auto-increment starting well above 1000,
         so this range is safe from collisions.
         """
-        key = (troop_name.strip(), scout_group_id)
+        key = (self._normalize_troop_name(troop_name), scout_group_id)
         if key in self._local_troop_id_map:
             return self._local_troop_id_map[key]
         assigned = self._local_troop_id_counter
@@ -539,10 +564,10 @@ class DataTransformer:
         """
         lookup: Dict[Tuple[str, str], int] = {}
         for r in raw:
-            sid = str(r.get('scoutnet_id', ''))
-            if not sid.lstrip('-').isdigit():
+            sid = r.get('scoutnet_id', '')
+            if not self._is_plausible_scoutnet_id(sid):
                 continue
-            name = r.get('name', '').strip()
+            name = self._normalize_troop_name(r.get('name', ''))
             group = r.get('scout_group_id', '')
             if name and group:
                 numeric_id = self._normalize_to_signed_int32(int(sid))
@@ -562,18 +587,18 @@ class DataTransformer:
         """Resolve a troop's scoutnet_id to an int.
 
         Strategy (in order):
-        1. If raw_id is already numeric, normalize and return it.
+        1. If raw_id looks like a real Scoutnet ID, normalize and return it.
+           Hash values from v1's manual troop creation are rejected here so
+           they fall through to name matching instead.
         2. Look up (troop_name, scout_group_key) in the name lookup built
            from troops that have a valid numeric ID in another semester.
         3. Fall back to an ID from the reserved range 250-1000.
         """
-        if raw_id is not None:
-            sid = str(raw_id)
-            if sid.lstrip('-').isdigit():
-                return self._normalize_to_signed_int32(int(sid))
+        if self._is_plausible_scoutnet_id(raw_id):
+            return self._normalize_to_signed_int32(int(str(raw_id)))
 
         # Try name-based lookup
-        name_key = (troop_name.strip(), scout_group_key)
+        name_key = (self._normalize_troop_name(troop_name), scout_group_key)
         if name_key in name_lookup:
             return name_lookup[name_key]
 
@@ -753,10 +778,21 @@ class DataTransformer:
         """
         if raw_troop_key in self.troop_key_to_scoutnet_id:
             return self.troop_key_to_scoutnet_id[raw_troop_key]
+
+        # Attendances pass a meeting key ('{troop_key}.{date}'), which is never
+        # in the map. Strip the date so they resolve to the same troop that
+        # transform_troops already decided on, instead of falling through to
+        # the numeric/local-id fallback below and disagreeing with meetings.
+        dot_idx = raw_troop_key.rfind('.')
+        if dot_idx != -1:
+            troop_key = raw_troop_key[:dot_idx]
+            if troop_key in self.troop_key_to_scoutnet_id:
+                return self.troop_key_to_scoutnet_id[troop_key]
+
         # Fallback: try to normalize directly
         raw_id = troop_id_tuple[0]
         sid = str(raw_id)
-        if sid.lstrip('-').isdigit():
+        if self._is_plausible_scoutnet_id(sid):
             return self._normalize_to_signed_int32(int(sid))
         scout_group_id = troop_id_tuple[1] if len(troop_id_tuple) > 1 else 0
         return self._get_local_troop_id(sid, scout_group_id)
