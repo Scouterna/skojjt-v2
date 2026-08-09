@@ -1,0 +1,447 @@
+@page "/marken/karta"
+@using Skojjt.Web.Services
+@rendermode InteractiveServer
+@inject InterestBadgeCatalogService CatalogService
+
+<PageTitle>Märkeskarta - Intressemärken - Skojjt</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-8">
+    <div class="d-flex flex-wrap align-center justify-space-between mb-2 gap-2">
+        <div>
+            <MudText Typo="Typo.h4">Märkeskarta</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Märkessystemet uppdateras av scouterna under 2026. Här är en översikt över de intressemärken som finns, och hur de är organiserade i serier och nivåer.
+                Se: <MudLink Href="https://www.scouterna.se/aktuellt/nyhet/scouternas-program-uppdateras-marken/" Target="_blank">https://www.scouterna.se/aktuellt/nyhet/scouternas-program-uppdateras-marken/</MudLink>
+            </MudText>
+        </div>
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+    }
+    else if (_catalog is null)
+    {
+        <MudAlert Severity="Severity.Error">Märkeskatalogen kunde inte läsas in.</MudAlert>
+    }
+    else
+    {
+        @* Nivålegend *@
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            @foreach (var level in _levels)
+            {
+                <div class="ibm-legend-item" style="@LevelChipStyle(level)">
+                    <img class="ibm-legend-img" src="@LevelImageUrl(level)" alt="@level.Name" loading="lazy" />
+                    <span>@level.Name</span>
+                </div>
+            }
+        </div>
+
+        @* Rutnät: rader = nivåer, kolumner = serier *@
+        <MudPaper Elevation="1" Class="pa-2 mb-6" Style="overflow-x:auto;">
+            <div class="ibm-grid" style="@GridStyle()">
+                @* Hörncell *@
+                <div class="ibm-corner"></div>
+
+                @* Kolumnrubriker (serier) *@
+                @foreach (var series in _catalog.Series)
+                {
+                    <div class="ibm-col-header" title="@series.Name">@series.Name</div>
+                }
+
+                @* En rad per nivå *@
+                @foreach (var level in _levels)
+                {
+                    <div class="ibm-row-header" style="@RowHeaderStyle(level)">
+                        <img class="ibm-level-img" src="@LevelImageUrl(level)" alt="@level.Name" loading="lazy" />
+                        <span>@level.Name</span>
+                    </div>
+
+                    @foreach (var series in _catalog.Series)
+                    {
+                        var node = FindNode(series, level.Order);
+                        <div class="ibm-cell">
+                            @if (node is not null)
+                            {
+                                <div class="ibm-badge ibm-clickable" style="@BadgeStyle(level)"
+                                     title="@BadgeTooltip(node)"
+                                     role="button" tabindex="0"
+                                     @onclick="() => OpenDetail(node)">
+                                    @if (!string.IsNullOrEmpty(node.ImageUrl))
+                                    {
+                                        <img class="ibm-badge-img" src="@node.ImageUrl" alt="@node.Name" loading="lazy" />
+                                    }
+                                    <span class="ibm-badge-name">@node.Name</span>
+                                    @if (node.Variants.Count > 0)
+                                    {
+                                        <span class="ibm-badge-variants">@node.Variants.Count varianter</span>
+                                    }
+                                </div>
+                                @if (node.Next.Count > 0)
+                                {
+                                    <div class="ibm-arrow" style="@ArrowStyle(node)">
+                                        <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Small" />
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </MudPaper>
+
+        @* Fristående märken (utan stegring) *@
+        <MudText Typo="Typo.h5" Class="mb-2">Fristående märken</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+            Märken som inte ingår i någon stegringsserie.
+        </MudText>
+        <div class="d-flex flex-wrap gap-2">
+            @foreach (var node in _catalog.Standalone)
+            {
+                var level = _catalog.FindLevel(node.Level);
+                <div class="ibm-badge ibm-standalone ibm-clickable"
+                     style="@BadgeStyle(level)"
+                     title="@(level?.Name ?? node.Level)"
+                     role="button" tabindex="0"
+                     @onclick="() => OpenDetail(node)">
+                    @if (!string.IsNullOrEmpty(node.ImageUrl))
+                    {
+                        <img class="ibm-badge-img" src="@node.ImageUrl" alt="@node.Name" loading="lazy" />
+                    }
+                    <span class="ibm-badge-name">@node.Name</span>
+                    <span class="ibm-badge-variants">@(level?.Name ?? node.Level)</span>
+                </div>
+            }
+        </div>
+    }
+</MudContainer>
+
+<MudDialog @bind-Visible="_detailVisible" Options="_detailOptions">
+    <TitleContent>
+        @if (_selected is not null)
+        {
+            var lvl = _catalog?.FindLevel(_selected.Level);
+            <div class="d-flex align-center gap-3">
+                @if (!string.IsNullOrEmpty(_selected.ImageUrl))
+                {
+                    <img class="ibm-detail-img" src="@_selected.ImageUrl" alt="@_selected.Name" />
+                }
+                <div>
+                    <MudText Typo="Typo.h6">@_selected.Name</MudText>
+                    @if (lvl is not null)
+                    {
+                        <MudChip T="string" Size="Size.Small" Style="@LevelChipStyle(lvl)">@lvl.Name</MudChip>
+                    }
+                </div>
+            </div>
+        }
+    </TitleContent>
+    <DialogContent>
+        @if (_selected is not null)
+        {
+            @if (!string.IsNullOrEmpty(_selected.Description))
+            {
+                <MudText Typo="Typo.body2" Class="mb-3">@_selected.Description</MudText>
+            }
+
+            @if (_selected.Variants.Count > 0)
+            {
+                <MudText Typo="Typo.subtitle2" Class="mb-1">Varianter</MudText>
+                <div class="d-flex flex-wrap gap-1 mb-3">
+                    @foreach (var variant in _selected.Variants)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@variant</MudChip>
+                    }
+                </div>
+            }
+
+            <MudText Typo="Typo.subtitle1" Class="mb-1">Märkeskriterier</MudText>
+            @if (_selected.Criteria.Count > 0)
+            {
+                <ul class="ibm-criteria">
+                    @foreach (var criterion in _selected.Criteria)
+                    {
+                        <li>@criterion</li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Inga kriterier registrerade för det här märket.</MudText>
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseDetail">Stäng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .ibm-grid {
+        display: grid;
+        gap: 4px;
+        min-width: max-content;
+        align-items: stretch;
+    }
+
+    .ibm-corner {
+        position: sticky;
+        left: 0;
+        z-index: 3;
+        background: var(--mud-palette-surface);
+    }
+
+    .ibm-col-header {
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-align: center;
+        padding: 4px 2px;
+        line-height: 1.1;
+        color: var(--mud-palette-text-primary);
+        border-bottom: 2px solid var(--mud-palette-lines-default);
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .ibm-row-header {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 4px 8px;
+        background: var(--mud-palette-surface);
+        border-left: 4px solid transparent;
+    }
+
+    .ibm-level-img {
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
+        margin-right: 6px;
+        flex-shrink: 0;
+    }
+
+    .ibm-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 12px 3px 4px;
+        border-radius: 16px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .ibm-legend-img {
+        width: 26px;
+        height: 26px;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+
+    .ibm-cell {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 96px;
+        padding-top: 2px;
+    }
+
+    .ibm-badge {
+        width: 100%;
+        min-height: 44px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 4px 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .ibm-badge-img {
+        width: 46px;
+        height: 46px;
+        object-fit: contain;
+        margin-bottom: 3px;
+    }
+
+    .ibm-badge-name {
+        font-size: 0.72rem;
+        font-weight: 600;
+        line-height: 1.05;
+    }
+
+    .ibm-badge-variants {
+        font-size: 0.6rem;
+        opacity: 0.85;
+        margin-top: 1px;
+    }
+
+    .ibm-arrow {
+        position: absolute;
+        bottom: -2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.75;
+    }
+
+    .ibm-standalone {
+        width: 150px;
+        min-height: 72px;
+    }
+
+    .ibm-clickable {
+        cursor: pointer;
+        transition: transform 0.08s ease-in-out, box-shadow 0.08s ease-in-out;
+    }
+
+    .ibm-clickable:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    }
+
+    .ibm-detail-img {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+
+    .ibm-criteria {
+        margin: 0;
+        padding-left: 1.2rem;
+    }
+
+    .ibm-criteria li {
+        margin-bottom: 6px;
+        line-height: 1.35;
+    }
+</style>
+
+@code {
+    private bool _loading = true;
+    private InterestBadgeCatalog? _catalog;
+    private IReadOnlyList<InterestBadgeLevel> _levels = [];
+
+    private bool _detailVisible;
+    private InterestBadgeNode? _selected;
+    private readonly DialogOptions _detailOptions = new()
+    {
+        MaxWidth = MaxWidth.Small,
+        FullWidth = true,
+        CloseButton = true,
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _catalog = await CatalogService.GetCatalogAsync();
+        _levels = _catalog.Levels.OrderBy(l => l.Order).ToList();
+        _loading = false;
+    }
+
+    private void OpenDetail(InterestBadgeNode node)
+    {
+        _selected = node;
+        _detailVisible = true;
+    }
+
+    private void CloseDetail() => _detailVisible = false;
+
+    private InterestBadgeNode? FindNode(InterestBadgeSeries series, int levelOrder)
+        => series.Badges.FirstOrDefault(b => LevelOrderOf(b.Level) == levelOrder);
+
+    private int LevelOrderOf(string levelKey)
+        => _catalog?.FindLevel(levelKey)?.Order ?? -1;
+
+    private string GridStyle()
+    {
+        var columns = _catalog?.Series.Count ?? 0;
+        return $"grid-template-columns: 120px repeat({columns}, 150px);";
+    }
+
+    private static string LevelChipStyle(InterestBadgeLevel level)
+        => $"background-color:{level.Color};color:{TextColor(level.Color)};";
+
+    private static string LevelImageUrl(InterestBadgeLevel level)
+    {
+        // Filnamnet för familjescouter saknar "er"-ändelsen.
+        var name = level.Key == "familjescouter" ? "familjescout" : level.Key;
+        return $"/img/troop-types/{name}-logo.png";
+    }
+
+    private static string RowHeaderStyle(InterestBadgeLevel level)
+        => $"border-left-color:{level.Color};";
+
+    private static string BadgeStyle(InterestBadgeLevel? level)
+    {
+        if (level is null)
+        {
+            return "background-color:#607D8B;color:#fff;";
+        }
+        return $"background-color:{level.Color};color:{TextColor(level.Color)};";
+    }
+
+    private string ArrowStyle(InterestBadgeNode node)
+    {
+        var nextKey = node.Next.Count > 0 ? node.Next[0] : null;
+        var color = "var(--mud-palette-text-secondary)";
+        if (nextKey is not null && _catalog is not null)
+        {
+            var nextLevel = FindNodeLevel(nextKey);
+            if (nextLevel is not null)
+            {
+                color = nextLevel.Color;
+            }
+        }
+        return $"color:{color};";
+    }
+
+    private InterestBadgeLevel? FindNodeLevel(string badgeKey)
+    {
+        if (_catalog is null)
+        {
+            return null;
+        }
+        foreach (var series in _catalog.Series)
+        {
+            var b = series.Badges.FirstOrDefault(x => x.Key == badgeKey);
+            if (b is not null)
+            {
+                return _catalog.FindLevel(b.Level);
+            }
+        }
+        return null;
+    }
+
+    private static string BadgeTooltip(InterestBadgeNode node)
+    {
+        if (node.Variants.Count > 0)
+        {
+            return $"{node.Name} — varianter: {string.Join(", ", node.Variants)}";
+        }
+        return node.Name;
+    }
+
+    private static string TextColor(string hex)
+    {
+        if (string.IsNullOrEmpty(hex) || hex.Length < 7 || hex[0] != '#')
+        {
+            return "#ffffff";
+        }
+
+        var r = Convert.ToInt32(hex.Substring(1, 2), 16);
+        var g = Convert.ToInt32(hex.Substring(3, 2), 16);
+        var b = Convert.ToInt32(hex.Substring(5, 2), 16);
+        // Relative luminance (perceived brightness).
+        var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
+        return luminance > 0.6 ? "#212121" : "#ffffff";
+    }
+}

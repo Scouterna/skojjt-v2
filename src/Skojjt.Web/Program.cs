@@ -194,6 +194,9 @@ builder.Services.AddExportServices();
 // Register documentation service
 builder.Services.AddSingleton<DocumentationService>();
 
+// Register interest badge (intressemärken) catalog service
+builder.Services.AddSingleton<InterestBadgeCatalogService>();
+
 // Configure authentication based on environment and configuration
 var useDevAuth = builder.Environment.IsDevelopment() &&
     string.IsNullOrEmpty(builder.Configuration["ScoutId:ClientId"]) &&

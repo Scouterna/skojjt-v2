@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.5.0] - 2026-08-03
+* Karta för intressemärken.
+* Skojjt admin användare kan nu läggas till per UIDs (scoutnet id).
+
 ## [2.4.0] - 2026-08-03
 * Skapa en avdelning som inte finns i Scoutnet. Registeransvariga kan nu skapa lokala avdelningar direkt i Skojjt via panelen **Skapa avdelning** på terminens översikt, till exempel för tillfälliga eller lokala grupper. Avdelningen får ett lokalt ID och kan hanteras precis som en avdelning importerad från Scoutnet.
 * Bugfix: Läger kunde visas för fel scoutkår.

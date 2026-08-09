@@ -1,0 +1,2281 @@
+{
+  "version": "2026",
+  "title": "Intressemärken",
+  "levels": [
+    {
+      "key": "familjescouter",
+      "unitTypeId": 8,
+      "name": "Familjescouter",
+      "color": "#7E57C2",
+      "order": 0
+    },
+    {
+      "key": "sparare",
+      "unitTypeId": 2,
+      "name": "Spårare",
+      "color": "#2E7D32",
+      "order": 1
+    },
+    {
+      "key": "upptackare",
+      "unitTypeId": 3,
+      "name": "Upptäckare",
+      "color": "#1565C0",
+      "order": 2
+    },
+    {
+      "key": "aventyrare",
+      "unitTypeId": 4,
+      "name": "Äventyrare",
+      "color": "#C62828",
+      "order": 3
+    },
+    {
+      "key": "utmanare",
+      "unitTypeId": 5,
+      "name": "Utmanare",
+      "color": "#AD1457",
+      "order": 4
+    },
+    {
+      "key": "rover",
+      "unitTypeId": 6,
+      "name": "Rover",
+      "color": "#F9A825",
+      "order": 5
+    }
+  ],
+  "series": [
+    {
+      "key": "eld",
+      "name": "Eld",
+      "badges": [
+        {
+          "key": "varme",
+          "name": "Värme",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "tanda"
+          ],
+          "imageUrl": "/img/interest-badges/varme.png",
+          "description": "Genom att jobba med intressemärket Värme övar du på att bli trygg vid eld. Märket Värme är det första i en märkesstegring om eld.",
+          "criteria": [
+            "Våga hålla i en tändsticka som brinner. Blåsa ut tändstickan.",
+            "Blåsa ut en låga. Öva på att blåsa lagom hårt så att det exempelvis inte stänker stearin.",
+            "Prata om hur farlig (eller inte farlig) eld är, till exempel testa hur varmt ett ljus känns jämfört med en eld.",
+            "Veta att en fotogenlykta kan bli varm och veta hur man håller i en lykta."
+          ]
+        },
+        {
+          "key": "tanda",
+          "name": "Tända",
+          "level": "sparare",
+          "order": 1,
+          "next": [
+            "brinna"
+          ],
+          "imageUrl": "/img/interest-badges/tanda.png",
+          "description": "Genom att jobba med intressemärket Tända övar du på grunderna för att elda. Märket Elda är det andra i en märkesstegring om eld.",
+          "criteria": [
+            "Kan tända en tändsticka och provat att tända en lykta och en eld.",
+            "Känner till vilka risker levande ljus och eldar innebär och ha diskuterat hur man ska bete sig i närheten av ljus och eld.",
+            "Vet vad du ska göra om du bränner dig."
+          ]
+        },
+        {
+          "key": "brinna",
+          "name": "Brinna",
+          "level": "upptackare",
+          "order": 2,
+          "next": [
+            "elda"
+          ],
+          "imageUrl": "/img/interest-badges/brinna.png",
+          "description": "Genom att jobba med Brinna lär du dig mer om elden och hur man kan använda den på ett bra sätt. Märket Brinna är det tredje i en märkesstegring om eld.",
+          "criteria": [
+            "Vad som behövs för att en eld ska fungera (syre, värme, bränsle) och ha fått testa vad som händer om alla delar inte finns med.",
+            "Veta hur man eldar säkert, det vill säga hur man gör en säker eldstad som hindrar elden från att sprida sig och hur du förbereder för att kunna släcka elden.",
+            "Kunna göra upp en eld."
+          ]
+        },
+        {
+          "key": "elda",
+          "name": "Elda",
+          "level": "aventyrare",
+          "order": 3,
+          "next": [
+            "tafyr"
+          ],
+          "imageUrl": "/img/interest-badges/elda.png",
+          "description": "Märket Elda är det fjärde i en märkesstegring om eld. Genom att jobba med märket Elda tränar du på att få igång och underhålla en eld under längre tid för att kunna laga mat, få värme och skapa stämning på ett säkert sätt.",
+          "criteria": [
+            "Kunna göra upp en eld med hjälp av kniv, tändstickor och enbart bränsle du hittar i naturen och hålla den vid liv under en längre tid.",
+            "Känna till olika eldtyper och kunna anpassa elden efter olika situationer som matlagning, värmekälla eller mys.",
+            "Kunna skilja på några olika typer av trä och veta vad som skiljer dem åt i när man eldar, till exempel vad som ger mest värme och vad som skvätter mest/minst.",
+            "Ha provat på att göra upp eld med andra metoder än tändare och tändstickor, till exempel eldstål eller förstoringsglas."
+          ]
+        },
+        {
+          "key": "tafyr",
+          "name": "Ta fyr",
+          "level": "utmanare",
+          "order": 4,
+          "next": [],
+          "imageUrl": "/img/interest-badges/tafyr.png",
+          "description": "Märket Ta fyr är det femte i en märkesstegring om eld. Märket handlar både om att kunna tända i svåra förhållanden och släcka en eld på olika sätt.",
+          "criteria": [
+            "Kunna göra upp en eld med blöt ved.",
+            "Kunna elda i blåst.",
+            "Kunna tända en eld med max tre tändstickor (utan tändvätska eller andra hjälpmedel som tidningspapper doppat i stearin)",
+            "Veta hur man släcker brand i olja/gryta/stekpanna, el, ”vanlig eld” och brinnande kläder.",
+            "Ha testat släcka bränder med vatten, brandsläckare (kolsyra, pulver eller skum) och släckt brinnande docka.",
+            "Kan hantera en brandsläckare inklusive att se vilken brandsläckare som används till vad."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "mat",
+      "name": "Mat",
+      "badges": [
+        {
+          "key": "smaka",
+          "name": "Smaka",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "matettan"
+          ],
+          "imageUrl": "/img/interest-badges/smaka.png",
+          "description": "I märket Smaka utmanar du dig själv att våga prova nya smaker. Märket Smaka är det första i en märkesstegring om mat.",
+          "criteria": [
+            "Våga testa smaker från naturen",
+            "Testa äta något som är lagat över eld eller på stormkök",
+            "Tvätta händerna innan du smakar"
+          ]
+        },
+        {
+          "key": "matettan",
+          "name": "Matettan",
+          "level": "sparare",
+          "order": 1,
+          "next": [
+            "mattvaan"
+          ],
+          "imageUrl": "/img/interest-badges/matettan.png",
+          "description": "Märket Mattettan ingår i en märkesstegring om mat. Här tränar du på att laga en enklare måltid.",
+          "criteria": [
+            "Vara med och laga mat både inomhus och utomhus på spritkök eller liknande.",
+            "Du ska med ledarnas hjälp kunna följa ett enkelt recept och vara delaktig i matlagningen från start till dess att disken är klar.",
+            "Du ska även känna till vad som gäller kring hygien i samband med matlagning."
+          ]
+        },
+        {
+          "key": "mattvaan",
+          "name": "Mattvåan",
+          "level": "upptackare",
+          "order": 2,
+          "next": [
+            "mattrean"
+          ],
+          "imageUrl": "/img/interest-badges/mattvaan.png",
+          "description": "Märket Mattvåan ingår i en märkesstegring om mat. Du får öva dig mer i att planera för matlagningen, tillreda mer avancerad mat på olika sätt.",
+          "criteria": [
+            "Du ska vara med och planera en eller flera måltider under ett möte, en hajk eller övernattning",
+            "Du ska kunna följa ett recept och laga mat med flera ingredienser både inomhus och på öppen eld.",
+            "Du ska också känna till vad som påverkar hållbarheten på olika livsmedel och hur de behöver förvaras."
+          ]
+        },
+        {
+          "key": "mattrean",
+          "name": "Mattrean",
+          "level": "aventyrare",
+          "order": 3,
+          "next": [
+            "mat-avancerat"
+          ],
+          "imageUrl": "/img/interest-badges/mattrean.png",
+          "description": "Märket Mattrean ingår i en märkesstegring om mat. Genom att jobba med märket tränar du på att planera en meny för till exempel hajk eller läger och tänka på mat ur olika aspekter.",
+          "criteria": [
+            "Du ska vara med och utifrån en bestämd budget planera, köpa och laga mat för en del av ett veckoläger, två helgövernattningar eller motsvarande tid.",
+            "Du ska välja mat som är väl anpassad för tillfället med hänsyn taget till hållbarhet, vikt, tillagningsmetod mm.",
+            "Du ska också välja mat med ett hälso-, miljö- och rättviseperspektiv."
+          ]
+        },
+        {
+          "key": "mat-avancerat",
+          "name": "Mat avancerat",
+          "level": "utmanare",
+          "order": 4,
+          "next": [
+            "skogsgourmet"
+          ],
+          "imageUrl": "/img/interest-badges/mat-avancerat.png",
+          "description": "Mat avancerat är ett märke för att locka till matlagning på nya sätt. Märket Mat avancerat är det femte i en märkesstegring om mat. För att få märket ska du prova att laga mat med metoder som du inte tidigare använt.",
+          "criteria": [
+            "Är delaktig i att laga mat med, för dig, två nya metoder.",
+            "Var med och förbered eller bygg det som krävs för att laga mat på det sätt du bestämt.",
+            "Lär någon annan att laga mat med de nya metoderna.",
+            "Kokgrop",
+            "Fågel/fisk/kött på spett som roterar över en eld",
+            "Hänga kött vid eld i rep",
+            "Baka en kaka med gryta i en gryta",
+            "Baka bröd över öppen eld (exempelvis runt en varm sten eller i löv).",
+            "Baka bröd genom att linda in en varm sten i deg och placera vid elden",
+            "Bygga en rök och röka exempelvis fisk",
+            "Bygg en tork och torka mat.",
+            "Använda en reflektorugn eller en stor konservburk som ugn.",
+            "Någon annan ovanlig metod som ni själva letar upp"
+          ]
+        },
+        {
+          "key": "skogsgourmet",
+          "name": "Skogsgourmet",
+          "level": "rover",
+          "order": 5,
+          "next": [],
+          "imageUrl": "/img/interest-badges/skogsgourmet.png",
+          "description": "Målet med märket är att få nya kunskaper om det som går att äta i skogen och laga en måltid med så mycket från skogen som möjligt. Märket Skogsgourmet är det sjätte i en märkesstegring om mat. Märket är för roverscouter.",
+          "criteria": [
+            "du är",
+            "Laga en trerätters måltid baserat på så många ingredienser som möjligt från naturen omkring dig.",
+            "Tälj egna bestick eller köksredskap"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "skapande",
+      "name": "Skapande",
+      "badges": [
+        {
+          "key": "pyssla",
+          "name": "Pyssla",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "skapa"
+          ],
+          "imageUrl": "/img/interest-badges/pyssla.png",
+          "description": "Märket Pyssla är det första i en serie om skapande. I det här märket får du pyssla med material från naturen.",
+          "criteria": [
+            "Pyssla med saker från naturen",
+            "Skapa en leksak av något du får från naturen",
+            "Testa att känna på olika material som exempelvis färg eller tyg"
+          ]
+        },
+        {
+          "key": "skapa",
+          "name": "Skapa",
+          "level": "sparare",
+          "order": 1,
+          "next": [
+            "sy"
+          ],
+          "imageUrl": "/img/interest-badges/skapa.png",
+          "description": "Märket Skapa är det andra i en serie om skapande. I det här märket får du prova att skapa saker med olika metoder.",
+          "criteria": [
+            "Något du kan använda",
+            "En dekoration",
+            "Något till någon annan"
+          ]
+        },
+        {
+          "key": "sy",
+          "name": "Sy",
+          "level": "upptackare",
+          "order": 2,
+          "next": [
+            "fixa"
+          ],
+          "imageUrl": "/img/interest-badges/sy.png",
+          "description": "Märket Sy är det tredje i en serie om skapande. I det här märket får du träna på att sy med maskin och för hand.",
+          "criteria": [
+            "Kunna trä en symaskin och sy något enkelt",
+            "Kunna sy på ett märke på sin scoutdräkt",
+            "Kunna laga något som är trasigt",
+            "Kunna sy i en knapp som lossnat"
+          ]
+        },
+        {
+          "key": "fixa",
+          "name": "Fixa",
+          "level": "aventyrare",
+          "order": 3,
+          "next": [
+            "hantverk"
+          ],
+          "imageUrl": "/img/interest-badges/fixa.png",
+          "description": "Märket Fixa är det fjärde i en serie om skapande. I det här märket får du förbättra, renovera eller laga.",
+          "criteria": [
+            "Se över er scoutlokal och se vad ni kan förbättra. Exempelvis klä om möbler, måla om, sy gardiner, dekorera, renovera eller vad ni nu bestämmer er för att göra och lära er mer om.",
+            "Skapa eller göra om något till er scoutlokal, patrullyta, scoutstuga eller till någon annan.",
+            "Gör en plan tillsammans vad ni behöver för material och hur lång tid ert arbete kommer ta.",
+            "När arbetet är klart ska du tillsammans med andra som var med och dina ledare prata om hur det har gått och vad du lärt dig.",
+            "Dokumentera och fira ert arbete."
+          ]
+        },
+        {
+          "key": "hantverk",
+          "name": "Hantverk",
+          "level": "utmanare",
+          "order": 4,
+          "next": [
+            "far-till-troja"
+          ],
+          "imageUrl": "/img/interest-badges/hantverk.png",
+          "description": "Märket Hantverk är det femte i en serie om skapande. I det här märket får du prova på olika hantverksmetoder.",
+          "criteria": [
+            "Testar två olika hantverk av olika material och stil, exempelvis keramik, sticka, tälja.",
+            "Designa eller hitta en design som du vill testa.",
+            "Lär ut ditt hantverk till någon annan."
+          ]
+        },
+        {
+          "key": "far-till-troja",
+          "name": "Får till tröja",
+          "level": "rover",
+          "order": 5,
+          "next": [],
+          "imageUrl": "/img/interest-badges/far-till-troja.png",
+          "description": "Märket Får till tröja är det sjätte i en serie om skapande. I här märket får du framställa en slutprodukt från början till slut och får god förståelse av framtagningen som produkten går igenom innan den hamnar i butiken.",
+          "criteria": [
+            "Välj en produkt och ta reda på hela produktionsprocessen, exempelvis, från ull till tröja, från lera till kruka, från vril till kåsa mm.",
+            "Med informationen från produktionsprocessen ska du nu producera fram den valda vara på egen hand.",
+            "När du tagit fram produkten ska du nu reflektera över hela processen och se vad du lärde dig"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "natur",
+      "name": "Naturen",
+      "badges": [
+        {
+          "key": "ny-i-naturen",
+          "name": "Ny i naturen",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "naturligt"
+          ],
+          "imageUrl": "/img/interest-badges/ny-i-naturen.png",
+          "description": "Märket Ny i naturen är det första i en serie om naturen. I det här märket lär du dig om några av de vanligaste insekterna och djuren runt oss, hur de bor och vad de äter.",
+          "criteria": [
+            "Tillsammans med dina kompisar hittar du och tittar på olika insekter runt om där ni är. Vilka fåglar ser ni och hur låter de? Kan ni hitta spår eller bajs från andra djur? Vad äter djuren och insekterna och vad behöver de för att må bra?",
+            "Ibland behöver djuren och insekterna lite hjälp av oss, speciellt om deras livsmiljö ändrats eller förstörts. Tillsammans med de andra så lär dig om hur du kan hjälpa djuren och insekterna, t ex genom att bygga insektshotell, insekts-, fågelmatare eller fågelholkar."
+          ]
+        },
+        {
+          "key": "naturligt",
+          "name": "Naturligt",
+          "level": "sparare",
+          "order": 1,
+          "next": [
+            "fauna"
+          ],
+          "imageUrl": "/img/interest-badges/naturligt.png",
+          "description": "Märket Naturligt är det andra i en serie om naturen. Märket Genom det här märket får du lära dig om olika arter i naturen men också om allemansrätten.",
+          "criteria": [
+            "Känna igen de vanligaste träden, djuren och växterna i din närhet. Eftersom detta skiljer sig mycket beroende på om man bor t.ex. i en stad, i skogen eller i ett odlingslandskap får dina ledare bestämma vilka växter och djur du ska kunna.",
+            "Veta hur du själv hittar information om andra djur och växter du ser i naturen.",
+            "Känna till innebörden av Allemansrätten, vad vi får och inte får göra i naturen och hur vi kan vistas i naturen utan att skada eller lämna onödiga spår efter oss."
+          ]
+        },
+        {
+          "key": "fauna",
+          "name": "Fauna",
+          "level": "upptackare",
+          "order": 2,
+          "next": [
+            "flora"
+          ],
+          "imageUrl": "/img/interest-badges/fauna.png",
+          "description": "Märket Fauna är det tredje i en serie om naturen. I det här märket lär du studera olika djur i naturen.",
+          "criteria": [
+            "Tillbringa minst en dag utomhus i ett naturreservat, fågelreservat eller en annan miljö där du har möjlighet att hitta spår från och se olika djur. Dokumentera djurlivet omkring dig genom att fotografera, filma eller rita av det du ser.",
+            "Lär dig mer om 5 av djuren, insekterna eller fåglarna mm som du såg på utflykten eller är intresserad av. I vilken miljö lever de? Vad äter de? Hur låter de? Hur ser deras spillning och spår ut?",
+            "Berätta för varandra vad ni har lärt er.",
+            "Bygg eller skapa något som hjälper till att förbättra vilda djurs livsmiljö, till exempel en fladdermus-, fågel- eller ekorrholk, igelkottsbo, förbättra livsmiljön i en damm eller skapa en bra miljö för ormar."
+          ]
+        },
+        {
+          "key": "flora",
+          "name": "Flora",
+          "level": "aventyrare",
+          "order": 3,
+          "next": [
+            "skogsexpert"
+          ],
+          "imageUrl": "/img/interest-badges/flora.png",
+          "description": "Märket Flora är det fjärde i en serie om naturen. I det här märket får du studera olika växter och prova att laga mat med något ätbart från naturen.",
+          "criteria": [
+            "Välj en ruta på 1m2 som du kan återkomma till under minst 3 årstider. Dokumentera det som växer där genom att fotografera, filma eller rita av det du ser och hur det förändras genom årstiderna.",
+            "Lära dig om 10 olika valfria växter som växer vilt i ditt närområde. Försök att hitta dem. Välj ur dessa grupper:",
+            "träd och buskar",
+            "svampar",
+            "örter",
+            "gräs",
+            "mossor eller lavar",
+            "alger eller sjögräs"
+          ]
+        },
+        {
+          "key": "skogsexpert",
+          "name": "Skogsexpert",
+          "level": "utmanare",
+          "order": 4,
+          "next": [],
+          "imageUrl": "/img/interest-badges/skogsexpert.png",
+          "description": "Märket Skogsexpert är det femte i en serie om naturen. I det här märket lär du dig att leva i och av naturen.",
+          "criteria": [
+            "Bygg ett gömsle och tillbringa minst ett dygn där. Se, lyssna och dokumentera vilka djur som passerar.",
+            "Identifiera 10 ätliga växter och hur de tillagas. Laga sedan en maträtt som innehåller minst 2 av dessa.",
+            "Pröva två olika säkra sätt att ta till vara på vatten för dryck och matlagning i skogen.",
+            "Lär dig vad som händer när en växt som vi tagit in som prydnads- eller nyttoväxt eller ett djur som inte ursprungligen funnits i Sveriges fauna hamnar i naturen och blir en invasiv art."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "sjukvard",
+      "name": "Sjukvård",
+      "badges": [
+        {
+          "key": "aj",
+          "name": "Aj",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "plastra"
+          ],
+          "imageUrl": "/img/interest-badges/aj.png",
+          "description": "Märket Aj är det första i en märkesstegring om sjukvård. Genom det här märket får du lära dig vad du kan göra om du eller en kompis gör sig illa.",
+          "criteria": [
+            "Kunna tvätta ett mindre sår.",
+            "Prata om varför såret ska rengöras.",
+            "Kunna sätta på ett plåster på ett mindre sår.",
+            "Prata om hur du kan trösta en kompis som skadat sig.",
+            "Öva på hur du kyler huden om du bränt sig.",
+            "Veta var sjukvårdsväskan finns.",
+            "Veta hur du ringer 112 och hur du ringer 112 från en låst telefon."
+          ]
+        },
+        {
+          "key": "plastra",
+          "name": "Plåstra",
+          "level": "sparare",
+          "order": 1,
+          "next": [
+            "hjalpa"
+          ],
+          "imageUrl": "/img/interest-badges/plastra.png",
+          "description": "Märket Plåstra är det andra i en märkesstegring om sjukvård. Genom att jobba med märket får du lära dig hur du tar hand om skador och hur du tillkallar hjälp.",
+          "criteria": [
+            "Veta hur du tar hand om mindre sår som skärsår.",
+            "Veta hur du lägger ett tryckförband och placerar skadan i högläge.",
+            "Veta hur du kan förebygga skavsår och ta hand om skavsår om du ändå får ett.",
+            "Veta vilka de viktigaste sakerna i sjukvårdsväskan är och vad vi använder dem till.",
+            "Veta hur du ringer efter ambulans, brandkår och polis och vad du ska säga när de svarar."
+          ]
+        },
+        {
+          "key": "hjalpa",
+          "name": "Hjälpa",
+          "level": "upptackare",
+          "order": 2,
+          "next": [
+            "radda"
+          ],
+          "imageUrl": "/img/interest-badges/hjalpa.png",
+          "description": "Märket Hjälpa är det tredje i en märkesstegring om sjukvård. Genom att jobba med märket fördjupar du dina kunskaper i första hjälpen och lär dig hur du tar hand om dig själv och andra. Behöver du hjälp med instruktioner finns det bra beskrivet på HLR-rådet.",
+          "criteria": [
+            "Förståelse för vad LABC innebär och hur du ska agera kring det.",
+            "Kunna lägga en person i stabilt sidoläge.",
+            "Kunna lägga om en stukad fot.",
+            "Veta vilken sjukvårdsutrustning ni behöver ha med er på hajk.",
+            "Veta hur du tar hand om hygien vid sårskador utomhus.",
+            "Känna igen symptomen för energibrist och vätskebrist och veta vad du kan göra för att undvika det."
+          ]
+        },
+        {
+          "key": "radda",
+          "name": "Rädda",
+          "level": "aventyrare",
+          "order": 3,
+          "next": [],
+          "imageUrl": "/img/interest-badges/radda.png",
+          "description": "Märket Rädda är det fjärde i en märkesstegring om sjukvård. Genom att jobba med märket fördjupar du dina kunskaper i första hjälpen och lär dig hantera allvarligare och mer komplexa situationer, från att leda gruppen vid en olycka till att agera snabbt och säkert när någon behöver akut hjälp.",
+          "criteria": [
+            "Veta hur du ska agera vid luftvägsstop.",
+            "Kunna överblicka en olyckssituation i patrullen och prioritera och fördela uppgifter kring det.",
+            "Veta vad som ska packas i sjukvårdsväskan inför en specifik hajk.",
+            "Kunna tejpa ihop skärsår.",
+            "Veta hur du hanterar benbrott.",
+            "Veta hur du hanterar större brännskador.",
+            "Kunna släcka brand på person.",
+            "Veta hur du tar hand om lokala frostskador och vad du ska göra vid symptom på allmän nedkylning.",
+            "Veta hur du ska agera när en diabetiker får blodsockerfall samt när en person får epilepsianfall.",
+            "Veta hur du ska agera om någon blir medvetslös."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "samarbete",
+      "name": "Vara med andra",
+      "badges": [
+        {
+          "key": "minipatrullen",
+          "name": "Minipatrullen",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "bra-kompis"
+          ],
+          "imageUrl": "/img/interest-badges/minipatrullen.png",
+          "description": "Märket Minipatrullen är det första i en serie om att vara med andra och att samarbeta. Genom att jobba med det här märket får du prova på hur det är att vara i en patrull.",
+          "criteria": [
+            "Ingå i en patrull som består av 4-8 scouter.",
+            "Tillsammans i patrullen hitta på ett rop eller en symbol för patrullen.",
+            "Genomföra en lek eller annan aktivitet tillsammans i patrullen.",
+            "Tillsammans i patrullen genomföra en samarbetsövning eller problemlösningsuppgift. där uppgiften är utformad så att den inte går att göra ensam."
+          ]
+        },
+        {
+          "key": "bra-kompis",
+          "name": "Bra kompis",
+          "level": "sparare",
+          "order": 1,
+          "next": [
+            "forebild"
+          ],
+          "imageUrl": "/img/interest-badges/bra-kompis.png",
+          "description": "Märket Bra kompis är det andra i en serie om att vara med andra och att samarbeta. I det här märket utforskar du vad det innebär att vara en god vän och hur du kan göra när det är svårt.",
+          "criteria": [
+            "Prata om hur en bra kompis är.",
+            "Diskutera situationer där det kan vara svårt att vara en bra kompis och ge förslag på hur du kan göra i sådana situationer.",
+            "Träna på hur du säger ifrån om någon är taskig mot dig eller någon annan.",
+            "Prata om hur patrullen/avdelningen kan ta emot och välkomna nya scouter.",
+            "Gör något snällt för en kompis."
+          ]
+        },
+        {
+          "key": "forebild",
+          "name": "Förebild",
+          "level": "upptackare",
+          "order": 2,
+          "next": [
+            "superpatrullen"
+          ],
+          "imageUrl": "/img/interest-badges/forebild.png",
+          "description": "Märket Förebild är det tredje i en serie om att vara med andra och att samarbeta. I det här märket får du fundera vilka dina egna förebilder är och hur du kan vara en förebild för andra.",
+          "criteria": [
+            "Fundera över vilka dina förebilder är och vad det är som gör dem till förebilder.",
+            "Berätta för varandra i patrullen vilka förebilder ni har och varför.",
+            "Diskutera hur du kan vara en förebild för andra och vilket ansvar du har som förebild för andra.",
+            "Gör något snällt med patrullen för yngre scouter där ni är goda förebilder."
+          ]
+        },
+        {
+          "key": "superpatrullen",
+          "name": "Superpatrullen",
+          "level": "aventyrare",
+          "order": 3,
+          "next": [],
+          "imageUrl": "/img/interest-badges/superpatrullen.png",
+          "description": "Märket Superpatrullen är det fjärde i en serie om att vara med andra och att samarbeta. I det här märket lär du dig om gruppdynamik och utmanar dig själv och patrullen för att ta samarbetet till en ny nivå.",
+          "criteria": [
+            "Låt alla i patrullen skriva ner sina främsta styrkor. Diskutera hur de olika styrkorna var för sig och alla styrkorna tillsammans kan hjälpa er som patrull.",
+            "Låt patrullen utföra olika uppgifter som kräver olika slags styrkor.  Diskutera efteråt vilka styrkor som behövdes för att lösa uppgiften och hur ni i patrullen kunde hjälpas åt i detta.",
+            "Lär er om de olika grundläggande faser som grupper går igenom i sin grupputvecklingsprocess.",
+            "Genomför ett rollspel eller en annan aktivitet där medlemmarna i patrullen får prova på olika roller och andra roller än de vanligtvis brukar ha. Reflektera efteråt om vad som då hände med dynamiken i gruppen och hur det kändes för de olika medlemmarna i de olika rollerna.",
+            "Prata om olika konflikter som kan uppstå i en patrull. Gör rollspel eller annan aktivitet kring dessa scenarion där ni får prova på olika konfliktlösningsmetoder."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "navigation",
+      "name": "Hitta rätt",
+      "badges": [
+        {
+          "key": "utforska",
+          "name": "Utforska",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "hitta"
+          ],
+          "imageUrl": "/img/interest-badges/utforska.png",
+          "description": "Märket Utforska är det första i en märkesstegring. Syftet med märket är att du ska känna dig trygg i skogen på dagen.",
+          "criteria": [
+            "Leka i och utforska en skog eller naturområde",
+            "Veta vad du ska göra om du kommer bort från en vuxen eller din patrull",
+            "Veta vad du skall göra om du går vilse, hur du kramar ett träd och gör dig synlig",
+            "Kunna ditt för- och efternamn"
+          ]
+        },
+        {
+          "key": "hitta",
+          "name": "Hitta",
+          "level": "sparare",
+          "order": 1,
+          "next": [
+            "karta"
+          ],
+          "imageUrl": "/img/interest-badges/hitta.png",
+          "description": "Märket Hitta är det andra i en märkesstegring. Syftet med märket är att du ska känna dig trygg i skogen i mörker/skymning, veta vad du ska göra för att hitta rätt och veta vad du ska göra om du går vilse.",
+          "criteria": [
+            "Leka och utforska en skog eller naturområde i mörker/skymning.",
+            "Förstå hur en karta fungerar och tillsammans med ledare ta er till en förutbestämd plats på kartan.",
+            "Lära dig vad du ska göra om du går vilse i skogen eller i staden och hur du kan öka chansen att bli hittad.",
+            "Kunna din adress och ett telefonnummer till en vuxen anhörig utantill."
+          ]
+        },
+        {
+          "key": "karta",
+          "name": "Karta",
+          "level": "upptackare",
+          "order": 2,
+          "next": [
+            "navigera"
+          ],
+          "imageUrl": "/img/interest-badges/karta.png",
+          "description": "Märket Karta är det tredje i en märkesstegring. Genom att jobba med märket får patrullen träna sig på att hitta med hjälp av karta och kompass.",
+          "criteria": [
+            "Förstå hur en karta fungera och prova på att rita en egen karta över ett mindre område.",
+            "Kunna och förstå de vanligaste karttecknen.",
+            "Med hjälp av en kompass kunna peka ut de fyra väderstrecken."
+          ]
+        },
+        {
+          "key": "navigera",
+          "name": "Navigera",
+          "level": "aventyrare",
+          "order": 3,
+          "next": [],
+          "imageUrl": "/img/interest-badges/navigera.png",
+          "description": "Märket Navigera är det fjärde i en märkesstegring. Genom att jobba med märket fördjupa dina kunskaper om karta, kompass, sjökort och navigation.",
+          "criteria": [
+            "Förstå hur kartan eller sjökortet förhåller sig till verkligheten och fördjupa sig i kartors olika symboler betyder till exempel höjdkurvor, djup, olika typer av terräng. Kunna använda kartor eller sjökort av olika typ och skala för att hitta vägen dit du ska.",
+            "Kunna använda en kompass för att ta ut väderstreck och riktning till målet.",
+            "Känna till andra sätt att hitta väderstreck, exempelvis med hjälp av klockan, polstjärnan och tecken i naturen.",
+            "Känna till hur du kan hitta kartor och satellitbilder på internet.",
+            "Känna till grunderna för en GPS och prova den om ni har tillgång till en."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "vatten",
+      "name": "Vatten",
+      "badges": [
+        {
+          "key": "pa-ytan",
+          "name": "På ytan",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "under-ytan"
+          ],
+          "imageUrl": "/img/interest-badges/pa-ytan.png",
+          "description": "Märket På ytan är det första i en serie om vatten. I det här märket får du utforska vad som händer på ytan i en sjö eller ett vattendrag.",
+          "criteria": [
+            "Göra en aktivitet där du testar hur ytspänning fungerar. Vad sjunker, vad flyter och varför är det så? Varför kan till exempel en båt flyta, men inte en pytteliten sten?",
+            "Undersöka en sjö, damm eller vattendrag i din närmiljö. Vilka växter och djur kan du hitta på vattenytan? Hur kan de leva där?",
+            "Rita, måla, fota eller pyssla det du har sett och testat."
+          ]
+        },
+        {
+          "key": "under-ytan",
+          "name": "Under ytan",
+          "level": "sparare",
+          "order": 1,
+          "next": [
+            "vatten-marke"
+          ],
+          "imageUrl": "/img/interest-badges/under-ytan.png",
+          "description": "Märket Under ytan är det andra i en serie om vatten. I det här märket får du utforska vad du hittar under ytan och lära dig om olika djur och väster som finns där.",
+          "criteria": [
+            "Besöka en sjö, damm, hav eller vattendrag och undersöka vad som finns i vattnet, exempelvis genom att håva eller titta i cyklop.",
+            "Lära dig att känna igen några av de vanligaste fiskarna, djuren och växterna som finns i vattnet du undersöker.",
+            "Veta hur du hittar information om djur och växter du ser i vatten.",
+            "Kunna beskriva vattnets kretslopp."
+          ]
+        },
+        {
+          "key": "vatten-marke",
+          "name": "Vatten",
+          "level": "upptackare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/vatten-marke.png",
+          "description": "Märket Vatten är det tredje i en serie om just vatten. I det här märket får du utforska vatten som förutsättning för liv, och hur vatten påverkar oss människor på olika sätt.",
+          "criteria": [
+            "Lära dig om vattenvård och hur vi får vatten rent. Exempelvis genom att besöka ett reningsverk, ett vattentorn eller tillverka ett eget vattenreningsverk i miniatyr",
+            "Gör en aktivitet där du undersöker din egen vattenförbrukning från ett scoutmöte till ett annat. Jämför med hur mycket vatten en person använder i ett land med andra förutsättningar.",
+            "Undersök hur nederbördsstatistiken sett ut i ditt område under de senaste åren.  Har det varit ovanligt mycket eller lite nederbörd? Vad beror skillnaderna på och hur påverkar det dig och andra?"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "odling",
+      "name": "Odling",
+      "badges": [
+        {
+          "key": "froet",
+          "name": "Fröet",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "blomman"
+          ],
+          "imageUrl": "/img/interest-badges/froet.png",
+          "description": "Märket Fröet är det första i en märkesstegring om odling. I det här märket får du lära dig vad växter behöver för att leva.",
+          "criteria": [
+            "Så ett frö, ta hand om det som växer och visa eller berätta vad som hänt med fröet från möte till möte.",
+            "Lär dig vad växter behöver för att leva (jord, sol, vatten, luft).",
+            "Tillverka någon typ av fågelmat av frön. Vilka frön tycker fåglar om?",
+            "Provsmaka olika frön. Vilka frön tycker du om?"
+          ]
+        },
+        {
+          "key": "blomman",
+          "name": "Blomman",
+          "level": "sparare",
+          "order": 1,
+          "next": [
+            "skorden"
+          ],
+          "imageUrl": "/img/interest-badges/blomman.png",
+          "description": "Märket Blomman är det andra i en märkesstegring om odling. I det här märket får du lära dig om olika blommor och hur de sprids.",
+          "criteria": [
+            "Så eller odla två likadana blommor. Ge dem olika förutsättningar och upptäck hur skillnaden blir. (olika mycket ljus, vatten eller näring osv)",
+            "Lär dig om olika typer av blommor som finns i Sverige, till exempel vilka som är invasiva giftiga, fridlysta eller ätbara.",
+            "Upptäck pollinatörer! Hitta insekter som hjälper växter att växa och prata om varför de är viktiga.",
+            "Gör något för pollinatörerna exempelvis ett bihotell eller blomlåda med nektarväxter."
+          ]
+        },
+        {
+          "key": "skorden",
+          "name": "Skörden",
+          "level": "upptackare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/skorden.png",
+          "description": "Märket Skörden är det tredje i en märkesstegring om odling. I det här märket får du följa en odlingsprocess.",
+          "criteria": [
+            "Planera och genomför en egen odling med ätbara växter, t.ex. pallkrage, fönsterodling eller hydroponik.",
+            "Kunna berätta om vad de växter du planterat behöver för att trivas.",
+            "Delta i en aktivitet där patrullen får hjälpa till att skörda och laga något av skörden.",
+            "Diskutera hur odling hänger ihop med hållbarhet, matproduktion och klimat.",
+            "Reflektera över hur vi kan bidra till ett mer hållbart samhälle genom våra val av mat och konsumtion."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "forhallanden",
+      "name": "Vara ute säkert",
+      "badges": [
+        {
+          "key": "sno",
+          "name": "Snö",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "morker"
+          ],
+          "imageUrl": "/img/interest-badges/sno.png",
+          "description": "Märket Snö är det första i en serie om att vara ute säkert i olika förhållanden. Genom att jobba med det här märket får du både leka och lära dig hur du är säker i snön.",
+          "criteria": [
+            "Bygga en snöiglo, snökoja eller liknande.",
+            "Känna till risker kring snö.",
+            "Veta hur du ska vara klädd i kalla temperaturer.",
+            "Veta hur du torkar blöta kläder både inomhus och utomhus.",
+            "Leka en snölek där alla i patrullen/gruppen är överens om reglerna och syftet med leken."
+          ]
+        },
+        {
+          "key": "morker",
+          "name": "Mörker",
+          "level": "sparare",
+          "order": 1,
+          "next": [
+            "vader"
+          ],
+          "imageUrl": "/img/interest-badges/morker.png",
+          "description": "Märket Mörker är det andra i en serie om att vara ute säkert i olika förhållanden. Genom märket övar du på att känna dig trygg i mörker.",
+          "criteria": [
+            "Genomföra någon typ av aktivitet i mörker som syftar till att få scouten att känna sig trygg i mörker. Gå ett ljusspår under tystnad eller spendera en stund i mörkret t.ex tillsammans med en stjärnkarta om det är en stjärnklar natt.",
+            "Förstå grundläggande säkerhetsregler i mörker samt användning av reflexer.",
+            "Förstå hur olika ljuskällor påverkar ditt och andras mörkerseende.",
+            "Reflektera över hur du känner dig och beter dig i mörker."
+          ]
+        },
+        {
+          "key": "vader",
+          "name": "Väder",
+          "level": "upptackare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/vader.png",
+          "description": "Märket Väder är det tredje i en serie om att vara ute säkert i olika förhållanden. Genom märket får du lära dig om hur du kan läsa av väder och hur du ska agera i olika väder.",
+          "criteria": [
+            "Känna till olika typer av väderförhållanden och hur de påverkar kroppen.",
+            "Kunna berätta något om vilka faktorer som påverkar väderförhållanden, vad en väderleksrapport innehåller och hur du ska förhålla dig till den.",
+            "Visa hur du kan hantera väderförhållanden genom att anpassa din klädsel, utrustning eller kanske din vandringsrutt.",
+            "I märket ingår också att lära sig läsa av naturens egna vädersignaler genom att exempelvis lära sig känna igen olika typer av moln eller genom att tillverka en väderpinne av en grankvist."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "lek",
+      "name": "Lek och tävling",
+      "badges": [
+        {
+          "key": "leka",
+          "name": "Leka",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "barkbat"
+          ],
+          "imageUrl": "/img/interest-badges/leka.png",
+          "description": "Märket Leka är det första i en serie om lek och tävling. I det här märket får du testa nya lekar ute i naturen.",
+          "criteria": [
+            "Testa en ny lek.",
+            "Leka med en ny kompis.",
+            "Träna på att följa reglerna i en lek."
+          ]
+        },
+        {
+          "key": "barkbat",
+          "name": "Barkbåt",
+          "level": "sparare",
+          "order": 1,
+          "next": [
+            "racing"
+          ],
+          "imageUrl": "/img/interest-badges/barkbat.png",
+          "description": "Märket Barkbåt är det andra i en serie om lek och tävling. I det här märket får du leka vid vatten och med din egengjorda barkbåt.",
+          "criteria": [
+            "Tillverka en barkbåt.",
+            "Testa olika designer för din barkbåt.",
+            "Delta i ett race med din barkbåt.",
+            "Leka säkert vid vattnet med din barkbåt."
+          ]
+        },
+        {
+          "key": "racing",
+          "name": "Racing",
+          "level": "upptackare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/racing.png",
+          "description": "Märket Racing är det tredje i en serie om lek och tävling. I det här märket får du tävla i olika typer av race med olika typer av farkoster.",
+          "criteria": [
+            "Delta i ett race med två farkoster mot varandra.",
+            "Delta i ett hinderbanerace.",
+            "Tävla mot varandra med olika förutsättningar, exempelvis kanot utan paddel, segelbåt utan segel.",
+            "Delta i två race på samma eller så lika tid som möjligt."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "rep",
+      "name": "Rep och knopar",
+      "badges": [
+        {
+          "key": "forsta-repmarket",
+          "name": "Första repmärket",
+          "level": "sparare",
+          "order": 0,
+          "next": [
+            "andra-repmarket"
+          ],
+          "imageUrl": "/img/interest-badges/forsta-repmarket.png",
+          "description": "Första repmärket är det första i en märkesstegring om rep och knopar. Genom att jobba med märket lär du dig att slå tre användbara knopar.",
+          "criteria": [
+            "Lär dig att slå tre knopar.",
+            "Lär dig vad de används till.",
+            "Visa dina patrullkompisar och ledare och berätta om dem."
+          ]
+        },
+        {
+          "key": "andra-repmarket",
+          "name": "Andra repmärket",
+          "level": "upptackare",
+          "order": 1,
+          "next": [
+            "tredje-repmarket"
+          ],
+          "imageUrl": "/img/interest-badges/andra-repmarket.png",
+          "description": "Andra repmärket är det andra i en märkesstegring om rep och knopar. Genom att jobba med märket utökar du dina kunskaper om knopar och vad du kan göra med rep.",
+          "criteria": [
+            "Kunna slå fem knopar och visa att du kan använda knoparna när de passar.",
+            "Känna till skillnaden på olika repsorter och veta när vilken typ av rep passar bäst.",
+            "Veta hur du genom att använda en talja av rep kan få utväxling när du ska lyfta, dra eller spänna något och ha använt den kunskapen i sitt rätta sammanhang."
+          ]
+        },
+        {
+          "key": "tredje-repmarket",
+          "name": "Tredje repmärket",
+          "level": "aventyrare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/tredje-repmarket.png",
+          "description": "Tredje repmärket är det tredje i en märkesstegring om rep och knopar. Genom att jobba med märket får du fördjupa dina kunskaper i hur du använder dig av rep och knopar.",
+          "criteria": [
+            "Tillverka något av rep/knopar som till exempel makramé, paracording, en repbro eller ett fiskenät.",
+            "Kunna flaggningsregler i Sverige, vilka knopar som används till flaggor och knap, och hur du hissar och halar flaggor korrekt.",
+            "Lär dig hur man korrekt förvarar och sköter om olika tågvirken.",
+            "Lär dig en ny knop som du kan ha nytta av och lär ut den till andra."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "sova-borta",
+      "name": "Sova borta",
+      "badges": [
+        {
+          "key": "sova-helg",
+          "name": "Sova borta helg",
+          "level": "sparare",
+          "order": 0,
+          "next": [
+            "sova-vecka"
+          ],
+          "imageUrl": "/img/interest-badges/sova-helg.png",
+          "description": "Märket Sova borta helg är det första i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt två nätter."
+        },
+        {
+          "key": "sova-vecka",
+          "name": "Sova borta vecka",
+          "level": "upptackare",
+          "order": 1,
+          "next": [
+            "sova-manad"
+          ],
+          "imageUrl": "/img/interest-badges/sova-vecka.png",
+          "description": "Märket Sova borta vecka är det andra i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt en vecka."
+        },
+        {
+          "key": "sova-manad",
+          "name": "Sova borta månad",
+          "level": "aventyrare",
+          "order": 2,
+          "next": [
+            "sova-100"
+          ],
+          "imageUrl": "/img/interest-badges/sova-manad.png",
+          "description": "Märket Sova borta månad är det tredje i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt en månad."
+        },
+        {
+          "key": "sova-100",
+          "name": "Sova borta 100",
+          "level": "utmanare",
+          "order": 3,
+          "next": [
+            "sova-ar"
+          ],
+          "imageUrl": "/img/interest-badges/sova-100.png",
+          "description": "Märket Sova borta 100 är det fjärde i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt 100 nätter."
+        },
+        {
+          "key": "sova-ar",
+          "name": "Sova borta år",
+          "level": "rover",
+          "order": 4,
+          "next": [],
+          "imageUrl": "/img/interest-badges/sova-ar.png",
+          "description": "Märket Sova borta år är det femte i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt ett år."
+        }
+      ]
+    },
+    {
+      "key": "vattensakerhet",
+      "name": "Säkerhet i vattnet",
+      "badges": [
+        {
+          "key": "livraddning",
+          "name": "Livräddning",
+          "level": "sparare",
+          "order": 0,
+          "next": [
+            "isvett"
+          ],
+          "imageUrl": "/img/interest-badges/livraddning.png",
+          "description": "Märket Livräddning är det första i en serie om säkerhet på och i vattnet. I det här märket får du lära dig att förebygga drunkningsolyckor och öva på att agera om det händer en olycka i vattnet.",
+          "criteria": [
+            "Veta hur du använder utrustning för livräddning, såsom tex livboj eller räddningslina.",
+            "Pratat om vid vilka situationer någon kan hamna oväntat i vattnet och hur scouterna ska hantera det.",
+            "Prövat att ramla i vattnet med kläderna på.",
+            "Träna på att kommunicera med den som är i nöd.",
+            "Träna på att rädda en kompis med hjälp av olika tekniker. Det kan till exempel vara från land, från båt eller i vatten."
+          ]
+        },
+        {
+          "key": "isvett",
+          "name": "Isvett",
+          "level": "upptackare",
+          "order": 1,
+          "next": [
+            "sjovett"
+          ],
+          "imageUrl": "/img/interest-badges/isvett.png",
+          "description": "Märket Isvett är det andra i en serie om säkerhet på och i vattnet. I det här märket lär du dig att vara säker på is och öva på hur du ska agera om du eller någon annan går igenom isen.",
+          "criteria": [
+            "Veta vilken utrustning du behöver ha med dig när du ska ge dig ut på isen.",
+            "Lära dig  var det finns risk för svag is och hur du kontrollerar isens tjocklek.",
+            "Lära dig hur du ska hjälpa någon ur en vak.",
+            "Testa att dra dig fram på is med hjälp av isdubbar.",
+            "Göra en aktivitet på is som ex åka skridskor, pimpla eller åka skidor.",
+            "Om möjlighet finns, testa att bada i isvak och själv ta dig upp."
+          ]
+        },
+        {
+          "key": "sjovett",
+          "name": "Sjövett",
+          "level": "aventyrare",
+          "order": 2,
+          "next": [
+            "kapsejsa"
+          ],
+          "imageUrl": "/img/interest-badges/sjovett.png",
+          "description": "Märket Sjövett är det tredje i en serie om säkerhet på och i vattnet. I det här märket lär du dig att vara trygg på sjön genom att säkert navigera och planera inför att du ger dig ut på sjön.",
+          "criteria": [
+            "Ha kunskap om vilka regler som gäller ute på sjön.",
+            "Ha kunskap om de viktigaste sjömärkena och dess betydelser.",
+            "Ansvara för att patrullen medför säkerhetsutrustning ombord när ni ska ut och segla, ex. livboj, flytvästar, lanternor och visselpipa.",
+            "Kunna hålla god uppsikt över omgivningen, vara redo att väja om nödvändigt och tänka på farten.",
+            "Ha som vana att kollat väderleksrapporten innan de ger sig ut på sjön.",
+            "Ha som vana att meddelat någon på land vart ni ska innan scouterna ger sig ut på sjön."
+          ]
+        },
+        {
+          "key": "kapsejsa",
+          "name": "Kapsejsa",
+          "level": "utmanare",
+          "order": 3,
+          "next": [],
+          "imageUrl": "/img/interest-badges/kapsejsa.png",
+          "description": "Märket Leka är det första i en serie om lek och tävling. I det här märket får du testa nya lekar ute i naturen.",
+          "criteria": [
+            "Förstå vilken säkerhetsutrustning som är passande för båttypen och kunna använda den.",
+            "Trilla i vattnet utan att farkosten välter och ta dig upp i farkosten igen.",
+            "Välta farkosten och vända tillbaka den. Ta dig upp i farkosten igen.",
+            "Ta hand om er och er farkost efter en kapsejsning.",
+            "Dokumentera er kapsejsning genom bild och text."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "teknik",
+      "name": "Teknik och mekanik",
+      "badges": [
+        {
+          "key": "saker-pa-natet",
+          "name": "Säker på nätet",
+          "level": "sparare",
+          "order": 0,
+          "next": [
+            "tekniken"
+          ],
+          "imageUrl": "/img/interest-badges/saker-pa-natet.png",
+          "description": "Märket Säker på nätet det första i en serie om teknik och mekanik. I det här märket får du lära dig hur du gör när någon utsätts för något dåligt på nätet, utforska hur du vet vad som är sant och inte sant och hur man själv beter sig på nätet.",
+          "criteria": [
+            "Lär dig hur du håller dig säker och är en bra kompis på nätet.",
+            "Lära dig vad som kan hända på nätet och vad du gör om något obehagligt händer eller nån beter sig dåligt.",
+            "Förstår att saker både är sant och inte sant på nätet. Går det att veta skillnaden?",
+            "Veta när jag inte borde dela vidare något jag sett på nätet."
+          ]
+        },
+        {
+          "key": "tekniken",
+          "name": "Tekniken",
+          "level": "upptackare",
+          "order": 1,
+          "next": [
+            "maskinen"
+          ],
+          "imageUrl": "/img/interest-badges/tekniken.png",
+          "description": "Märket Tekniken är det andra i en serie om teknik och mekanik. I det här märket får du utforska hur en maskin eller ett verktyg fungerar.",
+          "criteria": [
+            "Plocka isär en trasig hushållsmaskin eller ett verktyg.",
+            "Försöka identifiera vilken funktion de olika delarna kan ha",
+            "Se om ni kan hitta varför maskinen slutat fungera",
+            "Fundera på hur tillverkaren skulle kunna göra maskinen bättre"
+          ]
+        },
+        {
+          "key": "maskinen",
+          "name": "Maskinen",
+          "level": "aventyrare",
+          "order": 2,
+          "next": [
+            "innovationen"
+          ],
+          "imageUrl": "/img/interest-badges/maskinen.png",
+          "description": "Märket Maskinen är det tredje i en serie om teknik och mekanik. I det här märket får du skapa en maskin med hjälp av sol, vind eller vatten.",
+          "criteria": [
+            "Upplev hur vinden, som nästan alltid blåser, kan användas för att driva en dynamo eller en maskin.",
+            "Upplev hur solens strålar kan värma vatten och få en idé om hur de kan användas för att skapa energi.",
+            "Upplev hur vatten kan användas för att driva maskiner och få en idé om hur man med vattenkraft kan producera el.",
+            "Skapa en maskin av något slag, som kan använda något av det du lärt dig från tidigare punkter.",
+            "Fundera över hur maskinen ni skapat kan göras bättre om ni gjorde den igen, med obegränsade förutsättningar."
+          ]
+        },
+        {
+          "key": "innovationen",
+          "name": "Innovationen",
+          "level": "utmanare",
+          "order": 3,
+          "next": [],
+          "imageUrl": "/img/interest-badges/innovationen.png",
+          "description": "Märket Innovationen är det fjärde i en serie om teknik och mekanik. I det här märket får du skapa något digitalt i ett projekt."
+        }
+      ]
+    },
+    {
+      "key": "experiment",
+      "name": "Experiment",
+      "badges": [
+        {
+          "key": "experimentettan",
+          "name": "Experimentettan",
+          "level": "sparare",
+          "order": 0,
+          "next": [
+            "experimenttvaan"
+          ],
+          "imageUrl": "/img/interest-badges/experimentettan.png",
+          "description": "Märket Experimentettan är det första i en märkesstegring om experiment.",
+          "criteria": [
+            "Genomför någon form av vetenskapligt experiment under vägledning av ledare.",
+            "Testa att genomföra minst två lättare experiment i din patrull.",
+            "Lär dig om kemikalier (naturliga och konstruerade) och undersök var man kan hitta dem."
+          ]
+        },
+        {
+          "key": "experimenttvaan",
+          "name": "Experimenttvåan",
+          "level": "upptackare",
+          "order": 1,
+          "next": [
+            "experimenttrean"
+          ],
+          "imageUrl": "/img/interest-badges/experimenttvaan.png",
+          "description": "Märket Experimenttvåan är det andra i en märkesstegring om experiment.",
+          "criteria": [
+            "Genomför experiment för att bestämma brännbarheten, hårdheten och ursprunget för tre material.",
+            "Gör en hemmagjord pH-indikator (rödkålsindikator) och kontrollera resultaten med olika vätskor.",
+            "Testa två svårare experiment",
+            "Förstå grundläggande säkerhet vid genomförande av experiment",
+            "Kom på ett eget experiment som ni planerar och genomför i patrullen tillsammans med en ledare.",
+            "Testa vattenrening med enkla metoder",
+            "Skapa en raket av bakpulver och ättika",
+            "Elefanttandkräm",
+            "Lava-lampa",
+            "Bygga en vulkan",
+            "Gör tvål och förklara vad som händer under processen."
+          ]
+        },
+        {
+          "key": "experimenttrean",
+          "name": "Experimenttrean",
+          "level": "aventyrare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/experimenttrean.png",
+          "description": "Märket Experimenttrean är det tredje i en märkesstegring om experiment.",
+          "criteria": [
+            "Kunna planera experiment säkert och värdera risker innan experiment genomförs.",
+            "Planera och genomför komplexa experiment tillsammans med patrullen och ledaren.",
+            "Öva på att försöka förutspå experiment. Skapa en hypotes, testa experimentet och reflektera över resultatet.",
+            "Lär dig om ett experiment och visa hur det fungerar för andra i avdelningen, eller yngre scouter",
+            "Gör kaseinplast/mjölkplast. Experimentera med olika temperaturer och typer av mjölk och syra t.ex. vinäger citron, apelsin och jämför resultaten.",
+            "Färga kläder genom ex. batiktryck, batikfärgning eller genom att använda växtfärger."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "problemlosning",
+      "name": "Problemlösning",
+      "badges": [
+        {
+          "key": "klura",
+          "name": "Klura",
+          "level": "sparare",
+          "order": 0,
+          "next": [
+            "losa"
+          ],
+          "imageUrl": "/img/interest-badges/klura.png",
+          "description": "Märket Klura är det första i en serie om problemlösning. I det här märket får du lära dig om chiffer.",
+          "criteria": [
+            "Lära dig att lösa och använda minst två olika sorters chiffer eller ”hemliga språk”.",
+            "Skapa ett eget chiffer med en chiffernyckel"
+          ]
+        },
+        {
+          "key": "losa",
+          "name": "Lösa",
+          "level": "upptackare",
+          "order": 1,
+          "next": [
+            "koda"
+          ],
+          "imageUrl": "/img/interest-badges/losa.png",
+          "description": "Märket Lösa är det andra i en serie om problemlösning. I det här märket får patrullen hitta problem i sin omgivning och hitta på lösningar.",
+          "criteria": [
+            "full med gammal mjölk eller att det alltid står odiskade kåsor med gammalt kaffe i samlingssalen.",
+            "Patrullen skall ta fram lösningar på problemen.",
+            "Presentera lösningen för avdelningen",
+            "Om det behövs skriva en motion till kårens nästa stämma."
+          ]
+        },
+        {
+          "key": "koda",
+          "name": "Koda",
+          "level": "aventyrare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/koda.png",
+          "description": "Märket Koda är det tredje i en serie om problemlösning. I det här märket får du öva på att programmera.",
+          "criteria": [
+            "Testa hur programmeringslogik fungerar genom att pröva i verkliga livet och se om logiken håller. Turas om att göra instruktioner som guidar scoutkompisen genom en egengjord bana.",
+            "Tillsammans med minst en annan person göra ett programmeringsprojekt: Koda något som ni själva hittat på. Det kan till exempel vara ett spel, en robot, en hemsida, en app eller kanske en värld i Minecraft. Beroende på era förkunskaper kan ni antigen välja ett verktyg som underlättar programmeringen eller så skriver ni ren kod i ett programmeringsspråk."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "samhallsengagemang",
+      "name": "En bättre omvärld",
+      "badges": [
+        {
+          "key": "goda-garningar",
+          "name": "Goda gärningar",
+          "level": "sparare",
+          "order": 0,
+          "next": [
+            "varldsforbattraren"
+          ],
+          "imageUrl": "/img/interest-badges/goda-garningar.png",
+          "description": "Märket Goda gärningar är en del i en serie om att jobba för en bättre omvärld. Genom att jobba med det här märket får du praktisk erfarenhet att göra snälla saker för andra.",
+          "criteria": [
+            "Reflektera kring vad som kan vara en god gärning.",
+            "Gör en god gärning varje dag under till exempel en vecka.",
+            "Skriv eller rita i en ”dagbok” varje dag under tiden."
+          ]
+        },
+        {
+          "key": "varldsforbattraren",
+          "name": "Världsförbättraren",
+          "level": "upptackare",
+          "order": 1,
+          "next": [
+            "superhjalte"
+          ],
+          "imageUrl": "/img/interest-badges/varldsforbattraren.png",
+          "description": "Märket Världsförbättraren är en del i en serie om att jobba för en bättre omvärld. Genom att jobba med märket får du erfarenhet att göra saker som påverkar samhället i en bättre riktning.",
+          "criteria": [
+            "Göra en eller flera aktiviteter tillsammans med dina scoutkompisar där ni gör en god gärning genom att göra något för andra. Det kan till exempel vara att planera och genomföra en insamling, städa ett skogsparti, rensa en badplats, göra en kampanj för mindre bilåkande. Det viktiga är att det blir en aktivitet som påverkar samhället mot en bättre värld.",
+            "Efter att ni genomfört aktiviteten pratar ni tillsammans i patrullen och med ledarna om hur det kändes och vad resultatet blev för er aktivitet."
+          ]
+        },
+        {
+          "key": "superhjalte",
+          "name": "Superhjälte",
+          "level": "aventyrare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/superhjalte.png",
+          "description": "Märket Superhjälte är en del i en serie om att jobba för en bättre omvärld. Genom märket får du hitta och fördjupa dig i en fråga som du brinner för och se att ditt engagemang kan göra skillnad. Genom märket får du hitta och fördjupa dig i en fråga som du brinner för och se att ditt engagemang kan göra skillnad.",
+          "criteria": [
+            "Tillsammans med din patrull välja ett område eller en fråga där ni vill göra skillnad till exempel klimatfrågan, mobbning, trafiksäkerhet, hälsa, nedskräpning.",
+            "Bestämma hur ni ska göra skillnad, till exempel äta mindre kött, säga hej till alla i klassen, cykla tillsammans med kompisar till skolan, plocka skräp.",
+            "Göra detta kontinuerligt tillsammans med din patrull under en termin.",
+            "Följa upp hur det går och stötta varandra under terminens gång.",
+            "I slutet av terminen utvärdera på vilket sätt er insats gjorde skillnad och vilka erfarenheter ni har fått."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "hallbarhet",
+      "name": "Miljö och hållbarhet",
+      "badges": [
+        {
+          "key": "sortera-atervinn",
+          "name": "Sortera och återvinn",
+          "level": "sparare",
+          "order": 0,
+          "next": [
+            "hallbarhet"
+          ],
+          "imageUrl": "/img/interest-badges/sortera-atervinn.png",
+          "description": "Märket Sortera och återvinn är en del i en serie om att jobba om miljö, klimat och hållbarhet. Genom att jobba med märket får du göra en konkret insats för miljön.",
+          "criteria": [
+            "Göra en städinsats tillsammans där ni samlar skräp utomhus, till exempel på en lekplats eller vid en återvinningsstation.",
+            "Ta reda på vad som händer med soporna efter att du slängt dem i rätt sopkärl.",
+            "Se över kårens återvinningssystem. Hur sorterar ni era sopor? Vem är ansvarig för att tömma? Kan ni göra återvinningsstationen roligare genom att pynta och/eller sätta upp tydliga skyltar?",
+            "Se över vad ni har på kåren eller hemma och skänk eller sälj det ni inte använder längre.",
+            "Ta reda på var man kan köpa begagnat i er närhet och prata om vad ni tycker är okej att använda som varit någon annans, exempelvis kläder, möbler, leksaker, bestick mm."
+          ]
+        },
+        {
+          "key": "hallbarhet",
+          "name": "Hållbarhet",
+          "level": "upptackare",
+          "order": 1,
+          "next": [
+            "klimat"
+          ],
+          "imageUrl": "/img/interest-badges/hallbarhet.png",
+          "description": "Märket Hållbarhet är en del i en serie om att jobba om miljö, klimat och hållbarhet. Genom att jobba med märket får du lära dig om de globala målen för hållbarhet och utmana dig själv inom alla tre dimensionerna av hållbarhet, social, miljömässig och ekonomisk.",
+          "criteria": [
+            "Veta var de globala målen för hållbarhet är.",
+            "Gör en hållbarhetsutmaning inom **social** hållbarhet (t.ex. Gå på ett språkcafé, hjälpa till ett härbärge/kyrkan, sprida kunskap om hållbarhet, något hälsofrämjande eller kartlägg hur fördelningen mellan män och kvinnor ser ut i din scoutkår - vem gör vad?)",
+            "Gör en hållbarhetsutmaning inom **miljömässig** hållbarhet (rensa/städa ett vattendrag i er närhet, försök att duscha så snabbt som möjligt, arrangera en vegetarisk hajk, uppmuntra till samåkning i kåren)",
+            "Gör en hållbarhetsutmaning inom **ekonomisk** hållbarhet (arrangera en loppis, skapa något nytt av något gammalt, ta reda på hur dina ledare har det på scouterna och hur du kan visa dom din uppskattning på bästa sätt)",
+            "Berätta om det du gjorde för andra till exempel genom att dela i patrullen eller lägga upp aktiviteten i aktivitetsbanken.",
+            "Reflektera över hur det gick och hur du kan fortsätta arbeta för en hållbar värld."
+          ]
+        },
+        {
+          "key": "klimat",
+          "name": "Klimat",
+          "level": "aventyrare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/klimat.png",
+          "description": "Märket Hållbarhet är en del i en serie om att jobba om miljö, klimat och hållbarhet. Genom att jobba med märket får du koll på hur dina vardagsval påverkar klimatet, testa att förändra dina vanor på riktigt och dessutom inspirera hela din scoutkår att ta kliv i rätt riktning.",
+          "criteria": [
+            "Ha räknat ut ditt CO2-avtryck",
+            "Under en månad ha gjort något för att minska ditt CO2-avtryck, t ex att äta vegetariskt eller lokalt, cykla i stället för att åka bil eller att inte konsumera nya saker. Välj något som du tror att du kommer vilja och kunna fortsätta med.",
+            "Ha tagit ett initiativ i scoutkåren för ökade klimatinsatser, t ex att skriva en motion till kårstämman om solceller, ha en hajk med bara vegetarisk mat, att ni blir Hållbar scoutkår eller uppmuntrar till mer samåkning."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "internationellt",
+      "name": "Internationell rörelse",
+      "badges": [
+        {
+          "key": "internationellt",
+          "name": "Internationellt",
+          "level": "upptackare",
+          "order": 0,
+          "next": [
+            "varldens-utmaning"
+          ],
+          "imageUrl": "/img/interest-badges/internationellt.png",
+          "description": "Märket Internationellt är det första i en serie om vår internationella rörelse. I det här märket får du kontakt med scouter i ett annat land och lära dig mer om hur det är hos dem .",
+          "criteria": [
+            "Ta aktiv kontakt med scouter i ett annat land. Ett sätt att komma i kontakt med en patrull utomlands är att gå in på Facebooksidan International Scouting Sweden och klicka på community för att se om någon söker kontakt med en svensk patrull. Om inte så skriv ett eget inlägg på sidan så delar sidan det med de som följer, och hoppas ni får napp.",
+            "Ta reda på hur det är att vara scout i ett annat land och vad det innebär. Det kan ni till exempel göra genom att ta reda på vad de gör för scoutaktiviteter, vilka likheterna och skillnaderna är det jämfört mot vad ni gör i Scouterna.",
+            "Testa en av deras aktiviteter på ett scoutmöte.",
+            "Under tiden ni har kontakt med de andra scouterna ska ni regelbundet reflektera med patrullkompisar och ledare om hur kontakten har påverkat er och vad ni tar med er från det.",
+            "Undersök möjligheten att kunna träffas i verkligheten genom till exempel ett läger eller hajk."
+          ]
+        },
+        {
+          "key": "varldens-utmaning",
+          "name": "Världens utmaning",
+          "level": "aventyrare",
+          "order": 1,
+          "next": [
+            "upptack-varlden"
+          ],
+          "imageUrl": "/img/interest-badges/varldens-utmaning.png",
+          "description": "Märket Världens utmaning är det andra i en serie om vår internationella rörelse. I det här märket får ni utmanas och utmana scouter i andra länder.",
+          "criteria": [
+            "Kontakta tillsammans med din patrull scoutgrupper från minst två andra länder och lär kanna dem och deras scoutkår.",
+            "Hitta på en utmaning som ni vill utmana er nya vängrupp i. Kanske är det vem som lagar köttbullar snabbast, vem som kan surra det högsta tornet eller något helt annat. Ni bestämmer.",
+            "Be er nya vängrupp att utmana er i en utmaning som de själva hittat på."
+          ]
+        },
+        {
+          "key": "upptack-varlden",
+          "name": "Upptäck världen",
+          "level": "utmanare",
+          "order": 2,
+          "next": [
+            "varldsmedborgare"
+          ],
+          "imageUrl": "/img/interest-badges/upptack-varlden.png",
+          "description": "Märket Upptäck världen är det tredje i en serie om vår internationella rörelse. I det här märket ska du resa till ett annat land och träffa scouter och se vad som är lika och vad som är annorlunda.",
+          "criteria": [
+            "Planera och genomför en scoutresa i ett annat land och besök samtidigt scouter i landet.",
+            "Besök en scoutaktivitet i ett annat land.",
+            "Gör en typisk svensk scoutaktivitet med scouter från andra länder.",
+            "Reflektera över vad du har sett och skillnaderna mot scouting i Sverige.",
+            "Berätta om din internationella scoutupplevelse för andra scouter i din scoutkår eller närliggande scoutkårer."
+          ]
+        },
+        {
+          "key": "varldsmedborgare",
+          "name": "Världsmedborgare",
+          "level": "rover",
+          "order": 3,
+          "next": [],
+          "imageUrl": "/img/interest-badges/varldsmedborgare.png",
+          "description": "Märket Världsmedborgare är det fjärde i en serie om vår internationella rörelse. I det här märket ska du engagera dig som volontär internationellt.",
+          "criteria": [
+            "Engagera dig som internationell volontär i våra världsorganisationer WAGGGS eller WOSM. Antingen i ett projekt, i WAGGGS eller WOSMs region eller ett scoutcenter.",
+            "Berätta för andra roverscouter om dina upplevelser."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "konstnarliga",
+      "name": "Konstnärliga uttryck",
+      "badges": [
+        {
+          "key": "spela",
+          "name": "Spela",
+          "level": "upptackare",
+          "order": 0,
+          "next": [
+            "filma"
+          ],
+          "imageUrl": "/img/interest-badges/spela.png",
+          "description": "Märket Spela är det första i en serie om konstnärliga uttryck. I det här märket får du sätta upp en föreställning tillsammans med dina scoutkompisar.",
+          "criteria": [
+            "Skapa ett manus, antingen utifrån en egen idé eller utifrån en färdig berättelse.",
+            "Förbereda scen, miljö och rekvisita.",
+            "Öva in repliker och repetera.",
+            "Antingen är du engagerad i alla dess saker eller så fördjupar du dig i någon av dem, t.ex. att du skriver manus och regisserar dina kamrater eller att du ansvarar för scen, dekor och rekvisita.",
+            "Efteråt ska du, tillsammans med de andra som var med, prata om hur det gick och vad ni har lärt er."
+          ]
+        },
+        {
+          "key": "filma",
+          "name": "Filma",
+          "level": "aventyrare",
+          "order": 1,
+          "next": [
+            "fota"
+          ],
+          "imageUrl": "/img/interest-badges/filma.png",
+          "description": "Märket Filma är det andra i en serie om konstnärliga uttryck. I det här märket får du skapa en film tillsammans med dina scoutkompisar",
+          "criteria": [
+            "Vara delaktig i att skapa en film med handling med början, mitt och slut.",
+            "I det ingår att skriva manus, förbereda miljö och rekvisita, öva in repliker, repetera och agera, filma och redigera.",
+            "Antingen är du engagerad i alla dessa saker eller så fördjupar du dig i någon av dem, exempelvis skriver manus och regisserar dina kamrater eller att du ansvarar för filmning och lär dig mer om det.",
+            "Filmen ska vara minst fem minuter lång.",
+            "När filmen är färdig ska den ha premiär och visas för andra och du ska, tillsammans med de andra som var med, prata om hur det gick och vad ni har lärt er."
+          ]
+        },
+        {
+          "key": "fota",
+          "name": "Fota",
+          "level": "utmanare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/fota.png",
+          "description": "Märket Fota är det tredje i en serie om konstnärliga uttryck. I det här märket får du utforska olika fototekniker och hur man kan använda foto i berättande.",
+          "criteria": [
+            "Berätta en historia med patrullen enbart med hjälp av kamerabilder.",
+            "Testa att ta bilder där ljuset har olika riktning och styrka och jämfört resultaten.",
+            "Testa olika former av komposition av bilder. Till exempel med tredjedelsregeln eller med att ha motiv i förgrund och bakgrund, grodperspektiv eller närbilder.",
+            "Prata om vilka regler som finns när det gäller fotografering, till exempel integritet, skyddsobjekt, delade foton, publicering eller att använda andras foton."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "musik",
+      "name": "Musik",
+      "badges": [
+        {
+          "key": "musik",
+          "name": "Musik",
+          "level": "upptackare",
+          "order": 0,
+          "next": [
+            "instrument"
+          ],
+          "imageUrl": "/img/interest-badges/musik.png",
+          "description": "Märket Musik är det första i en serie om just musik. I det här märket får du prova att göra musik tillsammans med dina kompisar.",
+          "criteria": [
+            "Testa olika sätt att göra musik tillsammans, som till exempel att sjunga i stämmor, sjunga kanon, spela instrument eller något annat som ni är nyfikna på.",
+            "Tillsammans i patrullen dela med er av vilken musik ni tycker om och lyssna på den.",
+            "Lyssna på musik som speglar olika känslor.",
+            "Skriva en ny text till en sång och sedan sjunga och spela den tillsammans i patrullen."
+          ]
+        },
+        {
+          "key": "instrument",
+          "name": "Instrument",
+          "level": "aventyrare",
+          "order": 1,
+          "next": [
+            "orkester"
+          ],
+          "imageUrl": "/img/interest-badges/instrument.png",
+          "description": "Märket Instrument är det andra i en serie om musik. I det här märket får du börja lära dig ett instrument.",
+          "criteria": [
+            "Lära dig att spela en enkel melodi eller några ackord på ett instrument.",
+            "Kunna läsa enklare noter.",
+            "Ha lärt dig teknikövningar som passar ditt instrument.",
+            "Veta hur ditt instrument fungerar och hur du tar hand om det."
+          ]
+        },
+        {
+          "key": "orkester",
+          "name": "Orkester",
+          "level": "utmanare",
+          "order": 2,
+          "next": [
+            "skogsrejv"
+          ],
+          "imageUrl": "/img/interest-badges/orkester.png",
+          "description": "Märket Orkester är det tredje i en serie om musik. Det här märket får du spela tillsammans med andra och bilda en orkester.",
+          "criteria": [
+            "Vara delaktig i att skapa en konsert med början, mitt och slut.",
+            "I det ingår att välja ut låtar, solopartier och bestämma hur låtarna passar ihop.",
+            "När konserten är färdig ska den ha premiär och visas för andra och du ska, tillsammans med de andra som var med, prata om hur det gick och vad ni har lärt er."
+          ]
+        },
+        {
+          "key": "skogsrejv",
+          "name": "Skogsrejv",
+          "level": "rover",
+          "order": 3,
+          "next": [],
+          "imageUrl": "/img/interest-badges/skogsrejv.png",
+          "description": "Märket Skogsrejv är det fjärde i en serie om musik. Det här märket får du planera och genomföra ett skogsrejv."
+        }
+      ]
+    },
+    {
+      "key": "demokrati",
+      "name": "Demokrati",
+      "badges": [
+        {
+          "key": "min-rost",
+          "name": "Min röst",
+          "level": "upptackare",
+          "order": 0,
+          "next": [
+            "demokrati"
+          ],
+          "imageUrl": "/img/interest-badges/min-rost.png",
+          "description": "Märket Min röst är det första i en serie om demokrati. I det här märket får du lära dig mer om demokrati och se hur du kan använda din röst för att vara med och påverka.",
+          "criteria": [
+            "Kunna förklara fem ord som har med demokrati att göra.",
+            "Prova på att göra din röst hörd genom att delta i en värderingsövning eller en omröstning.",
+            "Skapa något som visar för andra vad demokrati är. Det kan till exempel vara ett drama, en plansch, en väggtidning eller en installation.",
+            "Ha deltagit i ett beslutandemöte/årsmöte i patrullen eller på högre nivå i kåren."
+          ]
+        },
+        {
+          "key": "demokrati",
+          "name": "Demokrati",
+          "level": "aventyrare",
+          "order": 1,
+          "next": [],
+          "imageUrl": "/img/interest-badges/demokrati.png",
+          "description": "Märket Demokrati är det andra i en serie om just demokrati. I det här märket får du lära dig mer om demokrati och hur det fungerar i Scouterna.",
+          "criteria": [
+            "Veta hur scouting är organiserat i din scoutkår, i Sverige och i världen.",
+            "Ha varit med på en kårstämma (eller beslutande årsmöte på högre nivå).",
+            "Veta hur du kan påverka genom att skriva en motion eller ett förslag till styrelsen.",
+            "I din patrull haft en diskussion om demokrati, hur alla kommer till tals, hur ni fattar beslut mm.",
+            "I din patrull ha provat på att ha ett möte med agenda, ordförande och sekreterare.",
+            "I din patrull eller scoutgrupp ha provat olika metoder att diskutera och bestämma saker, t ex genom brainstorming."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "kroppen",
+      "name": "Kroppen",
+      "badges": [
+        {
+          "key": "dassmarket",
+          "name": "Dassmärket",
+          "level": "upptackare",
+          "order": 0,
+          "next": [
+            "kroppslig-halsa"
+          ],
+          "imageUrl": "/img/interest-badges/dassmarket.png",
+          "description": "Dassmärket är det första i en serie om kroppen. I det här märket får du lära dig om hur du uträttar dina behov när du inte har en toalett till hands och hur du sköter hygienen.",
+          "criteria": [
+            "Diskutera hur du sköter din personliga hygien och uträttar dina behov när du inte har tillgång till en vanlig toalett. Prata om hur du gör om du har mens.",
+            "Känna till vilka regler som finns för utedass och för toalettbehov som uträttas på platser som helt saknar toalett, dass eller liknande.",
+            "Diskutera hur ni kan göra för att användandet av dass eller “friluftstoalett” ska kännas tryggt och naturligt.",
+            "Ha pratat om magont och att vara lös eller hård i magen och hur en hanterar det när du inte har tillgång till hemmet och en toalett."
+          ]
+        },
+        {
+          "key": "kroppslig-halsa",
+          "name": "Kroppslig hälsa",
+          "level": "aventyrare",
+          "order": 1,
+          "next": [
+            "psykisk-halsa"
+          ],
+          "imageUrl": "/img/interest-badges/kroppslig-halsa.png",
+          "description": "Märket Kroppslig hälsa är det andra i en serie om kroppen. I det här märket utforskar vad kroppen behöver för att må bra. Det här märket hänger nära samman med märket Psykisk hälsa.",
+          "criteria": [
+            "Samtala i patrullen vad varje person behöver för att må bra i form av fysisk aktivitet, återhämtning och mat. Finns det speciella rutiner, hur ofta eller hur länge?",
+            "Skapa en gemensam “mat och sov-klocka” för patrullen. Den ska täcka dagarna under en hel vecka. Den ska innehålla hur ni tänker att man ska leva så att kroppen mår så bra som möjligt. Bestäm hur mycket och när ni ska sova/återhämta er, när ni äter och hur länge samt hur mycket fysisk aktivitet ni ska ha och när.",
+            "Lev efter er “mat och sov-klocka” under en vecka.",
+            "Samtala om hur det gick. Hur passade de nya rutinerna? Hur mådde kroppen? Finns det något du vill förändra i “mat och sov-klockan\" för att du och din kropp ska må ännu bättre eller för att kunna leva efter rutinerna under en längre tid?"
+          ]
+        },
+        {
+          "key": "psykisk-halsa",
+          "name": "Psykisk hälsa",
+          "level": "utmanare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/psykisk-halsa.png",
+          "description": "Märket Psykiska hälsa är det tredje i en serie om kroppen. I det här märket får du utforska hur du gör för att du ska må bra på insidan.",
+          "criteria": [
+            "Gå igenom _5 tips för psykisk hälsa._ De hittar du på Scouternas webbplats, klicka här.",
+            "Lista saker som får dig att må bra och saker som får dig att bli stressad eller känna oro.",
+            "Diskutera era listor tillsammans i patrullen och _5 tips för psykisk hälsa._ Hjälps sedan åt att komma på sätt som får er att kunna göra mer av det som får er att må bra och strategier för att minska det som får er att känna stress och oro.",
+            "Genomför ett må-bra-möte. Detta ska vara en “spa-dag för hjärnan” där ni kan prova på något av de tips ni kommit på i patrullen. Det kan också vara tex yoga, avslappning eller mindfullness. Se till att ni också äter och dricker något gott samt lyssnar på musik som ger er glädje."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oppenhet",
+      "name": "Öppenhet och respekt",
+      "badges": [
+        {
+          "key": "inkludering",
+          "name": "Inkludering",
+          "level": "upptackare",
+          "order": 0,
+          "next": [
+            "genus-hbtq"
+          ],
+          "imageUrl": "/img/interest-badges/inkludering.png",
+          "description": "Märket Inkludering är det första i en serie om öppenhet och respekt. I det här märket får du göra aktiva handlingar för att alla ska känna sig välkomna.",
+          "criteria": [
+            "Träna på att ta plats själv och att ge plats åt andra, till exempel genom att använda talpinne eller skapa gruppregler.",
+            "Berätta något för din patrull som kan vara bra att andra vet om dig för att du ska trivas bra i Scouterna.",
+            "Fundera på om det finns vanor eller normer i Scouterna som gör det svårare för vissa att vara med. Om du kommer på några ska du också fundera på om det finns saker du eller er patrull kan göra för att minska svårigheterna.",
+            "Skapa något som gör att fler känner sig välkomna till er verksamhet, där ni visar på att ni tar ställning i en viss fråga eller hitta på sätt att visa på mångfald och inkludering."
+          ]
+        },
+        {
+          "key": "genus-hbtq",
+          "name": "Genus HBTQ+",
+          "level": "aventyrare",
+          "order": 1,
+          "next": [
+            "livsaskadning"
+          ],
+          "imageUrl": "/img/interest-badges/genus-hbtq.png",
+          "description": "Märket Genus HBTQ+ är det andra i en serie om öppenhet och respekt. I det här märket får du lära dig mer om normer och hur du kan hjälpa till att utmana dem.",
+          "criteria": [
+            "Lära dig om normer kopplade till genus, sexualitet, könsidentitet och könsuttryck.",
+            "Undersöka hur normer och acceptans för olikheter ser ut i de olika sammanhang du befinner dig i, exempelvis i hemmet, skolan, scouterna och i övriga samhället.",
+            "Reflektera och ge förslag på hur vi kan bidra till öppnare förhållningssätt och till att utmana normer kring genus och HBTQ+",
+            "Jämföra med hur det är i andra länder och deras samhällen samt scoutrörelser. Alla människor är lika mycket värda men hur ser människors säkerhet och rättigheter ut i praktiken i olika länder?"
+          ]
+        },
+        {
+          "key": "livsaskadning",
+          "name": "Livsåskådning",
+          "level": "utmanare",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/livsaskadning.png",
+          "description": "Märket Livsåskådning är det tredje i en serie om öppenhet och respekt. I det här märket får du utforska din tro och livsåskådning och skapa förståelse för andras.",
+          "criteria": [
+            "Fundera över vad som ger ditt liv mening, vad som händer när vi dör och vilka känslor det väcker. Här följer några exempel på vad du kan göra. Arbeta gärna med det här märket en längre period för att lämna utrymme för reflektion.",
+            "Leta upp en text, dikt, sång eller filmklipp som du tycker beskriver vad du tror på och hur du vill leva. Ta med detta till ett scoutmöte och berätta för dina scoutkompisar varför du valt som du valt.",
+            "Fundera själv över de här frågorna och undersök vad personer med olika tro tycker om de här frågorna: Vad tror du på? Vad är bra med din tro? Vad gör dig glad med din tro? Finns det något som gör det svårt att tro som du gör? Finns det en gud? Vad händer när vi dör?",
+            "Prata med någon som tillhör en annan generation (förälder eller mor- och farförälder) om hur det var när de var unga. Vad trodde de på? Har samhället förändrats?",
+            "Undersök vad religion har för roll i samhället. På vilka sätt kan religionen vara en positiv kraft? Vilka krafter fungerar på liknande sätt för personer som inte har en religiös tro?",
+            "Tillhör din scoutkår en specifik religion passa på att utforska vad det betyder för dig som scout."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "pengar",
+      "name": "Pengar",
+      "badges": [
+        {
+          "key": "spara",
+          "name": "Spara",
+          "level": "aventyrare",
+          "order": 0,
+          "next": [
+            "budgetera"
+          ],
+          "imageUrl": "/img/interest-badges/spara.png",
+          "description": "Märket Spara är det första i en serie om pengar. I det här märket får du hantera dina och patrullens pengar.",
+          "criteria": [
+            "Samla in pengar tillsammans i patrullen för en aktivitet genom att exempelvis ha en loppis",
+            "Planera hur en begränsad summa pengar ska räcka för patrullaktivitet.",
+            "Anteckna hur mycket pengar du gör av med mellan två scoutmöten. Testa att minska dina utgifter mellan nästkommande möten."
+          ]
+        },
+        {
+          "key": "budgetera",
+          "name": "Budgetera",
+          "level": "utmanare",
+          "order": 1,
+          "next": [
+            "deklarera"
+          ],
+          "imageUrl": "/img/interest-badges/budgetera.png",
+          "description": "Märket Budgetera är det andra i en serie om pengar. I det här märket får du planera hur du ska spendera patrullens pengar.",
+          "criteria": [
+            "Planera hur en begränsad summa pengar ska räcka för en längre patrullaktivitet.",
+            "Lär dig hur man redovisar utlägg i din kår.",
+            "Reflektera tillsammans hur det gick att hålla en budget från en hajk eller övernattning.",
+            "Byt till dig en ny sak och uppmuntra cirkulär ekonomi"
+          ]
+        },
+        {
+          "key": "deklarera",
+          "name": "Deklarera",
+          "level": "rover",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/deklarera.png",
+          "description": "Märket Deklarera är det tre i en serie om pengar. I det här märket får du lära dig om hur pengar i samhället fungerar.",
+          "criteria": [
+            "Lämna in en inkomstdeklaration.",
+            "Lär sig om hur lån (till exempel bolån, billån och snabblån), abonnemang, avbetalning, ränta och amortering fungerar.",
+            "Sätt dig in i hur föreningsekonomi fungerar, till exempel genom att skugga kårens kassör.",
+            "Undersök vad du får för skatten du betalar.",
+            "Skapa en månadsbudget med nödvändiga utgifter, till exempel boende, mat, mobil, försäkring och transport. Diskutera även vad som är rimligt att lägga på kläder och underhållning. Fundera på om det är något särskilt du vill spara till, på kort sikt eller på lång sikt."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "grejer",
+      "name": "Ta hand om grejer",
+      "badges": [
+        {
+          "key": "materialvard",
+          "name": "Materialvård",
+          "level": "aventyrare",
+          "order": 0,
+          "next": [
+            "reparera"
+          ],
+          "imageUrl": "/img/interest-badges/materialvard.png",
+          "description": "Märket Materialvård är det första i en serie om att ta hand om sina grejer. I det här märket får du lära dig ta hand om ditt och kårens material på ett bra sätt så det håller längre.",
+          "criteria": [
+            "Lära dig hur du tar hand om din personliga utrustning som exempelvis kängor, ryggsäck och sovsäck för att materialet ska fungera länge och väl. Veta hur din utrustning bäst förvaras när den inte används.",
+            "Underhålla en produkt som kräver kontinuerlig omvårdnad som exempelvis fetta in kängor eller andra läderprodukter, förbättra impregnering på regnkläder eller tält.",
+            "Göra rent och underhåll något av kårens material, till exempel fotogenlyktor eller segel.",
+            "Slipa en kniv eller yxa och byt ett sågblad.",
+            "Känna till din scoutkårs materialsystem och hur det fungerar.  Veta hur du förvarar och transporterar olika sorters material på hajk, övernattningar och läger."
+          ]
+        },
+        {
+          "key": "reparera",
+          "name": "Reparera",
+          "level": "utmanare",
+          "order": 1,
+          "next": [],
+          "imageUrl": "/img/interest-badges/reparera.png",
+          "description": "Märket Reparera är det andra i en serie om att ta hand om sina grejer. I det här märket får du lära dig ta hand om ditt och kårens material som har blivit trasigt så det håller längre.",
+          "criteria": [
+            "Reparera något i din personliga packning, exempelvis sy fast en rem på ryggsäcken, sy i en knapp eller laga ett liggunderlag.",
+            "Reparera material som ni använder i kåren exempelvis laga en reva, byta ut ett yxskaft, byta ett trasigt glas på en fotogenlykta eller liknande.",
+            "Reparera något som finns utomhus, till exempel vedbod, brygga eller eldring."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "bygga",
+      "name": "Bygga",
+      "badges": [
+        {
+          "key": "bygga",
+          "name": "Bygga",
+          "level": "upptackare",
+          "order": 0,
+          "next": [
+            "surra"
+          ],
+          "imageUrl": "/img/interest-badges/bygga.png",
+          "description": "Märket Bygga är det första i en märkesstegring som handlar just om att bygga. Genom att jobba med märket tränar du att planera, komma på smarta lösningar tillsammans med andra.",
+          "criteria": [
+            "Bygg en större konstruktion, till exempel en flotte, ett lägerkök, en hinderbana eller ett stabilt vindskydd att sova i. Konstruktionen kan byggas antingen som pionjärarbete med rep och surrningar eller med vanlig byggteknik som ex spik och hammare.",
+            "Vara delaktig i att hitta på konstruktionen och göra en ritning.",
+            "Utvärdera tillsammans med de andra som varit med."
+          ]
+        },
+        {
+          "key": "surra",
+          "name": "Surra",
+          "level": "aventyrare",
+          "order": 1,
+          "next": [
+            "bygga-avancerat"
+          ],
+          "imageUrl": "/img/interest-badges/surra.png",
+          "description": "Märket Surra är det andra i en märkesstegring. Genom att jobba med märket fördjupar du dina kunskaper i surrningsteknik.",
+          "criteria": [
+            "Välj ut lämpliga slanor för ert bygge; Tänk på hållfasthet och hållbarhet!",
+            "Välj surrningar och knopar som passar till det som ni tänkt bygga",
+            "Testa att surra med andra material än de som vi vanligtvis använder på scouterna",
+            "Testa att surra något jättestort eller jättelitet",
+            "Använd lämpligt tågvirke för ert bygge och diskutera olika rep och snörens för- och nackdelar",
+            "Dokumentera ert bygge med bilder eller film och visa upp det för några andra"
+          ]
+        },
+        {
+          "key": "bygga-avancerat",
+          "name": "Bygga avancerat",
+          "level": "utmanare",
+          "order": 2,
+          "next": [
+            "bygga-permanent"
+          ],
+          "imageUrl": "/img/interest-badges/bygga-avancerat.png",
+          "description": "Märket Bygga avancerat är det tredje i en märkesstegring. I märket Bygga avancerat får du tillsammans med din patrull utforska flera olika konstruktionstyper och vad de kan användas till i vår verksamhet. Ni kan komma fram till egna konstruktioner eller ta inspiration från andra byggen. Du hittar flera olika konstruktionstyper i Scouternas bok “ _Bygga_ ”.",
+          "criteria": [
+            "Förstå vad som gör en konstruktion och  byggprocess hållbar och säker.",
+            "Test bygga minst 5 olika typer av konstruktioner och vad de kan användas till, exempelvis en portal till ett läger, en flotte, lägerkök, högsta tornet på ett lägerområde, en duschanordning , en karusell till de yngre scouterna eller en helt egen fantasifylld konstruktion.",
+            "Leda ett byggprojekt utifrån din egen konstruktion.",
+            "Utvärdera konstruktionerna och deras användningsområde efter att de har färdigställts."
+          ]
+        },
+        {
+          "key": "bygga-permanent",
+          "name": "Bygga permanent",
+          "level": "rover",
+          "order": 3,
+          "next": [],
+          "imageUrl": "/img/interest-badges/bygga-permanent.png",
+          "description": "Märket Bygga permanent är det fjärde i en märkesstegring om att bygga. Bygga permanent är ett märke för roverscouter som vill konstruera och bygga något bestående, till exempel ett dass, materialförråd eller bastu.",
+          "criteria": [
+            "Gör en ritning, budget och tidsplanering.",
+            "Undersök om det krävs bygglov eller bygganmälan.",
+            "Fördela arbetsuppgifter i roverlaget och utse ansvariga.",
+            "Inviga nybygget på ett kreativt sätt."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "hajk",
+      "name": "Hajk och övernattning",
+      "badges": [
+        {
+          "key": "vara-ute",
+          "name": "Vara ute",
+          "level": "aventyrare",
+          "order": 0,
+          "next": [
+            "vara-ute-sjalv"
+          ],
+          "variants": [
+            "Vinter",
+            "Staden",
+            "Skogen",
+            "Sjön",
+            "Fjäll"
+          ],
+          "imageUrl": null,
+          "description": "Intressemärkena Vara ute finns i fem varianter beroende på miljö, välj att jobba med ett av dem eller allihop.",
+          "criteria": [
+            "Ha varit med på en hajk med övernattning i den valda miljön (vatten, fjället, skogen, staden, vintern). Beroende på var och när ni genomför ert äventyr kan aktiviteten se olika ut, ni kan till exempel vandra, cykla, klättra, segla, paddla, åka skidor eller skridskor.",
+            "Vara delaktig i de förberedelser som behövs, som att planera packning, färdväg, övernattningsplats och matsedel.",
+            "Efter hajken är det viktigt att du utvärderar den tillsammans med de andra som var med. Ni ska diskutera vad ni gjorde bra och vad ni kan göra annorlunda nästa gång. För att komma ihåg dina upplevelser och tankar är det bra om du fotograferar och antecknar under hajken."
+          ]
+        },
+        {
+          "key": "vara-ute-sjalv",
+          "name": "Vara ute själv",
+          "level": "utmanare",
+          "order": 1,
+          "next": [
+            "vandra-sjalv"
+          ],
+          "imageUrl": "/img/interest-badges/vara-ute-sjalv.png",
+          "description": "Detta märke är andra märket i en märkesstegring om att gå på hajk eller övernatta utomhus. I detta märke ska du planera och genomföra en övernattning utomhus på egen hand.",
+          "criteria": [
+            "Med stöd av din ledare planera en övernattning där du övernattar själv ute i naturen i ett dygn.",
+            "Planera var och hur övernattningen ska ske och hur du tar dig dit och hem",
+            "Planera vilken mat du ska ha med dig och hur den ska tillagas",
+            "Planera för säkerhet i form av nödkontakt och sjukvård om något händer,",
+            "Fundera över regler som gäller i området och förbered för eventuella eldningsförbud, dåligt väder eller annat som med kort varsel kan påverka övernattningens genomförande",
+            "Reflektera över hur att vara ute själv påverkar dig och vilka skillnader det finns mot att vara ute flera tillsammans både före, under och efter övernattningen"
+          ]
+        },
+        {
+          "key": "vandra-sjalv",
+          "name": "Vandra själv",
+          "level": "rover",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/vandra-sjalv.png",
+          "description": "Detta märke är tredje märket i en märkesstegring om att gå på hajk eller övernatta utomhus.",
+          "criteria": [
+            "Planera en ensamvandring med minst två övernattningar utomhus.",
+            "Stort fokus skall ligga på att ensam göra en säker vandring. Planera rutten och gör en riskbedömning.",
+            "Reflektera över hur att vara ute själv påverkar dig och vilka skillnader det finns mot att vara ute flera tillsammans både före, under och efter övernattningen."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "klattra",
+      "name": "Klättra (distansmärke)",
+      "badges": [
+        {
+          "key": "klattring",
+          "name": "Klättring",
+          "level": "aventyrare",
+          "order": 0,
+          "next": [
+            "klattra-kebnekaise"
+          ],
+          "imageUrl": "/img/interest-badges/klattring.png",
+          "description": "I det här märket får du lära dig grunderna i klättring och hur du gör det på ett säkert sätt. Men också vad du behöver kunna om en olycka händer. För att få säkra andra klättrare ska du inneha topprepskort (grönt kort) eller motsvarande. Detta märke ger dig inte grönt kort och säkring av andra klättrare är inte del av detta märke. Topprepskort baseras på Svenska klätterförbundets nationella krav och utfärdas av godkända klätterklubbar.",
+          "criteria": [
+            "Kunna grundläggande säkerhet såsom hur utrustningen fungerar, regler för säkring, knopar som behövs och kommandon som används vid klättring. Vid klättring på bergsvägg finns extra säkerhet att tänka på som att förbereda så det finns nödtelefon, en plan för att ta skadade från platsen och hur man beter sig på själva klättringsplatsen.",
+            "Kunna sjukvård kopplad till klättring så som fallskador, stukade/vrickade leder, brutna leder, brännskador från rep, skärskador från vassa klippor mm.",
+            "Ha utfört en klättring med topprep upp för en bergsvägg eller klättervägg och sen ha rapellerat ner.",
+            "Kunna hur allemansrätten gäller vid klättring på klippor."
+          ]
+        },
+        {
+          "key": "klattra-kebnekaise",
+          "name": "Klättra Kebnekaise",
+          "level": "utmanare",
+          "order": 1,
+          "next": [
+            "klattra-everest"
+          ],
+          "imageUrl": "/img/interest-badges/klattra-kebnekaise.png",
+          "description": "Fysiska utmaningar är vanligt förekommande i Scouterna. vi hajkar, klättrar och paddlar runt i den svenska naturen. Distansmärken är en serie med sex olika intressemärken, som uppmärksammar fysiska utmaningar du samlat på dig under din tid i scouterna.",
+          "criteria": [
+            "För att få märket klättra Kebnekaise ska du sammanlagt ha klättrat eller bestigit en eller flera höjder motsvarande Kebnekaises högsta punkt, ca 2100 möh.",
+            "Du som scout ansvarar själv för att dokumentera antalet höjdmeter du klättrar eller bestiger vid varje hajk eller scoutaktivitet."
+          ]
+        },
+        {
+          "key": "klattra-everest",
+          "name": "Klättra Everest",
+          "level": "rover",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/klattra-everest.png",
+          "description": "Fysiska utmaningar är vanligt förekommande i Scouterna. Vi hajkar, klättrar och paddlar runt i den svenska naturen. Distansmärken är en serie med sex olika intressemärken, som uppmärksammar hur stora fysiska utmaningar du samlat på dig under din tid i Scouterna. Märket Klättra Everest är en fortsättning på märket Klättra Kebnekaise.",
+          "criteria": [
+            "För att få märket klättra Everest ska du ha klättrat eller bestigit en eller flera höjder motsvarande Mount Everest högsta punkt, ca 8850 möh.",
+            "Du som scout ansvarar dokumentera antalet höjdmeter du klättrar eller bestiger vid varje hajk eller scoutaktivitet."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "paddla",
+      "name": "Paddla (längdmärke)",
+      "badges": [
+        {
+          "key": "paddling",
+          "name": "Paddling",
+          "level": "aventyrare",
+          "order": 0,
+          "next": [
+            "paddla-vanern"
+          ],
+          "imageUrl": "/img/interest-badges/paddling.png",
+          "description": "I det här märket får du lära dig grunderna i paddling och säkerhet vid vatten.",
+          "criteria": [
+            "Kunna lyfta, bära och lägga i kanoten tillsammans med kompisar",
+            "Kunna kliva i och ur kanoten",
+            "Känna till grundläggande regler kring paddling så som säkerhet på och vid vatten.",
+            "Känna till kanoten/kajakens egenskaper i vatten och hur du bär dig åt om du ramlar i.",
+            "Ha kunskap om vilken utrustning du behöver och hur du sköter om den.",
+            "Visa att du behärskar paddelteknik på ett sådant sätt att du med säkerhet kan manövrera kanoten/kajaken i olika situationer."
+          ]
+        },
+        {
+          "key": "paddla-vanern",
+          "name": "Paddla Vänern",
+          "level": "utmanare",
+          "order": 1,
+          "next": [
+            "paddla-gotland"
+          ],
+          "imageUrl": "/img/interest-badges/paddla-vanern.png",
+          "description": "Fysiska utmaningar är vanligt förekommande i Scouterna. Vi hajkar, klättrar och paddlar runt i den svenska naturen. Längdmärken är en är en serie med sex olika intressemärken, som uppmärksammar hur stora fysiska utmaningar du samlat på dig under din tid i Scouterna.",
+          "criteria": [
+            "För att få märket Paddla Vänern ska du ha paddlat en sträcka motsvarande längden av Vänern, ca 140 km.",
+            "Du som scout ansvarar själv för att dokumentera antalet km du har paddlat."
+          ]
+        },
+        {
+          "key": "paddla-gotland",
+          "name": "Paddla Gotland",
+          "level": "rover",
+          "order": 2,
+          "next": [],
+          "imageUrl": "/img/interest-badges/paddla-gotland.png",
+          "description": "Fysiska utmaningar är vanligt förekommande i Scouterna. vi hajkar, klättrar och paddlar runt i den svenska naturen Längdmärken är en är en serie med sex olika intressemärken, som uppmärksammar hur stora fysiska utmaningar du samlat på dig under din tid i Scouterna. Märket Paddla Gotland är en fortsättning på märket Paddla Vänern.",
+          "criteria": [
+            "För att få märket Paddla Gotland ska du ha paddlat en sträcka motsvarande Gotlands kuststräcka, ca 770 km",
+            "Du som scout ansvarar själv för att dokumentera antalet km du har paddlat."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "vandra-distans",
+      "name": "Vandra (längdmärke)",
+      "badges": [
+        {
+          "key": "vandra-gbg-sthlm",
+          "name": "Vandra GBG–STHLM",
+          "level": "utmanare",
+          "order": 0,
+          "next": [
+            "vandra-sverige"
+          ],
+          "imageUrl": "/img/interest-badges/vandra-gbg-sthlm.png",
+          "description": "Fysiska utmaningar är vanligt förekommande i Scouterna. Vi hajkar, klättrar och paddlar runt i den svenska naturen. Längdmärken är en är en serie med sex olika intressemärken, som uppmärksammar hur stora fysiska utmaningar du samlat på dig under din tid i Scouterna.",
+          "criteria": [
+            "För att få märket Vandra Gbg-Sthlm ska du ha vandrat en sträcka motsvarande sträckan mellan Göteborg och Stockholm, ca 400 km.",
+            "Du som scout ansvarar själv för att dokumentera antalet km du har vandrat."
+          ]
+        },
+        {
+          "key": "vandra-sverige",
+          "name": "Vandra Sverige",
+          "level": "rover",
+          "order": 1,
+          "next": [],
+          "imageUrl": "/img/interest-badges/vandra-sverige.png",
+          "description": "Fysiska utmaningar är vanligt förekommande i Scouterna. Vi hajkar, klättrar och paddlar runt i den svenska naturen. Längdmärken är en är en serie med sex olika intressemärken, som uppmärksammar hur stora fysiska utmaningar du samlat på dig under din tid i Scouterna. Märket Vandra Sverige är en fortsättning på märket Vandra Göteborg-Stockholm.",
+          "criteria": [
+            "För att få märket Vandra Sverige ska du ha vandrat en sträcka motsvarande Sveriges längd, ca 1570km.",
+            "Du som scout ansvarar själv för att dokumentera antalet km du har vandrat."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "kottmarket",
+      "name": "Kottmärket",
+      "badges": [
+        {
+          "key": "kottmarket-familj",
+          "name": "Kottmärket",
+          "level": "familjescouter",
+          "order": 0,
+          "next": [
+            "kottmarket-rover"
+          ],
+          "imageUrl": "/img/interest-badges/kottmarket-familj.png",
+          "description": "Skogen är full av kottar och de går att använda på många olika sätt. Med detta märke visar du att du blivit en expert på kottar och dess användningsområden.",
+          "criteria": [
+            "Leta upp så många kottar som du kan under en halvtimme (gärna olika sorters kottar om det finns i närområdet)",
+            "Ta reda på vilka kottar du samlat in och varför de ser ut som de gör. Vilken art kommer kotten ifrån, varför har den formen, färgen, storleken, strukturen och utseendet?",
+            "Ta reda på vem som ätit på kotten om den är tuggad på eller vilka som gillar den sortens kottar om de är hela.",
+            "Bygg eller skapa ett konstverk av kottarna – du väljer fritt om det ska vara ett kottdjur, en kottvärld, ett kottmonster eller någon helt annan skapelse."
+          ]
+        },
+        {
+          "key": "kottmarket-rover",
+          "name": "Kottmärket",
+          "level": "rover",
+          "order": 1,
+          "next": [],
+          "imageUrl": "/img/interest-badges/kottmarket-rover.png",
+          "description": "Skogen är full av kottar och de går att använda på många olika sätt. Med detta märke visar du att du blivit en expert på kottar och dess användningsområden.",
+          "criteria": [
+            "Leta upp så många kottar som du kan under en halvtimme (gärna olika sorters kottar om det finns i närområdet)",
+            "Ta reda på vilka kottar du samlat in och varför de ser ut som de gör. Vilken art kommer kotten ifrån, varför har den formen, färgen, storleken, strukturen och utseendet?",
+            "Ta reda på vem som ätit på kotten om den är tuggad på eller vilka som gillar den sortens kottar om de är hela.",
+            "Bygg eller skapa ett konstverk av kottarna – du väljer fritt om det ska vara ett kottdjur, en kottvärld, ett kottmonster eller någon helt annan skapelse."
+          ]
+        }
+      ]
+    }
+  ],
+  "standalone": [
+    {
+      "key": "da-och-nu",
+      "name": "Då och nu",
+      "level": "sparare",
+      "imageUrl": "/img/interest-badges/da-och-nu.png",
+      "description": "Genom att känna till scoutrörelsens historia och hur den har utvecklats ökar du din förståelse för varför vi gör vissa saker och varför vi till exempel ser ut som vi gör. Scoutrörelsen startade för mer än 100 år sedan i Storbritannien och är idag den största världsomspännande idéburna barn- och ungdomsrörelsen i världen.",
+      "criteria": [
+        "Ta reda på hur och varför scoutrörelsen startade, vad man gjorde då som finns kvar idag.",
+        "Ta reda på mer om WOSM, WAGGGS, scouting i Sverige och din kår.",
+        "Ta reda på hur scouting har sett ut för tjejer och killar genom historien.",
+        "Jämför Lag och Löfte då och nu (t ex 1907, på 50-talet och idag). Varför tror du att scoutlagen har förändrats? Hur tror du att den ser ut år 2100?",
+        "Ta reda på vilka scouthögtider som finns och varför vi firar dem.",
+        "Jämför din scoutkårs historia och utveckling med den hos en annan förening som finns på orten."
+      ]
+    },
+    {
+      "key": "lagerbal",
+      "name": "Lägerbål",
+      "level": "upptackare",
+      "imageUrl": "/img/interest-badges/lagerbal.png",
+      "description": "I det här märket får du ta del av flera lägerbål, dela med dig av dina talanger och samtidigt lära dig nya lägerbålssånger.",
+      "criteria": [
+        "Vara med på minst tre lägerbål, exempelvis med din avdelning, kår eller på ett läger.",
+        "Lära dig fem lägerbålssånger som du tycker om.",
+        "Lära dig en lägerbålssång på ett annat språk.",
+        "Framföra en sketch eller sång tillsammans med din patrull på ett lägerbål."
+      ]
+    },
+    {
+      "key": "grottning",
+      "name": "Grottning",
+      "level": "aventyrare",
+      "imageUrl": "/img/interest-badges/grottning.png",
+      "description": "I det här märket får du prova på grottning och lära dig hur du gör det på ett säkert sätt.",
+      "criteria": [
+        "Veta vilken säkerhet som gäller i den grotta ni ska besöka såsom risk för fallande sten, hur man tar sig fram i otillgänglig terräng och att man aldrig ska besöka grottor ensam.",
+        "Veta riskerna med syrebrist i icke ventilerade utrymmen och riskerna med eldning i grottor",
+        "Kunna grundläggande sjukvård kopplat till grottmiljöer så som stukade/vrickade leder, brutna leder, skärskador från vassa klippor m.m.",
+        "Besöka en eller flera grottor.",
+        "Testa olika ljuskällor inne i grottan.",
+        "Fundera på hur människor använt just den grottan du besöker.",
+        "Ta reda på mer om de växter och djur som finns inne i grottan ni besöker.",
+        "Ta reda på om det finns några sägner eller historier om den grotta ni besöker."
+      ]
+    },
+    {
+      "key": "dygna",
+      "name": "Dygna",
+      "level": "aventyrare",
+      "imageUrl": "/img/interest-badges/dygna.png",
+      "description": "I det här märket ska du vara vaken i 24 timmar och utforska vad det gör med kropp och knopp.",
+      "criteria": [
+        "Var vaken 24 timmar i sträck.",
+        "Gör en valfri aktivitet eller lek tillsammans med andra varannan timme under dygnet.",
+        "Samtala kort om hur det gick efter varje aktivitet. Var det lättare eller svårare än på dagen eller tidigare på kvällen? När var det roligare och när var det tråkigare att göra aktiviteter?",
+        "När de 24 timmarna är över ska du reflektera över: Förutom när du vill ta ett märke, finns det andra anledningar till att vilja eller behöva vara vaken 24 timmar i sträck? Hur blir du när du är trött? Finns det saker som blir farliga att göra när man inte sovit tillräckligt?"
+      ]
+    },
+    {
+      "key": "offline",
+      "name": "Offline",
+      "level": "aventyrare",
+      "imageUrl": "/img/interest-badges/offline.png",
+      "description": "I det här märket får du testa att vara offline 48 timmar och reflektera över hur det känns.",
+      "criteria": [
+        "Under 48 timmar ska du vara utan mobiltelefon och andra tekniska prylar som kan kopplas upp mot internet.",
+        "Börja de 48 timmarna med att göra en lista på saker du tror du kommer tycka är bra respektive jobbiga med att inte ha någon uppkoppling. Gör samma sak efter 24 timmar och sen igen efter 48 timmar.",
+        "Gör en social uppgift och en kunskapsuppgift under perioden. En social uppgift kan vara att skapa eller hålla kontakt med varandra eller andra utanför gruppen eller förmedla information eller meddelanden. En kunskapsuppgift kan vara att söka svar på frågor eller lösa problem.",
+        "I slutet av 48-timmarsperioden ska ni reflektera över vad som hände. Kändes det på olika sätt i början och slutet av perioden? Diskutera fördelar och nackdelar med uppkopplade prylar. Hur påverkar de våra relationer och vår förmåga att hantera och lösa problem. Finns det något som du vill göra annorlunda nu när du testat att inte vara uppkopplad hela tiden?"
+      ]
+    },
+    {
+      "key": "fika",
+      "name": "Fika",
+      "level": "utmanare",
+      "imageUrl": "/img/interest-badges/fika.png",
+      "description": "Genom märket Fika får du chans att ta fikat till nya höjder.",
+      "criteria": [
+        "Anordna ett traditionellt kafferep med sju sorters kakor.",
+        "Bjud på brittiskt afternoon tea. Baka era egna scones till detta.",
+        "Ordna ett knytkalas med kakbuffé.",
+        "Ordna en tårttävling där ni bakar tårtor i lag. Ni tävlar mot varandra i en kategori ni själva bestämmer ska vara temat för tårtbaket.",
+        "Korsa två olika bakverk med varandra och skapa en helt ny variant (ex semla + wrap= semlewrap, donut + croissant = cronut).",
+        "Välj ett (eller flera) andra länder och baka det landets specialiteter när det gäller. bakverk och kakor. Provsmaka sedan era bakverk.",
+        "Anordna ett café för andra där ni skänker vinsten till ett ändamål som ni väljer ut tillsammans.",
+        "Koka kaffe och/eller varm choklad över öppen eld.",
+        "Laga fika med hjälp av stormkök och ät det utomhus.",
+        "Packa picknickkorg och sätt er utomhus och njut av fika.",
+        "Gör en organisationstävling med baktema där ni får olika ingredienser för olika uppdrag och sedan ska komponera ert eget bakverk.",
+        "Kom på ett eget uppdrag med koppling till fika och genomför det."
+      ]
+    },
+    {
+      "key": "dykning",
+      "name": "Dykning",
+      "level": "utmanare",
+      "imageUrl": "/img/interest-badges/dykning.png",
+      "description": "Världen under ytan ger en helt ny upplevelse av vatten. Märket är utformat med dykning i åtanke men kan anpassas till en lägre nivå om möjlighet till provdyk inte finns. För att få märket måste scouten kunna simma 200 m och trampa vatten i 5 min. För provdyk ska alltid certifierad dykinstruktör anlitas.",
+      "criteria": [
+        "Veta hur man väljer, justerar och använder flytväst, snorkel, mask och fenor.",
+        "Kunna grundläggande säkerhet kopplad till snorkling och dykning så som hantering av syrebrist, nedkylning och skärsår. Du ska även kunna rädda en person ur vattnet och utföra HLR.",
+        "Kunna grundläggande sjukvård kopplad till snorkling och dykning så som hantering av syrebrist, nedkylning och skärsår. Du ska även kunna rädda en person ur vattnet och utföra HLR.",
+        "Snorkling och dykningstekniker, inklusive kontroll av flytkraft, ytbad och rensning av vatten från din snorkel.",
+        "Genomfört en snorkeltur vid ytan med kortare besök ner på 2 m djup.",
+        "Om möjligt gjort ett provdyk under direkt övervakning av en dykledare och då ta dina första andetag under vattnet."
+      ]
+    },
+    {
+      "key": "overlevnad",
+      "name": "Överlevnad",
+      "level": "utmanare",
+      "imageUrl": "/img/interest-badges/overlevnad.png",
+      "description": "I märket får du lära dig om människans grundläggande behov för överlevnad och hur du kan uppfylla dem i svåra situationer, såväl hemma som ute i naturen.",
+      "criteria": [
+        "Förstår människans grundläggande behov av värme, vatten och mat.",
+        "Känna till vad du behöver för att kunna klara dig i 72 timmar i en nödsituation.",
+        "Kunna orientera/navigera utan karta och kompass.",
+        "Skapa en säker övernattningsplats av naturliga medel och övernatta i den en natt.",
+        "Ha kännedom vad som är ätbart i svensk natur och identifiera när under året olika födoämnen finns att hitta, som bär, fisk, svamp eller växter."
+      ]
+    },
+    {
+      "key": "hela-aret-runt",
+      "name": "Hela året runt",
+      "level": "utmanare",
+      "imageUrl": "/img/interest-badges/hela-aret-runt.png",
+      "description": "I det här märket får du sova ute och uppleva naturen under olika årstider.",
+      "criteria": [
+        "Sov ute minst en natt under var och en av årets 12 månader. Det måste inte vara 12 månader i rad, men alla månader måste gås igenom.",
+        "Du får bara använda samma sovplats vid två tillfällen.",
+        "Gör en årstidsbaserad aktivitet vid varje tillfälle. Exempelvis hoppa i en lövhög på hösten, bygg en snöskulptur på vintern, ta ett nattligt bad på sommaren och pyssla med naturmaterial på våren.",
+        "Dokumentera ditt år genom text och bild och dela med dig till dina scoutkompisar."
+      ]
+    },
+    {
+      "key": "mitt-eget-marke",
+      "name": "Mitt eget märke",
+      "level": "utmanare",
+      "imageUrl": "/img/interest-badges/mitt-eget-marke.png",
+      "description": "Det här är ett intressemärke som du själv eller patrullen fyller med precis det innehåll som du själv/ni själva vill. I Ditt eget märke kan du förverkliga alla roliga, tokiga, knasiga, vanliga eller unika idéer till ett märke - ingrediensen är din egen fantasi och ramarna bestämmer du.",
+      "criteria": [
+        "Bestäm vad märket ska fokusera på och vad som är målet med märket.",
+        "Bestäm vilka kriterier som ska ingå och hur detta ska genomföras.",
+        "Genomför kriterierna.",
+        "Berätta för dina patrullkompisar vad du gjort och varför."
+      ]
+    },
+    {
+      "key": "specialistmarken",
+      "name": "Specialistmärken",
+      "level": "rover",
+      "imageUrl": "/img/interest-badges/specialistmarken.png",
+      "description": "Det här märket handlar om att du specialiserar dig inom ett visst område. Välj ett område som du redan är intresserad av och fördjupa dig inom det.",
+      "criteria": [
+        "Lär sig så mycket du kan om ditt område under en begränsad tidsperiod, till exempel sex månader.",
+        "Förbered en presentation på 30 sekunder där du berättar om ditt område och fördjupning."
+      ]
+    }
+  ]
+}
