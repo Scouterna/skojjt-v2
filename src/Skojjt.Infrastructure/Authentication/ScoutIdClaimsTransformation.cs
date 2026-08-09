@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Skojjt.Core.Authentication;
 using Skojjt.Infrastructure.Data;
@@ -19,16 +20,41 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
 {
     private readonly IDbContextFactory<SkojjtDbContext> _contextFactory;
     private readonly ILogger<ScoutIdClaimsTransformation> _logger;
+    private readonly HashSet<string> _adminUids;
+    private readonly string _adminScoutnetRole;
+    private const string DefaultAdminScoutnetRole = "organisation:692:scoutid_admin";
     private static readonly Regex s_regexGroup = new(@"group:(\d+):(.+)", RegexOptions.Compiled);
     private static readonly Regex s_regexTroop = new(@"troop:(\d+):(.+)", RegexOptions.Compiled);
     private static readonly ConcurrentDictionary<int, int> s_troopToGroupCache = new();
 
     public ScoutIdClaimsTransformation(
         IDbContextFactory<SkojjtDbContext> contextFactory,
-        ILogger<ScoutIdClaimsTransformation> logger)
+        ILogger<ScoutIdClaimsTransformation> logger,
+        IConfiguration? configuration = null)
     {
         _contextFactory = contextFactory;
         _logger = logger;
+        _adminUids = ParseAdminUids(configuration?["Skojjt:AdminUids"]);
+        var configuredAdminRole = configuration?["Skojjt:AdminScoutnetRole"];
+        _adminScoutnetRole = string.IsNullOrWhiteSpace(configuredAdminRole)
+            ? DefaultAdminScoutnetRole
+            : configuredAdminRole;
+    }
+
+    private static HashSet<string> ParseAdminUids(string? value)
+    {
+        var uids = new HashSet<string>(StringComparer.Ordinal);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return uids;
+        }
+
+        foreach (var part in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            uids.Add(part);
+        }
+
+        return uids;
     }
 
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
@@ -126,10 +152,15 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
         var uid = nameIdentifier.Value;
         var name = nameClaim.Value;
 
-        // For now I'm using scoutid admins as admins in skojjt.
-        const string scoutIdAdmin = "organisation:692:scoutid_admin"; // TODO: move to appconfig
-        bool isAdmin = (identity.FindFirst(claim => claim.Value == scoutIdAdmin) != null);
-        _logger.LogDebug("Admin check: looking for '{AdminClaim}', found: {IsAdmin}", scoutIdAdmin, isAdmin);
+        bool isAdmin = (identity.FindFirst(claim => claim.Value == _adminScoutnetRole) != null);
+        _logger.LogDebug("Admin check: looking for '{AdminClaim}', found: {IsAdmin}", _adminScoutnetRole, isAdmin);
+
+        // Also grant admin to users whose Scoutnet UID is configured in Skojjt:AdminUids.
+        if (!isAdmin && _adminUids.Contains(uid))
+        {
+            isAdmin = true;
+            _logger.LogInformation("Admin check: uid '{Uid}' matched configured AdminUids", uid);
+        }
         HashSet<string> accessibleGroups = new();
         HashSet<string> memberRegistrarGroups = new();
         HashSet<string> accessibleTroops = new();
