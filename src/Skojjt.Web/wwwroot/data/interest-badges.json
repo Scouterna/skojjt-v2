@@ -238,7 +238,7 @@
           "imageUrl": "/img/interest-badges/skogsgourmet.png",
           "description": "Målet med märket är att få nya kunskaper om det som går att äta i skogen och laga en måltid med så mycket från skogen som möjligt. Märket Skogsgourmet är det sjätte i en märkesstegring om mat. Märket är för roverscouter.",
           "criteria": [
-            "du är",
+            "Lär dig identifiera 10 matingredienser som du kan själv hitta i närheten där du är",
             "Laga en trerätters måltid baserat på så många ingredienser som möjligt från naturen omkring dig.",
             "Tälj egna bestick eller köksredskap"
           ]
@@ -1898,12 +1898,19 @@
             "Sjön",
             "Fjäll"
           ],
-          "imageUrl": null,
+          "imageUrl": "/img/interest-badges/vara-ute-vinter.png",
           "description": "Intressemärkena Vara ute finns i fem varianter beroende på miljö, välj att jobba med ett av dem eller allihop.",
           "criteria": [
             "Ha varit med på en hajk med övernattning i den valda miljön (vatten, fjället, skogen, staden, vintern). Beroende på var och när ni genomför ert äventyr kan aktiviteten se olika ut, ni kan till exempel vandra, cykla, klättra, segla, paddla, åka skidor eller skridskor.",
             "Vara delaktig i de förberedelser som behövs, som att planera packning, färdväg, övernattningsplats och matsedel.",
             "Efter hajken är det viktigt att du utvärderar den tillsammans med de andra som var med. Ni ska diskutera vad ni gjorde bra och vad ni kan göra annorlunda nästa gång. För att komma ihåg dina upplevelser och tankar är det bra om du fotograferar och antecknar under hajken."
+          ],
+          "variantImages": [
+            "/img/interest-badges/vara-ute-vinter.png",
+            "/img/interest-badges/vara-ute-staden.png",
+            "/img/interest-badges/vara-ute-skogen.png",
+            "/img/interest-badges/vara-ute-sjon.png",
+            "/img/interest-badges/vara-ute-fjall.png"
           ]
         },
         {

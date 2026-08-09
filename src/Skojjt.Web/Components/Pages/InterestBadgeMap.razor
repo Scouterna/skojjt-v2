@@ -147,12 +147,32 @@
             @if (_selected.Variants.Count > 0)
             {
                 <MudText Typo="Typo.subtitle2" Class="mb-1">Varianter</MudText>
-                <div class="d-flex flex-wrap gap-1 mb-3">
-                    @foreach (var variant in _selected.Variants)
-                    {
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@variant</MudChip>
-                    }
-                </div>
+                @if (_selected.VariantImages.Count > 0)
+                {
+                    <div class="d-flex flex-wrap gap-3 mb-3">
+                        @for (var vi = 0; vi < _selected.Variants.Count; vi++)
+                        {
+                            var label = _selected.Variants[vi];
+                            var imgUrl = vi < _selected.VariantImages.Count ? _selected.VariantImages[vi] : null;
+                            <div class="ibm-variant">
+                                @if (!string.IsNullOrEmpty(imgUrl))
+                                {
+                                    <img class="ibm-variant-img" src="@imgUrl" alt="@label" loading="lazy" />
+                                }
+                                <span class="ibm-variant-label">@label</span>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        @foreach (var variant in _selected.Variants)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@variant</MudChip>
+                        }
+                    </div>
+                }
             }
 
             <MudText Typo="Typo.subtitle1" Class="mb-1">Märkeskriterier</MudText>
@@ -318,6 +338,25 @@
     .ibm-criteria {
         margin: 0;
         padding-left: 1.2rem;
+    }
+
+    .ibm-variant {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 64px;
+    }
+
+    .ibm-variant-img {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+    }
+
+    .ibm-variant-label {
+        font-size: 0.72rem;
+        margin-top: 2px;
+        text-align: center;
     }
 
     .ibm-criteria li {

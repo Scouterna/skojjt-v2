@@ -123,4 +123,8 @@ public sealed class InterestBadgeNode
 
     [JsonPropertyName("imageUrl")]
     public string? ImageUrl { get; init; }
+
+    /// <summary>Image URLs for each variant, when the badge has several.</summary>
+    [JsonPropertyName("variantImages")]
+    public IReadOnlyList<string> VariantImages { get; init; } = [];
 }
