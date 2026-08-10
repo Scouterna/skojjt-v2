@@ -66,8 +66,10 @@ public class DakXmlExporter : IAttendanceExporter
         // Build person lookup
         var personsDict = data.TroopPersons.ToDictionary(tp => tp.Person.Id);
 
-        // Add leaders and participants to the card
-        foreach (var tp in data.TroopPersons)
+        // Add leaders and participants to the card.
+        // Order deterministically by person id so the output is stable regardless of
+        // how the source data was loaded (e.g. single-troop query vs. all-troops query).
+        foreach (var tp in data.TroopPersons.OrderBy(tp => tp.Person.Id))
         {
             var deltagare = CreateDakDeltagare(tp.Person, tp.IsLeader);
             if (tp.IsLeader)
@@ -95,7 +97,7 @@ public class DakXmlExporter : IAttendanceExporter
             };
 
             // Add attending persons to meeting
-            foreach (var personId in meetingInfo.AttendingPersonIds)
+            foreach (var personId in meetingInfo.AttendingPersonIds.OrderBy(id => id))
             {
                 if (!personsDict.TryGetValue(personId, out var tp))
                     continue;

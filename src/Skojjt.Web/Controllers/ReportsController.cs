@@ -233,11 +233,118 @@ public class ReportsController : ControllerBase
             return NotFound($"Could not load troop members");
         }
 
-        // Get meetings with attendance
-        var meetings = await _meetingRepository.GetByTroopWithAttendanceAsync(troop.Id, cancellationToken);
-
         // Build report data
-        var reportData = new AttendanceReportData
+        var reportData = await BuildReportDataAsync(scoutGroup, troopWithMembers, semester, cancellationToken);
+
+        // Generate export - catch configuration/validation errors
+        try
+        {
+            var result = await _exportService.ExportAsync(format, reportData, cancellationToken);
+            return File(result.Data, result.ContentType, result.FileName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Return a user-friendly error for configuration issues
+            // (e.g., missing AssociationId, MunicipalityId, etc.)
+            return BadRequest(new ExportErrorResponse
+            {
+                Error = "Exportfel",
+                Message = ex.Message,
+                ConfigurationUrl = $"/scout-groups/{scoutGroup.Id}/settings"
+            });
+        }
+    }
+
+    /// <summary>
+    /// Export all troops' DAK XML files in the semester as a single ZIP archive.
+    /// </summary>
+    /// <param name="scoutGroupId">Scout group ID</param>
+    /// <param name="semesterId">Semester ID</param>
+    [HttpGet("dak-all")]
+    public async Task<IActionResult> ExportDakAll(
+        [FromQuery] int scoutGroupId,
+        [FromQuery] int semesterId,
+        CancellationToken cancellationToken)
+    {
+        // Verify the current user has access to this scout group
+        if (!_currentUserService.HasGroupAccess(scoutGroupId))
+        {
+            return Forbid();
+        }
+
+        var scoutGroup = await _scoutGroupRepository.GetByIdAsync(scoutGroupId, cancellationToken);
+        if (scoutGroup == null)
+        {
+            return NotFound($"Scout group not found: {scoutGroupId}");
+        }
+
+        var semester = await _semesterRepository.GetByIdAsync(semesterId, cancellationToken);
+        if (semester == null)
+        {
+            return NotFound($"Semester not found: {semesterId}");
+        }
+
+        var troops = (await _troopRepository.GetByScoutGroupAndSemesterWithMembersAsync(scoutGroupId, semesterId, cancellationToken)).ToList();
+        if (troops.Count == 0)
+        {
+            return NotFound("Inga avdelningar hittades för denna termin.");
+        }
+
+        try
+        {
+            using var zipStream = new MemoryStream();
+            using (var archive = new System.IO.Compression.ZipArchive(zipStream, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var troop in troops)
+                {
+                    var reportData = await BuildReportDataAsync(scoutGroup, troop, semester, cancellationToken);
+                    var result = await _exportService.ExportAsync("dak", reportData, cancellationToken);
+
+                    var entryName = result.FileName;
+                    // Ensure unique entry names within the archive
+                    var counter = 1;
+                    while (!usedNames.Add(entryName))
+                    {
+                        var ext = Path.GetExtension(result.FileName);
+                        var baseName = Path.GetFileNameWithoutExtension(result.FileName);
+                        entryName = $"{baseName}_{++counter}{ext}";
+                    }
+
+                    var entry = archive.CreateEntry(entryName, System.IO.Compression.CompressionLevel.Optimal);
+                    await using var entryStream = entry.Open();
+                    await entryStream.WriteAsync(result.Data, cancellationToken);
+                }
+            }
+
+            zipStream.Position = 0;
+            var fileName = $"DAK-{scoutGroup.Name}-{semester.DisplayName}.zip";
+            return File(zipStream.ToArray(), "application/zip", fileName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ExportErrorResponse
+            {
+                Error = "Exportfel",
+                Message = ex.Message,
+                ConfigurationUrl = $"/scout-groups/{scoutGroup.Id}/settings"
+            });
+        }
+    }
+
+    /// <summary>
+    /// Builds the attendance report data for a single troop that already has its members loaded.
+    /// </summary>
+    private async Task<AttendanceReportData> BuildReportDataAsync(
+        Core.Entities.ScoutGroup scoutGroup,
+        Core.Entities.Troop troopWithMembers,
+        Core.Entities.Semester semester,
+        CancellationToken cancellationToken)
+    {
+        // Get meetings with attendance
+        var meetings = await _meetingRepository.GetByTroopWithAttendanceAsync(troopWithMembers.Id, cancellationToken);
+
+        return new AttendanceReportData
         {
             ScoutGroup = scoutGroup,
             Troop = troopWithMembers,
@@ -260,24 +367,6 @@ public class ReportsController : ControllerBase
                 })
                 .ToList()
         };
-
-        // Generate export - catch configuration/validation errors
-        try
-        {
-            var result = await _exportService.ExportAsync(format, reportData, cancellationToken);
-            return File(result.Data, result.ContentType, result.FileName);
-        }
-        catch (InvalidOperationException ex)
-        {
-            // Return a user-friendly error for configuration issues
-            // (e.g., missing AssociationId, MunicipalityId, etc.)
-            return BadRequest(new ExportErrorResponse
-            {
-                Error = "Exportfel",
-                Message = ex.Message,
-                ConfigurationUrl = $"/scout-groups/{scoutGroup.Id}/settings"
-            });
-        }
     }
 
     /// <summary>

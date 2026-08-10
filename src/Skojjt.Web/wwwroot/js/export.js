@@ -48,12 +48,20 @@ window.skojjtExport = {
             let filename = 'export';
             const disposition = response.headers.get('content-disposition');
             if (disposition) {
-                const filenameMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                if (filenameMatch && filenameMatch[1]) {
-                    filename = filenameMatch[1].replace(/['"]/g, '');
-                    // Handle UTF-8 encoded filenames
-                    if (filename.startsWith("UTF-8''")) {
-                        filename = decodeURIComponent(filename.substring(7));
+                // Prefer the RFC 5987 "filename*=UTF-8''..." variant which preserves
+                // non-ASCII characters (e.g. Swedish å/ä/ö). The plain "filename=" variant
+                // is an ASCII fallback where such characters are replaced with underscores.
+                const utf8Match = disposition.match(/filename\*=UTF-8''([^;\n]*)/i);
+                if (utf8Match && utf8Match[1]) {
+                    filename = decodeURIComponent(utf8Match[1].trim());
+                } else {
+                    const filenameMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                    if (filenameMatch && filenameMatch[1]) {
+                        filename = filenameMatch[1].replace(/['"]/g, '');
+                        // Handle UTF-8 encoded filenames
+                        if (filename.startsWith("UTF-8''")) {
+                            filename = decodeURIComponent(filename.substring(7));
+                        }
                     }
                 }
             }
