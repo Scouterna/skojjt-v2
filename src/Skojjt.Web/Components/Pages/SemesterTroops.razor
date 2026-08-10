@@ -105,7 +105,16 @@
                                     </CardHeaderActions>
                                 </MudCardHeader>
                                 <MudCardContent>
-                                    <MudText Typo="Typo.body2">@ScoutUnitTypes.GetName(troop.UnitTypeId)</MudText>
+                                    <div class="d-flex align-center gap-2">
+                                        @{
+                                            var logoUrl = UnitTypeLogoUrl(troop.UnitTypeId);
+                                        }
+                                        @if (logoUrl != null)
+                                        {
+                                            <img class="troop-type-logo" src="@logoUrl" alt="@ScoutUnitTypes.GetName(troop.UnitTypeId)" loading="lazy" />
+                                        }
+                                        <MudText Typo="Typo.body2">@ScoutUnitTypes.GetName(troop.UnitTypeId)</MudText>
+                                    </div>
 
                                     @if (troop.IsCamp && troop.CampStartDate.HasValue && troop.CampEndDate.HasValue)
                                     {
@@ -728,9 +737,35 @@
         transform: translateY(-4px);
         box-shadow: 0 4px 20px rgba(0,0,0,0.12);
     }
+    .troop-type-logo {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+    }
 </style>
 
 @code {
+    // Mappning fr\u00e5n unit_type_id till logotypens filnamn. Endast typer med en logotyp finns med.
+    private static readonly Dictionary<int, string> UnitTypeLogoNames = new()
+    {
+        [1] = "baver",       // B\u00e4verscouter
+        [2] = "sparare",     // Sp\u00e5rarscouter
+        [3] = "upptackare",  // Uppt\u00e4ckarscouter
+        [4] = "aventyrare",  // \u00c4ventyrarscouter
+        [5] = "utmanare",    // Utmanarscouter
+        [6] = "rover",       // Roverscouter
+        [8] = "familjescout" // Familjescouter
+    };
+
+    private static string? UnitTypeLogoUrl(int? unitTypeId)
+    {
+        if (unitTypeId.HasValue && UnitTypeLogoNames.TryGetValue(unitTypeId.Value, out var name))
+        {
+            return $"/img/troop-types/thumbs/{name}-logo.webp";
+        }
+        return null;
+    }
+
     [Parameter]
     public int ScoutGroupId { get; set; }
     

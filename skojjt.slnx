@@ -45,6 +45,7 @@
     <Project Path="tests/Skojjt.Web.Tests/Skojjt.Web.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
+    <Project Path="tools/BadgeThumbnailGenerator/BadgeThumbnailGenerator.csproj" />
     <Project Path="tools/Skojjt.ImportTool/Skojjt.ImportTool.csproj" />
   </Folder>
   <Folder Name="/v1/">
