@@ -31,7 +31,7 @@
             @foreach (var level in _levels)
             {
                 <div class="ibm-legend-item" style="@LevelChipStyle(level)">
-                    <img class="ibm-legend-img" src="@LevelImageUrl(level)" alt="@level.Name" loading="lazy" />
+                    <img class="ibm-legend-img" src="@LevelThumbUrl(level)" alt="@level.Name" loading="lazy" />
                     <span>@level.Name</span>
                 </div>
             }
@@ -53,8 +53,7 @@
                 @foreach (var level in _levels)
                 {
                     <div class="ibm-row-header" style="@RowHeaderStyle(level)">
-                        <img class="ibm-level-img" src="@LevelImageUrl(level)" alt="@level.Name" loading="lazy" />
-                        <span>@level.Name</span>
+                        <img class="ibm-level-img" src="@LevelThumbUrl(level)" alt="@level.Name" loading="lazy" />
                     </div>
 
                     @foreach (var series in _catalog.Series)
@@ -69,7 +68,7 @@
                                      @onclick="() => OpenDetail(node)">
                                     @if (!string.IsNullOrEmpty(node.ImageUrl))
                                     {
-                                        <img class="ibm-badge-img" src="@node.ImageUrl" alt="@node.Name" loading="lazy" />
+                                        <img class="ibm-badge-img" src="@ThumbUrl(node.ImageUrl)" alt="@node.Name" loading="lazy" />
                                     }
                                     <span class="ibm-badge-name">@node.Name</span>
                                     @if (node.Variants.Count > 0)
@@ -106,7 +105,7 @@
                      @onclick="() => OpenDetail(node)">
                     @if (!string.IsNullOrEmpty(node.ImageUrl))
                     {
-                        <img class="ibm-badge-img" src="@node.ImageUrl" alt="@node.Name" loading="lazy" />
+                        <img class="ibm-badge-img" src="@ThumbUrl(node.ImageUrl)" alt="@node.Name" loading="lazy" />
                     }
                     <span class="ibm-badge-name">@node.Name</span>
                     <span class="ibm-badge-variants">@(level?.Name ?? node.Level)</span>
@@ -314,7 +313,7 @@
     }
 
     .ibm-standalone {
-        width: 150px;
+        width: 120px;
         min-height: 72px;
     }
 
@@ -403,7 +402,7 @@
     private string GridStyle()
     {
         var columns = _catalog?.Series.Count ?? 0;
-        return $"grid-template-columns: 120px repeat({columns}, 150px);";
+        return $"grid-template-columns: 50px repeat({columns}, 120px);";
     }
 
     private static string LevelChipStyle(InterestBadgeLevel level)
@@ -415,6 +414,23 @@
         var name = level.Key == "familjescouter" ? "familjescout" : level.Key;
         return $"/img/troop-types/{name}-logo.png";
     }
+
+    // Nedskalad WebP-variant som används i kartvyn. Originalbilden visas i detaljdialogen.
+    private static string ThumbUrl(string? fullUrl)
+    {
+        if (string.IsNullOrEmpty(fullUrl))
+        {
+            return string.Empty;
+        }
+
+        var dir = fullUrl.Contains('/') ? fullUrl[..fullUrl.LastIndexOf('/')] : string.Empty;
+        var file = fullUrl[(fullUrl.LastIndexOf('/') + 1)..];
+        var name = Path.GetFileNameWithoutExtension(file);
+        return $"{dir}/thumbs/{name}.webp";
+    }
+
+    private static string LevelThumbUrl(InterestBadgeLevel level)
+        => ThumbUrl(LevelImageUrl(level));
 
     private static string RowHeaderStyle(InterestBadgeLevel level)
         => $"border-left-color:{level.Color};";
