@@ -953,7 +953,10 @@
             "sova-vecka"
           ],
           "imageUrl": "/img/interest-badges/sova-helg.png",
-          "description": "Märket Sova borta helg är det första i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt två nätter."
+          "description": "Märket Sova borta helg är det första i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt två nätter.",
+          "criteria": [
+            "För att få märket Sova borta helg ska du ha klarat att sova på ett scoutläger, hajk, segling, övernattning eller liknande under sammanlagt en helg (2 nätter)."
+          ]
         },
         {
           "key": "sova-vecka",
@@ -964,7 +967,10 @@
             "sova-manad"
           ],
           "imageUrl": "/img/interest-badges/sova-vecka.png",
-          "description": "Märket Sova borta vecka är det andra i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt en vecka."
+          "description": "Märket Sova borta vecka är det andra i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt en vecka.",
+          "criteria": [
+            "För att få märket Sova borta vecka ska du ha klarat att sova på ett scoutläger, hajk, segling, övernattning eller liknande under sammanlagt en vecka (7 nätter)."
+          ]
         },
         {
           "key": "sova-manad",
@@ -975,7 +981,10 @@
             "sova-100"
           ],
           "imageUrl": "/img/interest-badges/sova-manad.png",
-          "description": "Märket Sova borta månad är det tredje i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt en månad."
+          "description": "Märket Sova borta månad är det tredje i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt en månad.",
+          "criteria": [
+            "För att få märket Sova borta månad ska du ha klarat att sova på ett scoutläger, hajk, segling, övernattning eller liknande under sammanlagt en månad (30 nätter)."
+          ]
         },
         {
           "key": "sova-100",
@@ -986,7 +995,10 @@
             "sova-ar"
           ],
           "imageUrl": "/img/interest-badges/sova-100.png",
-          "description": "Märket Sova borta 100 är det fjärde i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt 100 nätter."
+          "description": "Märket Sova borta 100 är det fjärde i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt 100 nätter.",
+          "criteria": [
+            "För att få märket Sova borta 100 ska du ha klarat att sova på ett scoutläger, hajk, segling, övernattning eller liknande under sammanlagt 100 nätter."
+          ]
         },
         {
           "key": "sova-ar",
@@ -995,7 +1007,10 @@
           "order": 4,
           "next": [],
           "imageUrl": "/img/interest-badges/sova-ar.png",
-          "description": "Märket Sova borta år är det femte i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt ett år."
+          "description": "Märket Sova borta år är det femte i en märkesstegring om att sova hemifrån. I det här märket ska du sova över i ett scoutsammanhang sammanlagt ett år.",
+          "criteria": [
+            "För att få märket Sova borta år ska du ha klarat att sova på ett scoutläger, hajk, segling, övernattning eller liknande under sammanlagt ett år (365 nätter)."
+          ]
         }
       ]
     },
@@ -1066,7 +1081,7 @@
           "order": 3,
           "next": [],
           "imageUrl": "/img/interest-badges/kapsejsa.png",
-          "description": "Märket Leka är det första i en serie om lek och tävling. I det här märket får du testa nya lekar ute i naturen.",
+          "description": "Märket Kapsejsa är det fjärde i en serie om säkerhet på och i vattnet. I det här märket lär du dig vad du ska göra om en båt kapsejsar.",
           "criteria": [
             "Förstå vilken säkerhetsutrustning som är passande för båttypen och kunna använda den.",
             "Trilla i vattnet utan att farkosten välter och ta dig upp i farkosten igen.",
