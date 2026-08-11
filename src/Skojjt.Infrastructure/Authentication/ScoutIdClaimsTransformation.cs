@@ -159,7 +159,7 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
         if (!isAdmin && _adminUids.Contains(uid))
         {
             isAdmin = true;
-            _logger.LogInformation("Admin check: uid '{Uid}' matched configured AdminUids", uid);
+            _logger.LogDebug("Admin check: uid '{Uid}' matched configured AdminUids", uid);
         }
         HashSet<string> accessibleGroups = new();
         HashSet<string> memberRegistrarGroups = new();
