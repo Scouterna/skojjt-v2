@@ -17,6 +17,29 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Skojjt" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+
+    <!-- Site-wide default description (pages override via HeadContent) -->
+    <meta name="description" content="Skojjt är ett närvarosystem för svenska scoutkårer. Hantera närvaro, medlemmar, märken och exportera aktivitetsbidrag (DAK)." />
+
+    <!-- Open Graph / Facebook (site-wide defaults; pages can override via HeadContent) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Skojjt" />
+    <meta property="og:locale" content="sv_SE" />
+    <meta property="og:title" content="Skojjt - Närvarosystem för scouter" />
+    <meta property="og:description" content="Skojjt är ett närvarosystem för svenska scoutkårer. Hantera närvaro, medlemmar, märken och exportera aktivitetsbidrag (DAK)." />
+    <meta property="og:url" content="https://skojjt.scouterna.net/" />
+    <meta property="og:image" content="https://skojjt.scouterna.net/img/icon-512x512.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Skojjt" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Skojjt - Närvarosystem för scouter" />
+    <meta name="twitter:description" content="Skojjt är ett närvarosystem för svenska scoutkårer. Hantera närvaro, medlemmar, märken och exportera aktivitetsbidrag (DAK)." />
+    <meta name="twitter:image" content="https://skojjt.scouterna.net/img/icon-512x512.png" />
+
     <HeadOutlet />
     <script>
         try {
@@ -76,31 +99,45 @@
 
 <body>
     <Routes />
-    
-    <div id="components-reconnect-modal" class="components-reconnect-hide">
-        <div class="reconnect-overlay"></div>
-        <div class="reconnect-dialog">
-            <div class="reconnect-content show-reconnecting">
-                <div class="reconnect-icon">⟳</div>
-                <h4>Ansluter till servern...</h4>
-                <p>Vänta medan anslutningen återupprättas.</p>
-                <p id="reconnect-attempt" class="reconnect-attempt-text"></p>
-                <button onclick="window.Blazor.reconnect()">Försök igen nu</button>
-            </div>
-            <div class="reconnect-content show-failed">
-                <div class="reconnect-icon">✕</div>
-                <h4>Kunde inte återansluta</h4>
-                <p>Det gick inte att återupprätta anslutningen till servern.</p>
-                <button onclick="location.reload()">Ladda om sidan</button>
-            </div>
-            <div class="reconnect-content show-rejected">
-                <div class="reconnect-icon">⟳</div>
-                <h4>Sessionen kunde inte återupptas</h4>
-                <p>Servern har uppdaterats. Sidan laddas om automatiskt...</p>
+
+    <template id="reconnect-modal-template">
+        <div id="components-reconnect-modal" class="components-reconnect-hide">
+            <div class="reconnect-overlay"></div>
+            <div class="reconnect-dialog">
+                <div class="reconnect-content show-reconnecting">
+                    <div class="reconnect-icon">⟳</div>
+                    <h4>Ansluter till servern...</h4>
+                    <p>Vänta medan anslutningen återupprättas.</p>
+                    <p id="reconnect-attempt" class="reconnect-attempt-text"></p>
+                    <button onclick="window.Blazor.reconnect()">Försök igen nu</button>
+                </div>
+                <div class="reconnect-content show-failed">
+                    <div class="reconnect-icon">✕</div>
+                    <h4>Kunde inte återansluta</h4>
+                    <p>Det gick inte att återupprätta anslutningen till servern.</p>
+                    <button onclick="location.reload()">Ladda om sidan</button>
+                </div>
+                <div class="reconnect-content show-rejected">
+                    <div class="reconnect-icon">⟳</div>
+                    <h4>Sessionen kunde inte återupptas</h4>
+                    <p>Servern har uppdaterats. Sidan laddas om automatiskt...</p>
+                </div>
             </div>
         </div>
-    </div>
-    
+    </template>
+    <script>
+        // Clone the reconnect modal from an inert <template> into the DOM.
+        // Keeping the markup in a <template> means its text is not part of the
+        // rendered page, so search engine crawlers do not index the reconnect
+        // messages as page content/description.
+        (function () {
+            var tpl = document.getElementById('reconnect-modal-template');
+            if (tpl && tpl.content) {
+                document.body.appendChild(tpl.content.cloneNode(true));
+            }
+        })();
+    </script>
+
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="js/export.js"></script>
     <script src="js/shortcuts.js"></script>
