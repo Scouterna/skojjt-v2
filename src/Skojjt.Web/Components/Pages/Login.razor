@@ -131,8 +131,18 @@
                                           Class="mb-2" />
 
                             <div class="d-flex flex-wrap gap-4 mb-3">
-                                <MudCheckBox T="bool" name="isMemberRegistrar" Label="Medlemsregistrerare" Dense="true" />
-                                <MudCheckBox T="bool" name="isAdmin" Label="Administratör" Dense="true" />
+                                @* Plain checkboxes on purpose: MudCheckBox renders no HTML value
+                                   attribute, so the browser posts "on", which the [FromForm] bool
+                                   binder rejects -- leaving isAdmin/isMemberRegistrar silently
+                                   false and the user with no troop access. *@
+                                <label class="d-flex align-center gap-2">
+                                    <input type="checkbox" name="isMemberRegistrar" value="true" />
+                                    <span>Medlemsregistrerare</span>
+                                </label>
+                                <label class="d-flex align-center gap-2">
+                                    <input type="checkbox" name="isAdmin" value="true" />
+                                    <span>Administratör</span>
+                                </label>
                             </div>
 
                             <MudButton ButtonType="ButtonType.Submit"
