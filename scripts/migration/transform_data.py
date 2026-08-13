@@ -952,7 +952,7 @@ class DataTransformer:
             if not person_id or not badge_id:
                 continue
             
-            part_idx = r.get('idx', 0)
+            part_idx = r.get('part_index', 0)
             is_scout_part = r.get('is_scout_part', True)
             
             key = (int(person_id), badge_id, part_idx, is_scout_part)
