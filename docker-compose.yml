@@ -9,7 +9,10 @@ services:
     ports:
       - "5433:5432"  # Use port 5433 to avoid conflict with native PostgreSQL
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # Postgres 18+ stores data in major-version subdirectories, so the mount
+      # goes at /var/lib/postgresql rather than .../data. Mounting the old path
+      # makes the image refuse to start.
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U skojjt -d skojjt"]
       interval: 10s
