@@ -131,6 +131,12 @@ public class DataMigrationService
     private Dictionary<(int ScoutnetId, int ScoutGroupId, int SemesterId), int> _troopLookup = [];
     private Dictionary<(int TroopId, DateOnly MeetingDate), int> _meetingLookup = [];
 
+    // Maps badge IDs as they appear in the export to the IDs the database assigned.
+    // v1 numbers badges from 1 per instance, so exported IDs collide with badges other
+    // scout groups already own in a shared database. Populated by ImportBadgesAsync and
+    // used by every step that references a badge.
+    private Dictionary<int, int> _badgeIdMap = [];
+
     public DataMigrationService(SkojjtDbContext context, ILogger<DataMigrationService> logger)
     {
         _context = context;
@@ -143,8 +149,11 @@ public class DataMigrationService
             Converters = { new StringOrArrayConverter(), new IntOrArrayConverter() }
         };
 
-        // Use a generous command timeout for large migration operations (10 minutes)
-        _context.Database.SetCommandTimeout(TimeSpan.FromMinutes(10));
+        // Use a generous command timeout for large migration operations (10 minutes).
+        // Guarded because the setting is relational-only and the import is exercised
+        // against the in-memory provider in tests.
+        if (_context.Database.IsRelational())
+            _context.Database.SetCommandTimeout(TimeSpan.FromMinutes(10));
 
         // Disable auto-detect changes for bulk import performance
         _context.ChangeTracker.AutoDetectChangesEnabled = false;
@@ -732,13 +741,6 @@ public class DataMigrationService
         var items = await LoadJsonFileAsync<BadgeTemplateImport>(filePath, cancellationToken);
         var count = 0;
 
-        // Reset sequence if table is empty
-        if (!await _context.BadgeTemplates.AnyAsync(cancellationToken))
-        {
-            await _context.Database.ExecuteSqlRawAsync(
-                "ALTER SEQUENCE badge_templates_id_seq RESTART WITH 1", cancellationToken);
-        }
-
         var existingNames = (await _context.BadgeTemplates.Select(bt => bt.Name).ToListAsync(cancellationToken)).ToHashSet();
 
         foreach (var item in items)
@@ -781,9 +783,23 @@ public class DataMigrationService
     {
         var items = await LoadJsonFileAsync<BadgeImport>(filePath, cancellationToken);
         var count = 0;
-        var existingBadgeIds = (await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var reused = 0;
 
-        // Use explicit IDs from the import to maintain mapping
+        // The exported IDs are never used as database IDs: v1 numbers badges from 1 per
+        // instance, so importing group A's badge 1 into a database where group B already
+        // owns badge 1 would either overwrite B's badge or silently drop A's. Let the
+        // sequence assign IDs and record export ID -> database ID for the steps that
+        // reference badges.
+        _badgeIdMap.Clear();
+
+        // A badge is identified by (scout group, name) rather than by ID, so re-importing
+        // the same export reuses the badges it created the first time instead of duplicating.
+        var existingByGroupAndName = (await _context.Badges
+            .Select(b => new { b.Id, b.ScoutGroupId, b.Name })
+            .ToListAsync(cancellationToken))
+            .GroupBy(b => (b.ScoutGroupId, b.Name))
+            .ToDictionary(g => g.Key, g => g.Min(b => b.Id));
+
         foreach (var item in items)
         {
             if (item.Id <= 0)
@@ -795,55 +811,51 @@ public class DataMigrationService
                 continue;
             }
 
-            if (!existingBadgeIds.Add(item.Id))
+            var name = item.Name ?? "";
+
+            if (existingByGroupAndName.TryGetValue((item.ScoutGroupId, name), out var existingId))
+            {
+                _badgeIdMap[item.Id] = existingId;
+                reused++;
                 continue;
+            }
 
             var scoutShort = item.PartsScoutShort?.ToArray() ?? Array.Empty<string>();
             var scoutLong = item.PartsScoutLong?.ToArray() ?? Array.Empty<string>();
             var adminShort = item.PartsAdminShort?.ToArray() ?? Array.Empty<string>();
             var adminLong = item.PartsAdminLong?.ToArray() ?? Array.Empty<string>();
 
-            // Use raw SQL to insert with explicit ID
-            await _context.Database.ExecuteSqlRawAsync(
-                @"INSERT INTO badges (id, scout_group_id, name, description, parts_scout_short, parts_scout_long, parts_admin_short, parts_admin_long, image_url)
-                  VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})
-                  ON CONFLICT (id) DO NOTHING",
-                item.Id,
-                item.ScoutGroupId,
-                item.Name,
-                item.Description,
-                scoutShort,
-                scoutLong,
-                adminShort,
-                adminLong,
-                (object?)item.ImageUrl ?? DBNull.Value);
+            var badge = new Badge
+            {
+                ScoutGroupId = item.ScoutGroupId,
+                Name = name,
+                Description = item.Description,
+                PartsScoutShort = scoutShort,
+                PartsScoutLong = scoutLong,
+                PartsAdminShort = adminShort,
+                PartsAdminLong = adminLong,
+                ImageUrl = item.ImageUrl
+            };
 
             // Generate normalized BadgePart entities from legacy arrays
             foreach (var part in CreatePartsFromLegacyArrays(scoutShort, scoutLong, adminShort, adminLong))
             {
-                part.BadgeId = item.Id;
-                _context.BadgeParts.Add(part);
+                badge.Parts.Add(part);
             }
 
+            _context.Badges.Add(badge);
+
+            // Saved one at a time because the assigned ID is only known after SaveChanges,
+            // and SaveAndClearAsync detaches the entity. Badge counts are small (tens).
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _badgeIdMap[item.Id] = badge.Id;
+            existingByGroupAndName[(item.ScoutGroupId, name)] = badge.Id;
+            _context.ChangeTracker.Clear();
             count++;
-
-            if (count % 500 == 0)
-            {
-                await SaveAndClearAsync(cancellationToken);
-            }
         }
 
-        await SaveAndClearAsync(cancellationToken);
-
-        // Update the sequence to be after the max ID
-        if (items.Count > 0)
-        {
-            var maxId = items.Max(b => b.Id);
-            await _context.Database.ExecuteSqlAsync(
-                $"SELECT setval('badges_id_seq', {maxId + 1}, false)", cancellationToken);
-        }
-
-        _logger.LogInformation("Imported {Count} badges", count);
+        _logger.LogInformation("Imported {Count} badges ({Reused} already present)", count, reused);
         return count;
     }
 
@@ -852,7 +864,6 @@ public class DataMigrationService
         var items = await LoadJsonFileAsync<TroopBadgeImport>(filePath, cancellationToken);
         var count = 0;
         var skipped = 0;
-        var validBadges = (await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken)).ToHashSet();
         var existingTroopBadges = (await _context.Set<TroopBadge>()
             .Select(tb => new { tb.TroopId, tb.BadgeId })
             .ToListAsync(cancellationToken))
@@ -868,13 +879,15 @@ public class DataMigrationService
                 continue;
             }
 
-            if (!validBadges.Contains(item.BadgeId))
+            // Only badges from this same import are addressable: an unmapped ID would
+            // otherwise resolve to whichever group happens to own that ID already.
+            if (!_badgeIdMap.TryGetValue(item.BadgeId, out var badgeId))
             {
                 skipped++;
                 continue;
             }
 
-            if (!existingTroopBadges.Add((troopId.Value, item.BadgeId)))
+            if (!existingTroopBadges.Add((troopId.Value, badgeId)))
             {
                 skipped++;
                 continue;
@@ -883,7 +896,7 @@ public class DataMigrationService
             _context.Set<TroopBadge>().Add(new TroopBadge
             {
                 TroopId = troopId.Value,
-                BadgeId = item.BadgeId,
+                BadgeId = badgeId,
                 SortOrder = item.SortOrder
             });
             count++;
@@ -904,7 +917,6 @@ public class DataMigrationService
         var items = await LoadJsonFileAsync<BadgePartDoneImport>(filePath, cancellationToken);
         var count = 0;
         var validPersons = (await _context.Persons.Select(p => p.Id).ToListAsync(cancellationToken)).ToHashSet();
-        var validBadges = (await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken)).ToHashSet();
         var existingParts = (await _context.Set<BadgePartDone>()
             .Select(bp => new { bp.PersonId, bp.BadgeId, bp.PartIndex, bp.IsScoutPart })
             .ToListAsync(cancellationToken))
@@ -919,17 +931,17 @@ public class DataMigrationService
 
             var personId = (int)item.PersonId;
 
-            if (!validPersons.Contains(personId) || !validBadges.Contains(item.BadgeId))
+            if (!validPersons.Contains(personId) || !_badgeIdMap.TryGetValue(item.BadgeId, out var badgeId))
                 continue;
 
             var isScoutPart = item.IsScoutPart ?? true;
-            if (!existingParts.Add((personId, item.BadgeId, item.PartIndex, isScoutPart)))
+            if (!existingParts.Add((personId, badgeId, item.PartIndex, isScoutPart)))
                 continue;
 
             _context.Set<BadgePartDone>().Add(new BadgePartDone
             {
                 PersonId = personId,
-                BadgeId = item.BadgeId,
+                BadgeId = badgeId,
                 PartIndex = item.PartIndex,
                 IsScoutPart = isScoutPart,
                 ExaminerName = item.ExaminerName,
@@ -953,7 +965,6 @@ public class DataMigrationService
         var items = await LoadJsonFileAsync<BadgeCompletedImport>(filePath, cancellationToken);
         var count = 0;
         var validPersons = (await _context.Persons.Select(p => p.Id).ToListAsync(cancellationToken)).ToHashSet();
-        var validBadges = (await _context.Badges.Select(b => b.Id).ToListAsync(cancellationToken)).ToHashSet();
         var existingCompleted = (await _context.Set<BadgeCompleted>()
             .Select(bc => new { bc.PersonId, bc.BadgeId })
             .ToListAsync(cancellationToken))
@@ -968,16 +979,16 @@ public class DataMigrationService
 
             var personId = (int)item.PersonId;
 
-            if (!validPersons.Contains(personId) || !validBadges.Contains(item.BadgeId))
+            if (!validPersons.Contains(personId) || !_badgeIdMap.TryGetValue(item.BadgeId, out var badgeId))
                 continue;
 
-            if (!existingCompleted.Add((personId, item.BadgeId)))
+            if (!existingCompleted.Add((personId, badgeId)))
                 continue;
 
             _context.Set<BadgeCompleted>().Add(new BadgeCompleted
             {
                 PersonId = personId,
-                BadgeId = item.BadgeId,
+                BadgeId = badgeId,
                 Examiner = item.Examiner,
                 CompletedDate = ParseDate(item.CompletedDate) ?? DateOnly.FromDateTime(DateTime.Now)
             });
