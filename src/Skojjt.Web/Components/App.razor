@@ -18,9 +18,6 @@
     <meta name="apple-mobile-web-app-title" content="Skojjt" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 
-    <!-- Site-wide default description (pages override via HeadContent) -->
-    <meta name="description" content="Skojjt är ett närvarosystem för svenska scoutkårer. Hantera närvaro, medlemmar, märken och exportera aktivitetsbidrag (DAK)." />
-
     <!-- Open Graph / Facebook (site-wide defaults; pages can override via HeadContent) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Skojjt" />
@@ -101,7 +98,7 @@
     <Routes />
 
     <template id="reconnect-modal-template">
-        <div id="components-reconnect-modal" class="components-reconnect-hide">
+        <div id="components-reconnect-modal" class="components-reconnect-hide" data-nosnippet>
             <div class="reconnect-overlay"></div>
             <div class="reconnect-dialog">
                 <div class="reconnect-content show-reconnecting">
