@@ -481,7 +481,33 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// Static wwwroot assets are served by MapStaticAssets() (see below), which applies
+// content-based fingerprinting and immutable, long-lived cache headers for assets
+// referenced via the @Assets["..."] helper. UseStaticFiles remains as a fallback for
+// any files not captured by the build-time asset manifest.
+//
+// Images referenced by plain paths (e.g. /img/interest-badges/...) bypass the asset
+// manifest, so give them an explicit 24h Cache-Control. Without it the browser
+// revalidates every re-rendered <img>, causing the badge map to visibly reload
+// images when the filter changes.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var name = ctx.File.Name;
+        if (name.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
+            || name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+            || name.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+            || name.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+            || name.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
+            || name.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
+            || name.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.Context.Response.Headers.CacheControl = "public,max-age=86400";
+        }
+    }
+});
 
 // Normalize request culture before Blazor rendering. Malformed Accept-Language headers
 // (from bots/scanners) would otherwise cause CultureNotFoundException in

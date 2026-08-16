@@ -29,11 +29,20 @@
     }
     else
     {
-        @* Nivålegend *@
-        <div class="d-flex flex-wrap gap-2 mb-4">
+        @* Filter per avdelningstyp *@
+        <div class="d-flex flex-wrap gap-2 mb-4 align-center">
+            <MudText Typo="Typo.body2" Class="mr-1">Filtrera på avdelning:</MudText>
+            <div class="ibm-legend-item ibm-legend-clickable @(_selectedLevelKey is null ? "ibm-legend-selected" : null)"
+                 role="button" tabindex="0" @onclick="ClearFilter">
+                <span>Alla</span>
+            </div>
             @foreach (var level in _levels)
             {
-                <div class="ibm-legend-item" style="@LevelChipStyle(level)">
+                var isSelected = _selectedLevelKey == level.Key;
+                var dimmed = _selectedLevelKey is not null && !isSelected;
+                <div class="ibm-legend-item ibm-legend-clickable @(isSelected ? "ibm-legend-selected" : null) @(dimmed ? "ibm-legend-dim" : null)"
+                     style="@LevelChipStyle(level)"
+                     role="button" tabindex="0" @onclick="() => SelectLevel(level.Key)">
                     <img class="ibm-legend-img" src="@LevelThumbUrl(level)" alt="@level.Name" loading="lazy" />
                     <span>@level.Name</span>
                 </div>
@@ -47,22 +56,22 @@
                 <div class="ibm-corner"></div>
 
                 @* Kolumnrubriker (serier) *@
-                @foreach (var series in _catalog.Series)
+                @foreach (var series in DisplayedSeries)
                 {
-                    <div class="ibm-col-header" title="@series.Name">@series.Name</div>
+                    <div class="ibm-col-header" title="@series.Name" @key="series">@series.Name</div>
                 }
 
                 @* En rad per nivå *@
-                @foreach (var level in _levels)
+                @foreach (var level in DisplayedLevels)
                 {
-                    <div class="ibm-row-header" style="@RowHeaderStyle(level)">
+                    <div class="ibm-row-header" style="@RowHeaderStyle(level)" @key="level">
                         <img class="ibm-level-img" src="@LevelThumbUrl(level)" alt="@level.Name" loading="lazy" />
                     </div>
 
-                    @foreach (var series in _catalog.Series)
+                    @foreach (var series in DisplayedSeries)
                     {
                         var node = FindNode(series, level.Order);
-                        <div class="ibm-cell">
+                        <div class="ibm-cell" @key="(level, series)">
                             @if (node is not null)
                             {
                                 <div class="ibm-badge ibm-clickable" style="@BadgeStyle(level)"
@@ -93,28 +102,32 @@
         </MudPaper>
 
         @* Fristående märken (utan stegring) *@
-        <MudText Typo="Typo.h5" Class="mb-2">Fristående märken</MudText>
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-            Märken som inte ingår i någon stegringsserie.
-        </MudText>
-        <div class="d-flex flex-wrap gap-2">
-            @foreach (var node in _catalog.Standalone)
-            {
-                var level = _catalog.FindLevel(node.Level);
-                <div class="ibm-badge ibm-standalone ibm-clickable"
-                     style="@BadgeStyle(level)"
-                     title="@(level?.Name ?? node.Level)"
-                     role="button" tabindex="0"
-                     @onclick="() => OpenDetail(node)">
-                    @if (!string.IsNullOrEmpty(node.ImageUrl))
-                    {
-                        <img class="ibm-badge-img" src="@ThumbUrl(node.ImageUrl)" alt="@node.Name" loading="lazy" />
-                    }
-                    <span class="ibm-badge-name">@node.Name</span>
-                    <span class="ibm-badge-variants">@(level?.Name ?? node.Level)</span>
-                </div>
-            }
-        </div>
+        @if (_catalog.Standalone.Any(n => _selectedLevelKey is null || n.Level == _selectedLevelKey))
+        {
+            <MudText Typo="Typo.h5" Class="mb-2">Fristående märken</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                Märken som inte ingår i någon stegringsserie.
+            </MudText>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var node in _catalog.Standalone.Where(n => _selectedLevelKey is null || n.Level == _selectedLevelKey))
+                {
+                    var level = _catalog.FindLevel(node.Level);
+                    <div class="ibm-badge ibm-standalone ibm-clickable"
+                         style="@BadgeStyle(level)"
+                         title="@(level?.Name ?? node.Level)"
+                         role="button" tabindex="0"
+                         @key="node.Key"
+                         @onclick="() => OpenDetail(node)">
+                        @if (!string.IsNullOrEmpty(node.ImageUrl))
+                        {
+                            <img class="ibm-badge-img" src="@ThumbUrl(node.ImageUrl)" alt="@node.Name" loading="lazy" />
+                        }
+                        <span class="ibm-badge-name">@node.Name</span>
+                        <span class="ibm-badge-variants">@(level?.Name ?? node.Level)</span>
+                    </div>
+                }
+            </div>
+        }
     }
 </MudContainer>
 
@@ -265,6 +278,26 @@
         flex-shrink: 0;
     }
 
+    .ibm-legend-clickable {
+        cursor: pointer;
+        border: 2px solid transparent;
+        background-color: var(--mud-palette-surface);
+        transition: opacity 0.1s ease-in-out, box-shadow 0.1s ease-in-out, border-color 0.1s ease-in-out;
+    }
+
+    .ibm-legend-clickable:hover {
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+
+    .ibm-legend-selected {
+        border-color: var(--mud-palette-text-primary);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .ibm-legend-dim {
+        opacity: 0.4;
+    }
+
     .ibm-cell {
         position: relative;
         display: flex;
@@ -372,6 +405,25 @@
     private InterestBadgeCatalog? _catalog;
     private IReadOnlyList<InterestBadgeLevel> _levels = [];
 
+    private string? _selectedLevelKey;
+
+    private IEnumerable<InterestBadgeLevel> DisplayedLevels
+        => _selectedLevelKey is null ? _levels : _levels.Where(l => l.Key == _selectedLevelKey);
+
+    private IEnumerable<InterestBadgeSeries> DisplayedSeries
+    {
+        get
+        {
+            if (_catalog is null)
+            {
+                return [];
+            }
+            return _selectedLevelKey is null
+                ? _catalog.Series
+                : _catalog.Series.Where(s => s.Badges.Any(b => b.Level == _selectedLevelKey));
+        }
+    }
+
     private bool _detailVisible;
     private InterestBadgeNode? _selected;
     private readonly DialogOptions _detailOptions = new()
@@ -396,6 +448,11 @@
 
     private void CloseDetail() => _detailVisible = false;
 
+    private void SelectLevel(string levelKey)
+        => _selectedLevelKey = _selectedLevelKey == levelKey ? null : levelKey;
+
+    private void ClearFilter() => _selectedLevelKey = null;
+
     private InterestBadgeNode? FindNode(InterestBadgeSeries series, int levelOrder)
         => series.Badges.FirstOrDefault(b => LevelOrderOf(b.Level) == levelOrder);
 
@@ -404,7 +461,7 @@
 
     private string GridStyle()
     {
-        var columns = _catalog?.Series.Count ?? 0;
+        var columns = DisplayedSeries.Count();
         return $"grid-template-columns: 50px repeat({columns}, 120px);";
     }
 
