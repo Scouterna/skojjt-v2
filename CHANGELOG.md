@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.5.8] - 2026-08-19
+* Bugfix: Kryssa i en märkesdel för en scout med märkesframsteg importerade från Skojjt v1 gav felet "An error occurred while saving the entity changes." Importerade delresultat saknade koppling till märkets delar, vilket gjorde att de dels inte syntes som ikryssade, dels krockade med en ny rad när ledaren kryssade i samma del. Befintliga rader kopplas nu ihop automatiskt vid uppgradering.
+
 ## [2.5.7] - 2026-08-19
 * Bugfix: Ledarroll på en avdelning ger ledare på fler avdelningar #24
 

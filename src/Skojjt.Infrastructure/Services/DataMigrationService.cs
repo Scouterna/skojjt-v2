@@ -923,6 +923,21 @@ public class DataMigrationService
             .Select(bp => (bp.PersonId, bp.BadgeId, bp.PartIndex, bp.IsScoutPart))
             .ToHashSet();
 
+        // Legacy completions reference a part by its index among the parts of the same kind.
+        // Resolve those indexes to BadgePart ids up front: without the link the app cannot see
+        // that a part is already done, and a later toggle collides on the composite primary key.
+        var partIdsByLegacyKey = (await _context.Set<BadgePart>()
+            .Where(bp => bp.BadgeId != null)
+            .Select(bp => new { bp.Id, BadgeId = bp.BadgeId!.Value, bp.SortOrder, bp.IsAdminPart })
+            .ToListAsync(cancellationToken))
+            .GroupBy(bp => (bp.BadgeId, bp.IsAdminPart))
+            .SelectMany(g => g
+                .OrderBy(bp => bp.SortOrder)
+                .ThenBy(bp => bp.Id)
+                .Select((bp, index) => (Key: (g.Key.BadgeId, g.Key.IsAdminPart, PartIndex: index), bp.Id)))
+            .ToDictionary(x => x.Key, x => x.Id);
+        var unlinked = 0;
+
         foreach (var item in items)
         {
             // Skip invalid person IDs
@@ -938,12 +953,19 @@ public class DataMigrationService
             if (!existingParts.Add((personId, badgeId, item.PartIndex, isScoutPart)))
                 continue;
 
+            int? badgePartId = partIdsByLegacyKey.TryGetValue((badgeId, !isScoutPart, item.PartIndex), out var foundPartId)
+                ? foundPartId
+                : null;
+            if (badgePartId is null)
+                unlinked++;
+
             _context.Set<BadgePartDone>().Add(new BadgePartDone
             {
                 PersonId = personId,
                 BadgeId = badgeId,
                 PartIndex = item.PartIndex,
                 IsScoutPart = isScoutPart,
+                BadgePartId = badgePartId,
                 ExaminerName = item.ExaminerName,
                 CompletedDate = ParseDate(item.CompletedDate) ?? DateOnly.FromDateTime(DateTime.Now)
             });
@@ -956,7 +978,7 @@ public class DataMigrationService
         }
 
         await SaveAndClearAsync(cancellationToken);
-        _logger.LogInformation("Imported {Count} badge parts done", count);
+        _logger.LogInformation("Imported {Count} badge parts done ({Unlinked} with no matching badge part)", count, unlinked);
         return count;
     }
 
