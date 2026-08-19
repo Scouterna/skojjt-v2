@@ -317,6 +317,15 @@ public class ScoutnetImportService : IScoutnetImportService
                         }
                     }
 
+                    // Determine leadership specifically for this troop.
+                    // The member-level UnitRole (member.IsLeader()) is not troop-specific:
+                    // a person who leads one troop but only participates in another can still
+                    // report a leader unit_role on their participant membership row. When the
+                    // roles.Troop structure is available it is the authoritative per-troop source.
+                    var isLeaderForThisTroop = HasTroopRoleInfo(member)
+                        ? GetLeaderTroopIds(member).Contains(unitId.Value)
+                        : member.IsLeader();
+
                     // Ensure troop person membership
                     var existingMembership = existingTroopPersons
                         .FirstOrDefault(tp => tp.PersonId == personId &&
@@ -328,7 +337,7 @@ public class ScoutnetImportService : IScoutnetImportService
                         {
                             Troop = troop,
                             PersonId = personId,
-                            IsLeader = member.IsLeader(),
+                            IsLeader = isLeaderForThisTroop,
                             Patrol = member.GetPatrol(),
                             PatrolId = member.GetPatrolId()
                         };
@@ -339,7 +348,7 @@ public class ScoutnetImportService : IScoutnetImportService
                     else
                     {
                         // Update existing membership
-                        existingMembership.IsLeader = member.IsLeader();
+                        existingMembership.IsLeader = isLeaderForThisTroop;
                         existingMembership.Patrol = member.GetPatrol();
                         existingMembership.PatrolId = member.GetPatrolId();
                     }
@@ -468,6 +477,14 @@ public class ScoutnetImportService : IScoutnetImportService
             return result;
         }
     }
+
+    /// <summary>
+    /// Returns true when the member has a roles.Troop structure with at least one entry.
+    /// When present, this per-troop structure is the authoritative source for troop-specific
+    /// leadership, so the flat member-level UnitRole should not be used to infer it.
+    /// </summary>
+    private static bool HasTroopRoleInfo(ScoutnetMember member)
+        => member.Roles?.Value?.Troop is { Count: > 0 };
 
     /// <summary>
     /// Gets the troop IDs where the member has a leader role from the roles structure.

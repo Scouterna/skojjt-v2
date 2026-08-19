@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.5.7] - 2026-08-19
+* Bugfix: Ledarroll på en avdelning ger ledare på fler avdelningar #24
+
 ## [2.5.0] - 2026-08-03
 * Karta för intressemärken.
 * Skojjt admin användare kan nu läggas till per UIDs (scoutnet id).
