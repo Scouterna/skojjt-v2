@@ -37,7 +37,7 @@
     <meta name="twitter:description" content="Skojjt är ett närvarosystem för svenska scoutkårer. Hantera närvaro, medlemmar, märken och exportera aktivitetsbidrag (DAK)." />
     <meta name="twitter:image" content="https://skojjt.scouterna.net/img/icon-512x512.png" />
 
-    <HeadOutlet />
+    <HeadOutlet @rendermode="InteractiveServer" />
     <script>
         try {
             if (localStorage.getItem('darkMode') === 'True') {
