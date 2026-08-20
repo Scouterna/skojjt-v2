@@ -127,6 +127,43 @@ public class AuthController : Controller
 
 
     /// <summary>
+    /// Sets or clears elevated admin mode for the current session.
+    /// The choice is stored in an HttpOnly cookie so it survives page reloads
+    /// and manual URL navigation, and cannot be tampered with from JavaScript.
+    /// Only users with the Admin role may enable admin mode.
+    /// </summary>
+    [HttpPost("adminmode")]
+    [Authorize]
+    public IActionResult SetAdminMode([FromQuery] bool active)
+    {
+        if (active && !User.IsInRole("Admin"))
+        {
+            return Forbid();
+        }
+
+        var options = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Lax,
+            Path = "/",
+            IsEssential = true
+        };
+
+        if (active)
+        {
+            options.MaxAge = TimeSpan.FromDays(365);
+            Response.Cookies.Append(AdminModeService.CookieName, "1", options);
+        }
+        else
+        {
+            Response.Cookies.Delete(AdminModeService.CookieName, options);
+        }
+
+        return Ok(new { active });
+    }
+
+    /// <summary>
     /// Returns the current user's authentication status.
     /// </summary>
     [HttpGet("status")]

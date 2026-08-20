@@ -1,9 +1,8 @@
 @inherits LayoutComponentBase
-@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using Skojjt.Core.Authentication
 @inject ICurrentUserService CurrentUserService
 @inject IAdminModeService AdminModeService
-@inject ProtectedLocalStorage ProtectedLocalStorage
+@inject IJSRuntime JS
 @implements IDisposable
 
 <MudLayout>
@@ -71,23 +70,10 @@
 
 @code {
     private bool _drawerOpen = true;
-    private const string AdminModeStorageKey = "skojjt.adminModeActive";
 
     protected override void OnInitialized()
     {
         AdminModeService.StateChanged += OnAdminModeChanged;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && CurrentUserService.IsAdmin)
-        {
-            var result = await ProtectedLocalStorage.GetAsync<bool>(AdminModeStorageKey);
-            if (result.Success && result.Value)
-            {
-                AdminModeService.SetAdminMode(true);
-            }
-        }
     }
 
     private void ToggleDrawer()
@@ -99,7 +85,7 @@
     {
         var active = !AdminModeService.IsAdminModeActive;
         AdminModeService.SetAdminMode(active);
-        await ProtectedLocalStorage.SetAsync(AdminModeStorageKey, active);
+        await JS.InvokeVoidAsync("skojjtAdminMode.set", active);
     }
 
     private void OnAdminModeChanged()

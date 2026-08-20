@@ -98,7 +98,7 @@ public class ScoutIdAuthenticationTests
     {
         // Arrange
         var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
-        var service = new CurrentUserService(mockHttpContextAccessor.Object, new AdminModeService());
+        var service = new CurrentUserService(mockHttpContextAccessor.Object, new AdminModeService(mockHttpContextAccessor.Object));
 
         var claims = new List<Claim>
         {
@@ -131,7 +131,7 @@ public class ScoutIdAuthenticationTests
     {
         // Arrange
         var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
-        var service = new CurrentUserService(mockHttpContextAccessor.Object, new AdminModeService());
+        var service = new CurrentUserService(mockHttpContextAccessor.Object, new AdminModeService(mockHttpContextAccessor.Object));
 
         var identity = new ClaimsIdentity(); // Not authenticated
         var principal = new ClaimsPrincipal(identity);
@@ -287,6 +287,6 @@ public class ScoutIdAuthenticationTests
         mockHttpContext.Setup(c => c.User).Returns(principal);
         mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
 
-        return new CurrentUserService(mockHttpContextAccessor.Object, new AdminModeService());
+        return new CurrentUserService(mockHttpContextAccessor.Object, new AdminModeService(mockHttpContextAccessor.Object));
     }
 }

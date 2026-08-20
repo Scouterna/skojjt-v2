@@ -181,6 +181,18 @@
             navigator.serviceWorker.register('/service-worker.js');
         }
     </script>
+    <script>
+        window.skojjtAdminMode = {
+            set: async function (active) {
+                // Ask the server to set/clear the HttpOnly admin-mode cookie.
+                // Server validates the Admin role before honoring the request.
+                await fetch('/auth/adminmode?active=' + (active ? 'true' : 'false'), {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+            }
+        };
+    </script>
 </body>
 
 </html>
