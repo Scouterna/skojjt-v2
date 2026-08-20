@@ -10,8 +10,13 @@ public class AdminModeService : IAdminModeService
 {
     public bool IsAdminModeActive { get; private set; }
 
+    public event Action? StateChanged;
+
     public void SetAdminMode(bool active)
     {
+        if (IsAdminModeActive == active) return;
+
         IsAdminModeActive = active;
+        StateChanged?.Invoke();
     }
 }

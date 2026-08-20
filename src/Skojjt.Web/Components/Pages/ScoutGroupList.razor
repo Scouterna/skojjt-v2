@@ -8,6 +8,7 @@
 @inject ICurrentUserService CurrentUserService
 @inject IAdminModeService AdminModeService
 @inject IWebHostEnvironment Environment
+@implements IDisposable
 
 <PageTitle>Scoutkårer - Skojjt</PageTitle>
 
@@ -131,7 +132,22 @@
 
     protected override async Task OnInitializedAsync()
     {
+        AdminModeService.StateChanged += OnAdminModeChanged;
         await LoadScoutGroups();
+    }
+
+    private async void OnAdminModeChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadScoutGroups();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        AdminModeService.StateChanged -= OnAdminModeChanged;
     }
 
     private async Task LoadScoutGroups()

@@ -4,7 +4,7 @@ namespace Skojjt.Core.Authentication;
 /// Service that controls whether the current admin user is operating with
 /// elevated admin powers (access to all groups). Admin mode is OFF by default,
 /// meaning admins see the same view as regular users until they explicitly enable it.
-/// This does not affect access to admin pages — only the group access bypass.
+/// This does not affect access to admin pages â€” only the group access bypass.
 /// </summary>
 public interface IAdminModeService
 {
@@ -17,4 +17,10 @@ public interface IAdminModeService
     /// Toggles admin mode on or off.
     /// </summary>
     void SetAdminMode(bool active);
+
+    /// <summary>
+    /// Raised whenever the admin mode state changes, allowing UI components
+    /// to re-render (e.g. after the persisted state is restored on a new circuit).
+    /// </summary>
+    event Action? StateChanged;
 }

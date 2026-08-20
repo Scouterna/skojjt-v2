@@ -13,6 +13,7 @@
 @inject IScoutnetApiClient ApiClient
 @inject IScoutnetImportService ImportService
 @inject ISnackbar Snackbar
+@implements IDisposable
 @inject NavigationManager Navigation
 
 <PageTitle>Lägg till ny scoutkår - Skojjt</PageTitle>
@@ -274,8 +275,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var user = CurrentUserService.GetCurrentUser();
-        _hasAccess = (user?.IsAdmin == true && AdminModeService.IsAdminModeActive) || (user?.MemberRegistrarGroups.Count > 0);
+        AdminModeService.StateChanged += OnAdminModeChanged;
+        UpdateAccess();
         if (!_hasAccess) return;
 
         // Load available semesters
@@ -289,6 +290,26 @@
         }
 
         _selectedSemesterId = currentSemester.Id;
+    }
+
+    private void UpdateAccess()
+    {
+        var user = CurrentUserService.GetCurrentUser();
+        _hasAccess = (user?.IsAdmin == true && AdminModeService.IsAdminModeActive) || (user?.MemberRegistrarGroups.Count > 0);
+    }
+
+    private async void OnAdminModeChanged()
+    {
+        await InvokeAsync(() =>
+        {
+            UpdateAccess();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        AdminModeService.StateChanged -= OnAdminModeChanged;
     }
 
     private async Task VerifyCredentials()
