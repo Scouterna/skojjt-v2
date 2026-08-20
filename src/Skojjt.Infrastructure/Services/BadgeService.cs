@@ -67,12 +67,12 @@ public class BadgeService : IBadgeService
 
         var personIds = troopPersons.Select(tp => tp.PersonId).ToList();
 
-        // Get all active (non-undone) progress for this badge and these persons
+        // Get all active (non-undone) progress for this badge and these persons.
+        // Rows imported from v1 have no BadgePartId and are resolved by their legacy key below.
         var partsDone = await context.BadgePartsDone
             .Where(pd => pd.BadgeId == badgeId
                 && personIds.Contains(pd.PersonId)
-                && pd.UndoneAt == null
-                && pd.BadgePartId != null)
+                && pd.UndoneAt == null)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -86,7 +86,7 @@ public class BadgeService : IBadgeService
 
         var progressByPerson = partsDone
             .GroupBy(pd => pd.PersonId)
-            .ToDictionary(g => g.Key, g => g.Where(pd => pd.BadgePartId.HasValue).Select(pd => pd.BadgePartId!.Value).ToHashSet());
+            .ToDictionary(g => g.Key, g => ResolvePartIds(g, badge.Parts));
 
         var personProgress = troopPersons
             .Where(tp => !tp.Person.Removed)
@@ -148,29 +148,95 @@ public class BadgeService : IBadgeService
             .ToList();
     }
 
+    /// <summary>
+    /// Resolves the legacy key of a BadgePart: v1 numbered scout and admin parts separately
+    /// from zero, so a part's legacy index is its position among the parts of the same kind.
+    /// Deliberately derived from ordering rather than from SortOrder directly, because the
+    /// SortOrder values themselves are not consistent - the v1 import and the "add part"
+    /// dialog offset admin parts by 100, while badge templates number every part from zero.
+    /// </summary>
+    private static int LegacyPartIndex(BadgePart part, IEnumerable<BadgePart> badgeParts) =>
+        badgeParts
+            .Where(p => p.IsAdminPart == part.IsAdminPart)
+            .OrderBy(p => p.SortOrder)
+            .ThenBy(p => p.Id)
+            .ToList()
+            .FindIndex(p => p.Id == part.Id);
+
+    /// <summary>
+    /// Maps completion rows onto the BadgeParts they refer to. Rows written by the v1 import
+    /// carry no BadgePartId and are matched on their legacy key instead.
+    /// </summary>
+    private static HashSet<int> ResolvePartIds(IEnumerable<BadgePartDone> partsDone, IEnumerable<BadgePart> parts)
+    {
+        var partList = parts as IReadOnlyList<BadgePart> ?? parts.ToList();
+        var resolved = new HashSet<int>();
+
+        foreach (var done in partsDone)
+        {
+            if (done.BadgePartId.HasValue)
+            {
+                resolved.Add(done.BadgePartId.Value);
+                continue;
+            }
+
+            var match = partList.FirstOrDefault(p =>
+                p.IsAdminPart != done.IsScoutPart && LegacyPartIndex(p, partList) == done.PartIndex);
+
+            if (match != null)
+                resolved.Add(match.Id);
+        }
+
+        return resolved;
+    }
+
     public async Task<TogglePartResult> TogglePartAsync(int badgeId, int badgePartId, int personId, string examinerName, CancellationToken cancellationToken = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
         // Validate the badge part exists and belongs to this badge
-        var badgePart = await context.BadgeParts
-            .FirstOrDefaultAsync(bp => bp.Id == badgePartId && bp.BadgeId == badgeId, cancellationToken)
+        var allParts = await context.BadgeParts
+            .Where(bp => bp.BadgeId == badgeId)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var badgePart = allParts.FirstOrDefault(bp => bp.Id == badgePartId)
             ?? throw new ArgumentException($"BadgePart {badgePartId} not found for badge {badgeId}");
 
-        // Look for an existing active record
-        var existing = await context.BadgePartsDone
-            .FirstOrDefaultAsync(pd =>
+        var legacyIsScoutPart = !badgePart.IsAdminPart;
+        var legacyPartIndex = LegacyPartIndex(badgePart, allParts);
+
+        // Find records for this part, including v1-imported rows that predate BadgePartId.
+        // Without the legacy match the insert below collides with the migrated row on the
+        // composite primary key (PersonId, BadgeId, PartIndex, IsScoutPart).
+        var candidates = await context.BadgePartsDone
+            .Where(pd =>
                 pd.PersonId == personId
                 && pd.BadgeId == badgeId
-                && pd.BadgePartId == badgePartId
-                && pd.UndoneAt == null, cancellationToken);
+                && (pd.BadgePartId == badgePartId
+                    || (pd.BadgePartId == null
+                        && pd.PartIndex == legacyPartIndex
+                        && pd.IsScoutPart == legacyIsScoutPart)))
+            .ToListAsync(cancellationToken);
+
+        // Adopt any legacy row so later toggles match on BadgePartId directly
+        foreach (var orphan in candidates.Where(pd => pd.BadgePartId == null))
+        {
+            orphan.BadgePartId = badgePartId;
+            _logger.LogInformation(
+                "Linked legacy part done (person {PersonId}, badge {BadgeId}, part index {PartIndex}) to badge part {BadgePartId}",
+                personId, badgeId, orphan.PartIndex, badgePartId);
+        }
+
+        var active = candidates.Where(pd => pd.UndoneAt == null).ToList();
 
         var result = new TogglePartResult();
 
-        if (existing != null)
+        if (active.Count > 0)
         {
             // Undo: mark as undone rather than deleting for audit trail
-            existing.UndoneAt = DateTime.UtcNow;
+            foreach (var record in active)
+                record.UndoneAt = DateTime.UtcNow;
             result.IsDone = false;
 
             // Check if badge was completed and needs to be uncompleted
@@ -186,12 +252,7 @@ public class BadgeService : IBadgeService
         else
         {
             // Check for a previously undone record to reactivate (same composite PK)
-            var undone = await context.BadgePartsDone
-                .FirstOrDefaultAsync(pd =>
-                    pd.PersonId == personId
-                    && pd.BadgeId == badgeId
-                    && pd.BadgePartId == badgePartId
-                    && pd.UndoneAt != null, cancellationToken);
+            var undone = candidates.FirstOrDefault();
 
             if (undone != null)
             {
@@ -210,31 +271,27 @@ public class BadgeService : IBadgeService
                     BadgeId = badgeId,
                     BadgePartId = badgePartId,
                     PartIndex = badgePart.SortOrder,
-                    IsScoutPart = !badgePart.IsAdminPart,
+                    IsScoutPart = legacyIsScoutPart,
                     ExaminerName = examinerName,
                     CompletedDate = DateOnly.FromDateTime(DateTime.Today)
                 });
             }
             result.IsDone = true;
 
-            // Check if all parts are now done ? auto-complete
-            var allPartIds = await context.BadgeParts
-                .Where(bp => bp.BadgeId == badgeId)
-                .Select(bp => bp.Id)
-                .ToListAsync(cancellationToken);
-
-            var donePartIds = await context.BadgePartsDone
+            // Check if all parts are now done -> auto-complete
+            var otherDone = await context.BadgePartsDone
                 .Where(pd => pd.PersonId == personId
                     && pd.BadgeId == badgeId
-                    && pd.BadgePartId != null
                     && pd.UndoneAt == null)
-                .Select(pd => pd.BadgePartId!.Value)
+                .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            // Include the one we're about to add
-            var allDone = allPartIds.All(id => id == badgePartId || donePartIds.Contains(id));
+            var donePartIds = ResolvePartIds(otherDone, allParts);
 
-            if (allDone && allPartIds.Count > 0)
+            // Include the one we're about to add
+            var allDone = allParts.All(p => p.Id == badgePartId || donePartIds.Contains(p.Id));
+
+            if (allDone && allParts.Count > 0)
             {
                 var alreadyCompleted = await context.BadgesCompleted
                     .AnyAsync(bc => bc.PersonId == personId && bc.BadgeId == badgeId, cancellationToken);
