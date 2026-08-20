@@ -299,6 +299,129 @@ public class BadgeServiceTests : IDisposable
         Assert.IsTrue(result.BadgeCompleted); // single part badge, so completing it finishes
     }
 
+    // --- v1-migrated rows without BadgePartId ---
+
+    /// <summary>
+    /// Seeds a completion the way the v1 import wrote them: no BadgePartId, identified only
+    /// by its index among the parts of the same kind.
+    /// </summary>
+    private void SeedLegacyPartDone(int badgeId, int partIndex, bool isScoutPart)
+    {
+        using var context = new SkojjtDbContext(_options);
+        context.BadgePartsDone.Add(new BadgePartDone
+        {
+            PersonId = TestPerson1Id,
+            BadgeId = badgeId,
+            PartIndex = partIndex,
+            IsScoutPart = isScoutPart,
+            BadgePartId = null,
+            ExaminerName = "v1",
+            CompletedDate = new DateOnly(2024, 5, 1)
+        });
+        context.SaveChanges();
+    }
+
+    [TestMethod]
+    public async Task TogglePartAsync_AdoptsLegacyRowInsteadOfInsertingDuplicate()
+    {
+        using var ctx = new SkojjtDbContext(_options);
+        var badge = CreateTestBadgeWithParts(ctx, scoutParts: 2, adminParts: 0);
+        var firstPart = ctx.BadgeParts.Where(p => p.BadgeId == badge.Id).OrderBy(p => p.SortOrder).First();
+        SeedLegacyPartDone(badge.Id, partIndex: 0, isScoutPart: true);
+
+        // Before the fix this inserted a second row with the same composite primary key
+        var result = await _service.TogglePartAsync(badge.Id, firstPart.Id, TestPerson1Id, "Examiner");
+
+        // The part was already done, so toggling it undoes it rather than adding a duplicate
+        Assert.IsFalse(result.IsDone);
+
+        using var verify = new SkojjtDbContext(_options);
+        var rows = verify.BadgePartsDone.Where(pd => pd.BadgeId == badge.Id && pd.PersonId == TestPerson1Id).ToList();
+        Assert.HasCount(1, rows, "the legacy row should be reused, not duplicated");
+        Assert.AreEqual(firstPart.Id, rows[0].BadgePartId, "the legacy row should be linked to its badge part");
+        Assert.IsNotNull(rows[0].UndoneAt);
+    }
+
+    [TestMethod]
+    public async Task TogglePartAsync_ReactivatesAdoptedLegacyRow()
+    {
+        using var ctx = new SkojjtDbContext(_options);
+        var badge = CreateTestBadgeWithParts(ctx, scoutParts: 2, adminParts: 0);
+        var firstPart = ctx.BadgeParts.Where(p => p.BadgeId == badge.Id).OrderBy(p => p.SortOrder).First();
+        SeedLegacyPartDone(badge.Id, partIndex: 0, isScoutPart: true);
+
+        await _service.TogglePartAsync(badge.Id, firstPart.Id, TestPerson1Id, "Examiner");
+        var result = await _service.TogglePartAsync(badge.Id, firstPart.Id, TestPerson1Id, "Examiner");
+
+        Assert.IsTrue(result.IsDone);
+
+        using var verify = new SkojjtDbContext(_options);
+        var rows = verify.BadgePartsDone.Where(pd => pd.BadgeId == badge.Id && pd.PersonId == TestPerson1Id).ToList();
+        Assert.HasCount(1, rows);
+        Assert.IsNull(rows[0].UndoneAt);
+        Assert.AreEqual("Examiner", rows[0].ExaminerName);
+    }
+
+    [TestMethod]
+    public async Task TogglePartAsync_AdoptsLegacyAdminRowWhenSortOrderIsOffset()
+    {
+        using var ctx = new SkojjtDbContext(_options);
+        var badge = new Badge { ScoutGroupId = TestGroupId, Name = "Sjömärket", Description = "Testmärke" };
+        ctx.Badges.Add(badge);
+        ctx.SaveChanges();
+
+        // Admin parts offset by 100, the way the v1 import and the add-part dialog number them
+        ctx.BadgeParts.Add(new BadgePart { BadgeId = badge.Id, SortOrder = 0, IsAdminPart = false, ShortDescription = "Scoutdel" });
+        ctx.BadgeParts.Add(new BadgePart { BadgeId = badge.Id, SortOrder = 100, IsAdminPart = true, ShortDescription = "Admindel" });
+        ctx.SaveChanges();
+
+        var adminPart = ctx.BadgeParts.First(p => p.BadgeId == badge.Id && p.IsAdminPart);
+
+        // v1 numbered admin parts from zero, so the legacy index is 0, not 100
+        SeedLegacyPartDone(badge.Id, partIndex: 0, isScoutPart: false);
+
+        var result = await _service.TogglePartAsync(badge.Id, adminPart.Id, TestPerson1Id, "Examiner");
+
+        Assert.IsFalse(result.IsDone);
+
+        using var verify = new SkojjtDbContext(_options);
+        var rows = verify.BadgePartsDone.Where(pd => pd.BadgeId == badge.Id && pd.PersonId == TestPerson1Id).ToList();
+        Assert.HasCount(1, rows);
+        Assert.AreEqual(adminPart.Id, rows[0].BadgePartId);
+    }
+
+    [TestMethod]
+    public async Task GetTroopProgressAsync_CountsLegacyRowsWithoutBadgePartId()
+    {
+        using var ctx = new SkojjtDbContext(_options);
+        var badge = CreateTestBadgeWithParts(ctx, scoutParts: 2, adminParts: 1);
+        var scoutParts = ctx.BadgeParts.Where(p => p.BadgeId == badge.Id && !p.IsAdminPart).OrderBy(p => p.SortOrder).ToList();
+        ctx.TroopBadges.Add(new TroopBadge { TroopId = TestTroopId, BadgeId = badge.Id });
+        ctx.SaveChanges();
+
+        SeedLegacyPartDone(badge.Id, partIndex: 1, isScoutPart: true);
+
+        var progress = await _service.GetTroopProgressAsync(badge.Id, TestTroopId);
+
+        var person = progress.PersonProgress.First(p => p.Person.Id == TestPerson1Id);
+        CollectionAssert.AreEquivalent(new[] { scoutParts[1].Id }, person.CompletedPartIds.ToList());
+    }
+
+    [TestMethod]
+    public async Task TogglePartAsync_AutoCompletesWhenRemainingPartsAreLegacyRows()
+    {
+        using var ctx = new SkojjtDbContext(_options);
+        var badge = CreateTestBadgeWithParts(ctx, scoutParts: 2, adminParts: 0);
+        var parts = ctx.BadgeParts.Where(p => p.BadgeId == badge.Id).OrderBy(p => p.SortOrder).ToList();
+
+        SeedLegacyPartDone(badge.Id, partIndex: 0, isScoutPart: true);
+
+        var result = await _service.TogglePartAsync(badge.Id, parts[1].Id, TestPerson1Id, "Examiner");
+
+        Assert.IsTrue(result.IsDone);
+        Assert.IsTrue(result.BadgeCompleted, "the legacy row should count towards auto-completion");
+    }
+
     // --- CreateFromTemplateAsync ---
 
     [TestMethod]
