@@ -10,6 +10,13 @@ När du navigerar till en avdelning ser du närvarokortet – en tabell med:
 - **Kolumner** – en kolumn per sammankomst (datum)
 - **Celler** – kryss (✓) för närvaro
 
+Ovanför tabellen finns två reglage:
+
+- **Gruppera patrull** – delar upp raderna i patruller med rubrikrader
+- **Visa detaljer** – visar extra kolumner för ålder, ledarstatus och patrull
+
+Åtgärder för en enskild medlem når du alltid via menyn **⋮** i namnrutan – se [Åtgärder på en medlem](#atgarder-pa-en-medlem).
+
 ## Skapa en sammankomst
 
 1. Navigera till avdelningens närvarosida
@@ -25,6 +32,27 @@ Klicka på en cell i närvarokortet för att markera eller avmarkera närvaro. �
 
 - **Grön markering** = närvarande
 - **Tom cell** = ej närvarande
+
+## Åtgärder på en medlem
+
+Längst till höger i namnrutan på varje rad finns en meny med tre punkter (**⋮**). Där samlas de åtgärder som gäller just den medlemmen:
+
+- **Visa profil** – öppnar medlemmens [personsida](/hjalp/04-medlemshantering#personsida)
+- **Gör till ledare** / **Ta bort ledarstatus** – växlar om personen räknas som ledare. Ledare visas med blå bakgrund och sorteras överst
+- **Ändra patrull** – öppnar patrullfältet för redigering (detaljkolumnerna visas automatiskt)
+- **Ta bort från avdelningen** – tar bort medlemmen från avdelningen efter en bekräftelsedialog
+
+På dator är menyn nedtonad tills du för muspekaren över raden. På mobil och surfplatta visas den alltid.
+
+> **OBS:** Menyn visas bara när terminen är **upplåst**. Är avdelningen låst går det inte att ändra medlemmar eller närvaro.
+
+### Ta bort en medlem från avdelningen
+
+1. Klicka på **⋮** i medlemmens namnruta
+2. Välj **Ta bort från avdelningen**
+3. Bekräfta i dialogrutan som visar medlemmens namn
+
+Medlemmen tas bort från *den här avdelningen*, men finns kvar i kåren och i Scoutnet. Vill du ta bort någon som bytt avdelning är detta rätt sätt. Se [Medlemshantering](/hjalp/04-medlemshantering) för hur borttagna och inaktiva medlemmar hanteras i kåren som helhet.
 
 ## Redigera en sammankomst
 

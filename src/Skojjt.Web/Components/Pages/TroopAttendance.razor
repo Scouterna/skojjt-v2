@@ -21,6 +21,7 @@
 @inject ISensusSyncService SensusSyncService
 @inject ICampService CampService
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
@@ -723,6 +724,16 @@
     .meeting-link:hover { text-decoration: underline; }
     .person-link { color: var(--mud-palette-primary); text-decoration: none; }
     .person-link:hover { text-decoration: underline; }
+
+    /* Row overflow menu - subtle until the row is hovered/focused on pointer devices */
+    .name-col { position: relative; }
+    .person-menu { float: right; }
+    .person-menu .mud-icon-button { padding: 2px; }
+    @@media (hover: hover) {
+        .person-menu { opacity: 0.35; transition: opacity 0.15s; }
+        tr:hover .person-menu,
+        .person-menu:focus-within { opacity: 1; }
+    }
     
     /* Leader column styles */
     .leader-col { min-width: 60px; }
@@ -784,7 +795,7 @@
     @@media (max-width: 600px) {
         .attendance-grid { min-width: auto; }
         .attendance-grid th, .attendance-grid td { padding: 2px 3px; font-size: 0.8rem; }
-        .name-col { min-width: 80px; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .name-col { min-width: 110px; max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .name-col .mud-chip { display: none; }
         .meeting-col { min-width: 64px; height: 96px; }
         .meeting-name-rotate { height: 86px; width: 64px; }
@@ -1192,6 +1203,14 @@
         _editingPatrolValue = null;
     }
 
+    // Started from the row overflow menu; the patrol column only exists when
+    // the details columns are visible, so make sure they are shown.
+    private void StartPatrolEditFromMenu(TroopPerson tp)
+    {
+        _showExtraInfo = true;
+        StartPatrolEdit(tp);
+    }
+
     // Member search and add methods
     private async Task OnMemberSearchTextChanged(string searchText)
     {
@@ -1352,6 +1371,24 @@
         catch (Exception ex)
         {
             Snackbar.Add($"Kunde inte ändra ledarstatus: {ex.Message}", Severity.Error);
+        }
+    }
+
+    // Invoked from the row overflow menu, which has no room for the inline
+    // two-click confirmation, so confirm with a dialog naming the person.
+    private async Task ConfirmRemoveMemberFromTroop(TroopPerson tp)
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Ta bort medlem",
+            $"Är du säker på att du vill ta bort {tp.Person.FullName} från avdelningen?",
+            yesText: "Ta bort",
+            cancelText: "Avbryt");
+
+        if (result == true)
+        {
+            // Arm the pending state so the shared remove path performs the removal.
+            _pendingRemovePersonId = tp.PersonId;
+            await RemoveMemberFromTroop(tp);
         }
     }
 
@@ -1855,6 +1892,28 @@
                 {
                     // person is marked as removed in Scoutnet, mark with a chip 'B' for borttagen
                     <MudChip T="string" Size="Size.Small" Color="Color.Primary" Class="ml-1 d-none d-sm-inline-flex">B</MudChip>
+                }
+                @if (!(_troop?.IsLocked ?? true))
+                {
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                             Size="Size.Small"
+                             Dense="true"
+                             AnchorOrigin="Origin.BottomRight"
+                             TransformOrigin="Origin.TopRight"
+                             Class="person-menu"
+                             AriaLabel="@($"Åtgärder för {tp.Person.FullName}")">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Person"
+                                     Href="@($"/sk/{ScoutGroupId}/p/{tp.PersonId}")">Visa profil</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Star"
+                                     OnClick="@(() => ToggleLeaderStatus(tp, !tp.IsLeader))">
+                            @(tp.IsLeader ? "Ta bort ledarstatus" : "Gör till ledare")
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Groups"
+                                     OnClick="@(() => StartPatrolEditFromMenu(tp))">Ändra patrull</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.PersonRemove"
+                                     IconColor="Color.Error"
+                                     OnClick="@(() => ConfirmRemoveMemberFromTroop(tp))">Ta bort från avdelningen</MudMenuItem>
+                    </MudMenu>
                 }
             </td>
             @if (_showExtraInfo)

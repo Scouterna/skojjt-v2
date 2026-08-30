@@ -86,7 +86,7 @@ När en medlem tas bort från Scoutnet och ni gör en ny import:
 - Medlemmen markeras som **borttagen/inaktiv**
 - Historisk närvarodata bevaras för rapportering
 
-Du kan manuellt ta bort en medlem från en avdelning om personen inte längre ska vara där.
+Du kan manuellt ta bort en medlem från en avdelning om personen inte längre ska vara där. Det gör du från avdelningens närvarosida via menyn **⋮** i medlemmens namnruta – se [Åtgärder på en medlem](/hjalp/03-narvarohantering#atgarder-pa-en-medlem). Medlemmen finns kvar i kåren och tidigare närvaro påverkas inte.
 
 ## Alla medlemmar
 
