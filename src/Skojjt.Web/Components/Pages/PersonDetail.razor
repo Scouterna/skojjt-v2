@@ -1,9 +1,11 @@
 @page "/sk/{ScoutGroupId:int}/p/{PersonId:int}"
 @using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
 @using Skojjt.Core.Services
 @attribute [Authorize]
+@inject ICurrentUserService CurrentUserService
 @inject IScoutGroupRepository ScoutGroupRepository
 @inject IPersonRepository PersonRepository
 @inject IBadgeService BadgeService
@@ -17,9 +19,9 @@
     {
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
     }
-    else if (_person == null)
+    else if (!_hasAccess || _person == null)
     {
-        <MudAlert Severity="Severity.Error">Personen kunde inte hittas.</MudAlert>
+        <MudAlert Severity="Severity.Error">Personen kunde inte hittas eller så saknar du behörighet att visa den.</MudAlert>
     }
     else
     {
@@ -345,6 +347,7 @@
     private List<TroopPerson> _troopMemberships = new();
     private IReadOnlyList<BadgePersonSummary> _badgeProgress = [];
     private bool _loading = true;
+    private bool _hasAccess;
     private bool _initialized;
     private int _lastLoadedScoutGroupId;
     private int _lastLoadedPersonId;
@@ -375,10 +378,42 @@
         _loading = true;
         try
         {
+            _hasAccess = false;
+            _scoutGroup = null;
+            _person = null;
+            _troopMemberships = new();
+            _badgeProgress = [];
+            _breadcrumbs = new();
+
+            if (!CurrentUserService.HasGroupAccess(ScoutGroupId)) return;
+
+            var person = await PersonRepository.GetWithTroopsAsync(PersonId);
+
+            // A missing person is reported the same way as a denied one, so the page
+            // cannot be used to probe which member numbers exist.
+            if (person == null) return;
+
+            // The person must be a member of the scout group in the URL.
+            if (!person.ScoutGroupPersons.Any(sgp => sgp.ScoutGroupId == ScoutGroupId)) return;
+
+            var memberships = person.TroopPersons
+                .Where(tp => tp.Troop?.ScoutGroupId == ScoutGroupId)
+                .OrderByDescending(tp => tp.Troop?.SemesterId ?? 0)
+                .ToList();
+
+            // Non-registrars may only view persons in troops they have access to.
+            if (!CurrentUserService.IsMemberRegistrar(ScoutGroupId)
+                && !memberships.Any(tp => tp.Troop != null && CurrentUserService.HasTroopAccess(ScoutGroupId, tp.Troop.ScoutnetId)))
+            {
+                return;
+            }
+
+            _hasAccess = true;
+            _person = person;
+            _troopMemberships = memberships;
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
-            _person = await PersonRepository.GetWithTroopsAsync(PersonId);
-            
-            if (_scoutGroup != null && _person != null)
+
+            if (_scoutGroup != null)
             {
                 _breadcrumbs = new List<BreadcrumbItem>
                 {
@@ -387,15 +422,9 @@
                     new BreadcrumbItem("Medlemmar", href: $"/sk/{ScoutGroupId}/p"),
                     new BreadcrumbItem(_person.FullName, href: null, disabled: true)
                 };
-
-                // Get troop memberships for this scout group
-                _troopMemberships = _person.TroopPersons
-                    .Where(tp => tp.Troop?.ScoutGroupId == ScoutGroupId)
-                    .OrderByDescending(tp => tp.Troop?.SemesterId ?? 0)
-                    .ToList();
-
-                _badgeProgress = await BadgeService.GetPersonBadgesAsync(PersonId);
             }
+
+            _badgeProgress = await BadgeService.GetPersonBadgesAsync(PersonId);
         }
         finally
         {

@@ -39,11 +39,24 @@ Skojjt is a **Blazor Server** attendance tracking system for Swedish scout group
   - `troop:<troop_scoutnet_id>:<role>` — troop-level role (e.g., `troop:999:other_leader`). These are resolved to their parent scout group via a DB lookup in `ScoutIdClaimsTransformation`, with results cached in a static `ConcurrentDictionary`.
 - **Custom claims** emitted after transformation: `AccessibleGroups` (comma-separated group IDs), `AccessibleTroops` (comma-separated troop Scoutnet IDs), `MemberRegistrarGroups` (comma-separated group IDs).
 
+#### Page authorization rule (MANDATORY)
+- `@attribute [Authorize]` only proves the user is logged in — it does **not** check which group or troop they may see. Every page must additionally authorize the route parameters.
+- **Any page with a `ScoutGroupId` route parameter MUST verify access before loading data.** Set a `private bool _hasAccess` field at the top of `LoadData()`, `return` early when it is false, and render a Swedish error alert instead of the content.
+- Pick the check that matches the page's data:
+  - Troop-scoped page (has `TroopScoutnetId`) → `CurrentUserService.HasTroopAccess(ScoutGroupId, TroopScoutnetId)`.
+  - Group-wide member/report data (all members, person flow, graphs, föreningsredovisning, imports, group settings) → `CurrentUserService.IsMemberRegistrar(ScoutGroupId)`.
+  - Ordinary group-scoped page → `CurrentUserService.HasGroupAccess(ScoutGroupId)`.
+- **Never trust an entity id from the URL on its own.** When a page loads an entity by its own id (e.g. `PersonId`, `MeetingId`, `BadgeId`), also verify the entity actually belongs to the `ScoutGroupId` in the route — otherwise any user can read any record by pairing their own group id with a foreign entity id (IDOR). Prefer repository methods that take `scoutGroupId` and filter in SQL over methods keyed only by the entity id.
+- Reset all loaded state (`_person`, `_scoutGroup`, lists, ...) at the start of `LoadData()` so denied or re-parameterised loads cannot leave stale data on screen. Pages reload on parameter changes via `OnParametersSetAsync`, so the check must live inside `LoadData()`, not only in `OnInitializedAsync()`.
+- All these checks already short-circuit to `true` for admins with admin mode active, so no separate admin branch is needed.
+- Hide navigation links behind the same condition that guards the target page, so the UI never offers a link that leads to a permission error.
+
 ### Blazor Pages
 - Pages use `@attribute [Authorize]` and `@rendermode InteractiveServer`.
 - Inject repositories and services directly into Razor components via `@inject`.
 - Route parameters use the pattern `/sk/{ScoutGroupId:int}/t/{SemesterId:int}/...`.
 - Swedish text for all user-facing strings (buttons, labels, alerts, page titles).
+- Authorize route parameters in `LoadData()` — see the page authorization rule above.
 
 ### Entity Conventions
 - `Person.Id` = Scoutnet member number (not auto-increment).

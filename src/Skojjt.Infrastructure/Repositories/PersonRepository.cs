@@ -15,6 +15,7 @@ public class PersonRepository : Repository<Person>, IPersonRepository
     {
         await using var context = CreateContext();
         return await context.Set<Person>()
+            .Include(p => p.ScoutGroupPersons)
             .Include(p => p.TroopPersons)
                 .ThenInclude(tp => tp.Troop)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);

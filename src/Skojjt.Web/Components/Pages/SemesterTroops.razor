@@ -273,14 +273,17 @@
                             Lägerbidrag (Stockholm)
                         </MudButton>
                     </MudItem>
-                    <MudItem xs="12" sm="6" md="4">
-                        <MudButton Variant="Variant.Outlined" 
-                                   FullWidth="true"
-                                   StartIcon="@Icons.Material.Filled.Summarize"
-                                   Href="@($"/sk/{ScoutGroupId}/summary/{SemesterId}")">
-                            Föreningsredovisning
-                        </MudButton>
-                    </MudItem>
+                    @if (_isMemberRegistrar)
+                    {
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudButton Variant="Variant.Outlined"
+                                       FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.Summarize"
+                                       Href="@($"/sk/{ScoutGroupId}/summary/{SemesterId}")">
+                                Föreningsredovisning
+                            </MudButton>
+                        </MudItem>
+                    }
                 </MudGrid>
             </MudExpansionPanel>
         </MudExpansionPanels>

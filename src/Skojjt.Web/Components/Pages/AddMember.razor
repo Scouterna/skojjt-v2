@@ -1,11 +1,13 @@
 @page "/sk/{ScoutGroupId:int}/add-member"
 @page "/sk/{ScoutGroupId:int}/t/{SemesterId:int}/{TroopScoutnetId:int}/add-member"
 @using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
 @using Skojjt.Infrastructure.Scoutnet
 @attribute [Authorize]
 @rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
 @inject IScoutGroupRepository ScoutGroupRepository
 @inject ITroopRepository TroopRepository
 @inject IScoutnetRegistrationService RegistrationService
@@ -19,6 +21,10 @@
     @if (_loading)
     {
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">Du har inte behörighet att lägga till medlemmar här.</MudAlert>
     }
     else if (_scoutGroup == null)
     {
@@ -343,6 +349,7 @@
     private WaitinglistRegistrationResult? _result;
     private string _lastRegisteredName = string.Empty;
     private bool _loading = true;
+    private bool _hasAccess;
     private bool _isSubmitting;
     private List<BreadcrumbItem> _breadcrumbs = [];
 
@@ -358,6 +365,17 @@
         _loading = true;
         try
         {
+            _hasAccess = false;
+            _scoutGroup = null;
+            _troop = null;
+            _breadcrumbs = [];
+
+            _hasAccess = HasTroopContext
+                ? CurrentUserService.HasTroopAccess(ScoutGroupId, TroopScoutnetId!.Value)
+                : CurrentUserService.IsMemberRegistrar(ScoutGroupId);
+
+            if (!_hasAccess) return;
+
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
 
             if (HasTroopContext)

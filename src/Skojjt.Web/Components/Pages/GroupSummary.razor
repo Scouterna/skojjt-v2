@@ -1,10 +1,12 @@
 @page "/sk/{ScoutGroupId:int}/summary/{SemesterId:int}"
 @using Microsoft.AspNetCore.Authorization
+@using Skojjt.Core.Authentication
 @using Skojjt.Core.Entities
 @using Skojjt.Core.Interfaces
 @using Skojjt.Core.Services
 @attribute [Authorize]
 @rendermode InteractiveServer
+@inject ICurrentUserService CurrentUserService
 @inject IScoutGroupRepository ScoutGroupRepository
 @inject ISemesterRepository SemesterRepository
 @inject IGroupSummaryService GroupSummaryService
@@ -17,6 +19,12 @@
     @if (_loading)
     {
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (!_hasAccess)
+    {
+        <MudAlert Severity="Severity.Error">
+            Du har inte behörighet att visa föreningsredovisningen. Endast registeransvariga har tillgång.
+        </MudAlert>
     }
     else if (_scoutGroup == null || _semester == null || _summaryData == null)
     {
@@ -163,6 +171,7 @@
     private Semester? _semester;
     private GroupSummaryData? _summaryData;
     private bool _loading = true;
+    private bool _hasAccess;
     private bool _initialized;
     private int _lastLoadedScoutGroupId;
     private int _lastLoadedSemesterId;
@@ -194,6 +203,15 @@
 
         try
         {
+            _hasAccess = false;
+            _scoutGroup = null;
+            _semester = null;
+            _summaryData = null;
+            _breadcrumbs = new();
+
+            _hasAccess = CurrentUserService.IsMemberRegistrar(ScoutGroupId);
+            if (!_hasAccess) return;
+
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
             _semester = await SemesterRepository.GetByIdAsync(SemesterId);
 
