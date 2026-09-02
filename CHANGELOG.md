@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.5.11] - 2026-09-02
+* Namnen på avdelningssidan scrollade med möten vilket gjorde det lite svårt att registrera närvaro med många framtida möten förbokade.
+* Ny knapp för att dölja alla framtida möten på avdelningssidan, vilket borde göra det enklare om man lägger in möten i förväg.
+
 ## [2.5.10] - 2026-09-02
 * Bugfix: Vice avdelningsledare hade inte access till avdelningens närvarokort. Vice avdelningsledare har nu samma behörighet som avdelningsledare.
 * Ny tre-punkters meny per person för att ta bort en person från avdelningen mm. Tidigare var man tvungen att använda "visa detaljer" sen ta bort.

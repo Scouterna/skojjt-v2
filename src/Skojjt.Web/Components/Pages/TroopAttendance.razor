@@ -92,7 +92,7 @@
         <MudPaper Elevation="2" Class="pa-2 pa-sm-4">
             <div class="d-flex flex-wrap justify-space-between align-center mb-4 gap-2">
                 <MudText Typo="Typo.h6">Närvaroregistrering</MudText>
-                <div class="d-flex align-center gap-2">
+                <div class="d-flex flex-wrap align-center gap-2 attendance-toolbar">
                     <MudChip T="string" 
                              Size="Size.Small" 
                              Color="@GetSaveStatusColor()" 
@@ -103,6 +103,15 @@
                                Label="Gruppera patrull" 
                                Color="Color.Secondary"
                                Size="Size.Small" />
+                    @if (_hideFutureMeetings ? HiddenMeetingCount > 0 : _allMeetings.Any(IsFutureMeeting))
+                    {
+                        <MudSwitch T="bool"
+                                   Value="_hideFutureMeetings"
+                                   ValueChanged="OnHideFutureMeetingsChanged"
+                                   Label="@($"Dölj kommande ({(_hideFutureMeetings ? HiddenMeetingCount : _allMeetings.Count(IsFutureMeeting))})")"
+                                   Color="Color.Tertiary"
+                                   Size="Size.Small" />
+                    }
                     <MudSwitch @bind-Value="_showExtraInfo" 
                                Label="Visa detaljer" 
                                Color="Color.Primary"
@@ -118,7 +127,7 @@
             }
             else
             {
-                @if (_meetings.Count == 0)
+                @if (_allMeetings.Count == 0)
                 {
                     <MudAlert Severity="Severity.Info" Class="mb-4">
                         Inga möten registrerade. 
@@ -139,6 +148,17 @@
                                     <th class="leader-col">Ledare</th>
                                     <th class="patrol-col">Patrull</th>
                                     <th class="action-col"></th>
+                                }
+                                @if (HiddenMeetingCount > 0)
+                                {
+                                    <th class="hidden-meetings-col">
+                                        <MudTooltip Text="@($"{HiddenMeetingCount} kommande möten är dolda – klicka för att visa")">
+                                            <div class="hidden-meetings-indicator" @onclick="@(() => OnHideFutureMeetingsChanged(false))">
+                                                <MudIcon Icon="@Icons.Material.Filled.VisibilityOff" Size="Size.Small" />
+                                                <span class="hidden-meetings-count">+@HiddenMeetingCount</span>
+                                            </div>
+                                        </MudTooltip>
+                                    </th>
                                 }
                                 @for (var i = 0; i < _meetings.Count; i++)
                                 {
@@ -180,7 +200,7 @@
                                         }
                                     </th>
                                 }
-                                @if (_meetings.Count > 0)
+                                @if (_allMeetings.Count > 0)
                                 {
                                     <th class="sum-col">&#931;</th>
                                 }
@@ -212,7 +232,7 @@
                                 }
                             }
                         </tbody>
-                        @if (_meetings.Count > 0)
+                        @if (_allMeetings.Count > 0)
                         {
                             <tfoot>
                                 <tr class="footer-row">
@@ -227,6 +247,10 @@
                                         <td></td>
                                         <td></td>
                                         <td></td>
+                                    }
+                                    @if (HiddenMeetingCount > 0)
+                                    {
+                                        <td class="hidden-meetings-col"></td>
                                     }
                                     @foreach (var meeting in _meetings)
                                     {
@@ -647,7 +671,7 @@
             </MudText>
             <MudAlert Severity="Severity.Info" Dense="true">
                 @{
-                    var attended = _troopPersons.Count(tp => _meetings.Any(m => IsAttending(tp.PersonId, m.Id)));
+                    var attended = _troopPersons.Count(tp => _allMeetings.Any(m => IsAttending(tp.PersonId, m.Id)));
                 }
                 @attended av @_troopPersons.Count deltagare har minst en närvarodag.
             </MudAlert>
@@ -684,6 +708,8 @@
 
 <style>
     .attendance-grid-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .attendance-toolbar { max-width: 100%; }
+    .attendance-toolbar > * { flex: 0 0 auto; }
     .attendance-grid { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 600px; }
     .attendance-grid th, .attendance-grid td { padding: 4px 8px; border: 1px solid var(--mud-palette-lines-default); text-align: center; white-space: nowrap; }
     .attendance-grid thead th { background: var(--mud-palette-surface); position: sticky; top: 0; z-index: 10; }
@@ -691,6 +717,9 @@
     .attendance-grid thead th.sticky-col { z-index: 15; }
     .name-col { text-align: left !important; min-width: 150px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
     .meeting-col { min-width: 78px; white-space: nowrap; vertical-align: bottom; height: 88px; padding-top: 0 !important; padding-bottom: 4px !important; }
+    .hidden-meetings-col { min-width: 48px; width: 48px; vertical-align: bottom; background: var(--mud-palette-background-gray); }
+    .hidden-meetings-indicator { display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: var(--mud-palette-text-secondary); }
+    .hidden-meetings-count { font-size: 0.75rem; font-weight: 600; }
     .meeting-name-rotate { position: relative; height: 78px; width: 78px; margin: 0 auto; }
     .meeting-rotate-link {
         position: absolute;
@@ -726,7 +755,6 @@
     .person-link:hover { text-decoration: underline; }
 
     /* Row overflow menu - subtle until the row is hovered/focused on pointer devices */
-    .name-col { position: relative; }
     .person-menu { float: right; }
     .person-menu .mud-icon-button { padding: 2px; }
     @@media (hover: hover) {
@@ -829,6 +857,11 @@
     private Semester? _semester;
     private Troop? _troop;
     private List<TroopPerson> _troopPersons = new();
+
+    /// <summary>All meetings for the troop, newest first. Used for totals and exports.</summary>
+    private List<Meeting> _allMeetings = new();
+
+    /// <summary>Meetings shown in the grid; excludes future meetings when <see cref="_hideFutureMeetings"/> is set.</summary>
     private List<Meeting> _meetings = new();
     private Dictionary<(int PersonId, int MeetingId), bool> _attendance = new();
     private Dictionary<(int PersonId, int MeetingId), bool> _originalAttendance = new();
@@ -837,6 +870,7 @@
     private bool _hasAccess = false;
     private bool _showExtraInfo = false;
     private bool _groupByPatrol = false;
+    private bool _hideFutureMeetings = true;
     private bool _isPinned = false;
     private bool _showNewMeetingDialog = false;
     private bool _showAddMemberDialog = false;
@@ -883,6 +917,7 @@
     private SaveStatus _saveStatus = SaveStatus.Saved;
     private CancellationTokenSource? _saveDebounceTokenSource;
     private const int SaveDebounceMs = 1500;
+    private const string HideFutureMeetingsStorageKey = "hideFutureMeetings";
 
     private string _newMeetingName = "Möte";
     private int _newMeetingDuration = 90;
@@ -1037,6 +1072,21 @@
             """);
 
             _isPinned = await JSRuntime.InvokeAsync<bool>("skojjtShortcuts.isPinned", TroopScoutnetId);
+
+            try
+            {
+                var storedHideFuture = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", HideFutureMeetingsStorageKey);
+                if (storedHideFuture is not null)
+                {
+                    _hideFutureMeetings = storedHideFuture == "true";
+                    ApplyMeetingFilter();
+                }
+            }
+            catch (JSException)
+            {
+                // localStorage unavailable - keep the default
+            }
+
             StateHasChanged();
         }
         await JSRuntime.InvokeVoidAsyncIgnoreErrors("eval", $"window.hasUnsavedChanges = {(_saveStatus == SaveStatus.Unsaved).ToString().ToLower()};");
@@ -1161,11 +1211,12 @@
 
                 // Load all meetings with attendance in a SINGLE query instead of N+1 queries
                 var meetingsWithAttendance = await MeetingRepository.GetByTroopWithAttendanceAsync(_troop.Id);
-                _meetings = meetingsWithAttendance.ToList();
+                _allMeetings = meetingsWithAttendance.ToList();
+                ApplyMeetingFilter();
 
                 // Build attendance dictionary from the already-loaded data
                 _attendance.Clear();
-                foreach (var meeting in _meetings)
+                foreach (var meeting in _allMeetings)
                 {
                     foreach (var attendance in meeting.Attendances)
                     {
@@ -1466,11 +1517,31 @@
             .ThenBy(g => g.Key);
     }
 
+    private int HiddenMeetingCount => _allMeetings.Count - _meetings.Count;
+
+    private static bool IsFutureMeeting(Meeting meeting) =>
+        meeting.MeetingDate > DateOnly.FromDateTime(DateTime.Today);
+
+    private void ApplyMeetingFilter()
+    {
+        _meetings = _hideFutureMeetings
+            ? _allMeetings.Where(m => !IsFutureMeeting(m)).ToList()
+            : _allMeetings.ToList();
+    }
+
+    private async Task OnHideFutureMeetingsChanged(bool hide)
+    {
+        _hideFutureMeetings = hide;
+        ApplyMeetingFilter();
+        await JSRuntime.InvokeVoidAsyncIgnoreErrors("localStorage.setItem", HideFutureMeetingsStorageKey, hide ? "true" : "false");
+    }
+
     private int GetColspan()
     {
         var cols = 1; // Name
         if (_showExtraInfo) cols += 4; // Age + Leader + Patrol + Action
         cols += _meetings.Count; // Meeting columns
+        if (HiddenMeetingCount > 0) cols += 1; // Placeholder column for hidden future meetings
         if (_meetings.Count > 0) cols += 1; // Sum column only if there are meetings
         return cols;
     }
@@ -1569,7 +1640,7 @@
         _ => Icons.Material.Filled.Cloud
     };
 
-    private int GetAttendanceCount(int personId) => _meetings.Count(m => IsAttending(personId, m.Id));
+    private int GetAttendanceCount(int personId) => _allMeetings.Count(m => IsAttending(personId, m.Id));
     private (int Leaders, int Scouts) GetMeetingAttendanceSplit(int meetingId)
     {
         var leaders = _troopPersons.Count(tp => tp.IsLeader && IsAttending(tp.PersonId, meetingId));
@@ -1795,7 +1866,7 @@
             var attendanceState = _troopPersons
                 .Select(tp => (
                     tp.PersonId,
-                    Attended: _meetings.Any(m => IsAttending(tp.PersonId, m.Id))))
+                    Attended: _allMeetings.Any(m => IsAttending(tp.PersonId, m.Id))))
                 .ToList();
 
             _checkinResult = await CampService.PushCheckinAsync(
@@ -1998,6 +2069,10 @@
                     }
                 </td>
             }
+            @if (HiddenMeetingCount > 0)
+            {
+                <td class="hidden-meetings-col"></td>
+            }
             @foreach (var meeting in _meetings)
             {
                 <td class="check-col">
@@ -2009,7 +2084,7 @@
                                  Disabled="@(_troop?.IsLocked ?? false)" />
                 </td>
             }
-            @if (_meetings.Count > 0)
+            @if (_allMeetings.Count > 0)
             {
                 <td class="sum-col">
                     <strong>@GetAttendanceCount(tp.PersonId)</strong>
