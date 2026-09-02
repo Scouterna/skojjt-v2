@@ -201,7 +201,8 @@ Recognized role names (see `ScoutIdClaimsTransformation`):
 |-----------|-------------|
 | `member_registrar` | Medlemsregistrerare — full access to the group, including member management |
 | `leader` | Avdelningsledare |
-| `assistant_leader` | Biträdande avdelningsledare |
+| `assistant_leader` | Biträdande/assisterande avdelningsledare |
+| `vice_leader` | Vice avdelningsledare |
 | `other_leader` | Övrig ledare |
 
 ## Application Claims

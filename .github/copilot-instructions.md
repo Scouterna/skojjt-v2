@@ -32,7 +32,7 @@ Skojjt is a **Blazor Server** attendance tracking system for Swedish scout group
 - **Group-level access**: Users can only access scout groups listed in their `AccessibleGroupIds`. Check with `ICurrentUserService.HasGroupAccess(scoutGroupId)` or `RequireGroupAccess(scoutGroupId)`.
 - **Troop-level access**: Within a group, users only see troops they have explicit role claims for. Check with `ICurrentUserService.HasTroopAccess(scoutGroupId, troopScoutnetId)`.
 - **Member registrar** (`member_registrar` role) has full access to all troops within their group, plus access to group-level management pages (Scoutnet import, all members, add member, badges, group settings).
-- **Troop leaders** (`leader`, `assistant_leader`, `other_leader` roles) only have access to the specific troops listed in their role claims.
+- **Troop leaders** (`leader`, `assistant_leader`, `vice_leader`, `other_leader` roles) only have access to the specific troops listed in their role claims.
 - Admin users only have elevated access when admin mode is explicitly active (`IAdminModeService.IsAdminModeActive`).
 - **ScoutID role claims** come in two formats:
   - `group:<group_id>:<role>` — direct group-level role (e.g., `group:42:member_registrar`).

@@ -143,6 +143,47 @@ public class ClaimsTransformationTests
     }
 
     [TestMethod]
+    public async Task TransformAsync_WithViceLeaderTroopRoleClaim_GrantsTroopAccess()
+    {
+        // Arrange
+        var (transformation, options) = CreateTransformationWithDb();
+
+        await using (var context = new SkojjtDbContext(options))
+        {
+            context.Troops.Add(new Troop
+            {
+                ScoutnetId = 18008,
+                ScoutGroupId = 42,
+                SemesterId = 20251,
+                Name = "Test Troop"
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, "67891"),
+            new(ClaimTypes.Email, "vice@test.se"),
+            new("name", "Test Vice Leader"),
+            new("role", "troop:18008:vice_leader"),
+        };
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+
+        // Act
+        var result = await transformation.TransformAsync(principal);
+
+        // Assert
+        var resultIdentity = (ClaimsIdentity)result.Identity!;
+        var accessibleGroups = resultIdentity.FindFirst(ScoutIdClaimTypes.AccessibleGroups)?.Value;
+        Assert.IsNotNull(accessibleGroups);
+        Assert.Contains(accessibleGroups, "42", $"Expected accessible groups to contain '42', but was '{accessibleGroups}'");
+
+        var accessibleTroops = resultIdentity.FindFirst(ScoutIdClaimTypes.AccessibleTroops)?.Value;
+        Assert.IsNotNull(accessibleTroops);
+        Assert.Contains(accessibleTroops, "18008", $"Expected accessible troops to contain '18008', but was '{accessibleTroops}'");
+    }
+
+    [TestMethod]
     public void TrimRedundantRoleClaims_RemovesRawGroupTroopAndOrganisationRoleClaims()
     {
         // Arrange: raw ScoutID role values, both as "role" and as the duplicate ClaimTypes.Role.

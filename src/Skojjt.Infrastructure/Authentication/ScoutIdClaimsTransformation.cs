@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Skojjt.Core.Authentication;
 using Skojjt.Infrastructure.Data;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 
@@ -26,6 +27,20 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
     private static readonly Regex s_regexGroup = new(@"group:(\d+):(.+)", RegexOptions.Compiled);
     private static readonly Regex s_regexTroop = new(@"troop:(\d+):(.+)", RegexOptions.Compiled);
     private static readonly ConcurrentDictionary<int, int> s_troopToGroupCache = new();
+
+    /// <summary>
+    /// ScoutID role keys that grant access to Skojjt. Mirrors the Scoutnet unit roles
+    /// 2 = Avdelningsledare (leader), 3 = Ledare (other_leader), 4 = Vice avdelningsledare
+    /// (vice_leader), 5 = Assisterande ledare (assistant_leader), plus member_registrar.
+    /// </summary>
+    private static readonly FrozenSet<string> s_accessGrantingRoles = new[]
+    {
+        "leader",
+        "assistant_leader",
+        "vice_leader",
+        "other_leader",
+        "member_registrar",
+    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     public ScoutIdClaimsTransformation(
         IDbContextFactory<SkojjtDbContext> contextFactory,
@@ -176,7 +191,7 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
                 // Extract group information from the role claim
                 var groupId = groupMatch.Groups[1].Value;
                 var roleName = groupMatch.Groups[2].Value;
-                if (roleName is "leader" or "assistant_leader" or "member_registrar" or "other_leader")
+                if (s_accessGrantingRoles.Contains(roleName))
                 {
                     accessibleGroups.Add(groupId);
                 }
@@ -272,7 +287,7 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
             if (s_troopToGroupCache.TryGetValue(troopScoutnetId, out var scoutGroupId))
             {
                 var groupIdStr = scoutGroupId.ToString();
-                if (roleName is "leader" or "assistant_leader" or "member_registrar" or "other_leader")
+                if (s_accessGrantingRoles.Contains(roleName))
                 {
                     accessibleGroups.Add(groupIdStr);
                     accessibleTroops.Add(troopScoutnetId.ToString());

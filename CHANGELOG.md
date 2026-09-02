@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.5.10] - 2026-09-02
+* Bugfix: Vice avdelningsledare hade inte access till avdelningens närvarokort. Vice avdelningsledare har nu samma behörighet som avdelningsledare.
+* Ny tre-punkters meny per person för att ta bort en person från avdelningen mm. Tidigare var man tvungen att använda "visa detaljer" sen ta bort.
+
 ## [2.5.8] - 2026-08-19
 * Bugfix: Kryssa i en märkesdel för en scout med märkesframsteg importerade från Skojjt v1 gav felet "An error occurred while saving the entity changes." Importerade delresultat saknade koppling till märkets delar, vilket gjorde att de dels inte syntes som ikryssade, dels krockade med en ny rad när ledaren kryssade i samma del. Befintliga rader kopplas nu ihop automatiskt vid uppgradering.
 
