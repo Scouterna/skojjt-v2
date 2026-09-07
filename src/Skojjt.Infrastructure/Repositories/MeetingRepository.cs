@@ -15,6 +15,7 @@ public class MeetingRepository : Repository<Meeting, int>, IMeetingRepository
     {
         await using var context = CreateContext();
         return await context.Set<Meeting>()
+            .AsNoTrackingWithIdentityResolution()
             .Include(m => m.Attendances)
                 .ThenInclude(a => a.Person)
             .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
@@ -24,6 +25,7 @@ public class MeetingRepository : Repository<Meeting, int>, IMeetingRepository
     {
         await using var context = CreateContext();
         return await context.Set<Meeting>()
+            .AsNoTracking()
             .Where(m => m.TroopId == troopId)
             .OrderByDescending(m => m.MeetingDate)
             .ToListAsync(cancellationToken);
@@ -33,6 +35,7 @@ public class MeetingRepository : Repository<Meeting, int>, IMeetingRepository
     {
         await using var context = CreateContext();
         return await context.Set<Meeting>()
+            .AsNoTrackingWithIdentityResolution()
             .Where(m => m.TroopId == troopId)
             .Include(m => m.Attendances)
             .OrderByDescending(m => m.MeetingDate)
@@ -43,6 +46,7 @@ public class MeetingRepository : Repository<Meeting, int>, IMeetingRepository
     {
         await using var context = CreateContext();
         return await context.Set<Meeting>()
+            .AsNoTrackingWithIdentityResolution()
             .Where(m => m.TroopId == troopId && m.MeetingDate >= startDate && m.MeetingDate <= endDate)
             .Include(m => m.Attendances)
             .OrderByDescending(m => m.MeetingDate)
@@ -53,6 +57,7 @@ public class MeetingRepository : Repository<Meeting, int>, IMeetingRepository
     {
         await using var context = CreateContext();
         return await context.Set<Meeting>()
+            .AsNoTrackingWithIdentityResolution()
             .Include(m => m.Attendances)
             .FirstOrDefaultAsync(m => m.TroopId == troopId && m.MeetingDate == date, cancellationToken);
     }
@@ -61,6 +66,7 @@ public class MeetingRepository : Repository<Meeting, int>, IMeetingRepository
     {
         await using var context = CreateContext();
         return await context.Set<Meeting>()
+            .AsNoTrackingWithIdentityResolution()
             .Where(m => m.TroopId == troopId && m.MeetingDate < beforeDate)
             .Include(m => m.Attendances)
             .OrderByDescending(m => m.MeetingDate)

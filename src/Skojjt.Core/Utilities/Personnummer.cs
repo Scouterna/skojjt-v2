@@ -79,8 +79,22 @@ public class Personnummer : IEquatable<Personnummer>, IComparable<Personnummer>
 		}
 	}
 	public bool IsSamordningsnummer => Int32.Parse(_personnummer.AsSpan(6, 2)) >= 60;
-	public bool IsFemale => (Int32.Parse(_personnummer.AsSpan(10, 1)) & 1) == 0;
-	public bool IsMale => (Int32.Parse(_personnummer.AsSpan(10, 1)) & 1) != 0;
+	public bool IsFemale => IsFemaleNumber(_personnummer);
+	public bool IsMale => !IsFemaleNumber(_personnummer);
+
+	/// <summary>
+	/// Returns true when the given personnummer indicates a female, i.e. when the
+	/// second to last digit is even. Returns false for null, empty or too short input.
+	/// </summary>
+	public static bool IsFemaleNumber(string? personnummer)
+	{
+		if (String.IsNullOrEmpty(personnummer) || personnummer.Length < 11)
+		{
+			return false;
+		}
+		return Int32.TryParse(personnummer.AsSpan(personnummer.Length - 2, 1), out var digit) && (digit & 1) == 0;
+	}
+
 	public DateOnly BirthDay => new DateOnly(Year, Month, Day);
 	public string BirthDayString => BirthDay.ToString("yyyy-MM-dd");
 

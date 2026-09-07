@@ -307,7 +307,7 @@
         _hasAccess = CurrentUserService.HasTroopAccess(ScoutGroupId, TroopScoutnetId);
         if (!_hasAccess)
         {
-            _breadcrumbs = [new("Scoutkårer", href: "/sk"), new("Ingen behörighet", href: null, disabled: true)];
+            _breadcrumbs = BreadcrumbBuilder.NoAccess();
             _loading = false;
             return;
         }
@@ -331,14 +331,11 @@
                 _progress = await BadgeService.GetTroopProgressAsync(BadgeId, _troop.Id);
             }
 
-            _breadcrumbs =
-            [
-                new("Scoutkårer", href: "/sk"),
-                new(_scoutGroup?.Name ?? "Kår", href: $"/sk/{ScoutGroupId}"),
-                new(_semester?.DisplayName ?? "Termin", href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
-                new(_troop?.Name ?? "Avdelning", href: Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}")),
-                new(_badge?.Name ?? "Märke", href: null, disabled: true)
-            ];
+            _breadcrumbs = BreadcrumbBuilder.Create()
+                .ScoutGroup(_scoutGroup?.Name ?? "Kår", ScoutGroupId)
+                .Semester(_semester?.DisplayName ?? "Termin", ScoutGroupId, SemesterId)
+                .Troop(_troop?.Name, ScoutGroupId, SemesterId, TroopScoutnetId)
+                .Leaf(_badge?.Name ?? "Märke");
         }
         finally
         {

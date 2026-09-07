@@ -15,6 +15,7 @@ public class PersonRepository : Repository<Person>, IPersonRepository
     {
         await using var context = CreateContext();
         return await context.Set<Person>()
+            .AsNoTrackingWithIdentityResolution()
             .Include(p => p.ScoutGroupPersons)
             .Include(p => p.TroopPersons)
                 .ThenInclude(tp => tp.Troop)
@@ -25,6 +26,7 @@ public class PersonRepository : Repository<Person>, IPersonRepository
     {
         await using var context = CreateContext();
         return await context.Set<Person>()
+            .AsNoTrackingWithIdentityResolution()
             .Include(p => p.ScoutGroupPersons.Where(sgp => sgp.ScoutGroupId == scoutGroupId))
             .Where(p => p.ScoutGroupPersons.Any(sgp => sgp.ScoutGroupId == scoutGroupId))
             .OrderBy(p => p.LastName)
@@ -36,6 +38,7 @@ public class PersonRepository : Repository<Person>, IPersonRepository
     {
         await using var context = CreateContext();
         return await context.TroopPersons
+            .AsNoTracking()
             .Where(tp => tp.TroopId == troopId)
             .Include(tp => tp.Person)
             .Select(tp => tp.Person)
@@ -48,6 +51,7 @@ public class PersonRepository : Repository<Person>, IPersonRepository
     {
         await using var context = CreateContext();
         return await context.Set<Person>()
+            .AsNoTracking()
             .Where(p => p.ScoutGroupPersons.Any(sgp => sgp.ScoutGroupId == scoutGroupId) && !p.Removed)
             .OrderBy(p => p.LastName)
             .ThenBy(p => p.FirstName)
@@ -59,6 +63,7 @@ public class PersonRepository : Repository<Person>, IPersonRepository
         await using var context = CreateContext();
         var lowerSearch = searchTerm.ToLower();
         var query = context.Set<Person>()
+            .AsNoTrackingWithIdentityResolution()
             .Include(p => p.ScoutGroupPersons.Where(sgp => sgp.ScoutGroupId == scoutGroupId))
             .Where(p => p.ScoutGroupPersons.Any(sgp => sgp.ScoutGroupId == scoutGroupId))
             .Where(p => p.FirstName.ToLower().Contains(lowerSearch) || 

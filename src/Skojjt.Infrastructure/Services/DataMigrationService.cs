@@ -382,7 +382,7 @@ public class DataMigrationService
                 Id = personId,
                 FirstName = item.FirstName.Substring(0, Math.Min(item.FirstName.Length, 50)),
                 LastName = item.LastName.Substring(0, Math.Min(item.LastName.Length, 50)),
-                BirthDate = ParseDate(item.BirthDate),
+                BirthDate = DateParsing.ParseDateOnly(item.BirthDate),
                 PersonalNumber = item.PersonalNumber.GetNullablePersonnummer(),
                 Email = item.Email?.Substring(0, Math.Min(item.Email.Length, 100)),
                 Phone = item.Phone?.Substring(0, Math.Min(item.Phone.Length, 50)),
@@ -490,7 +490,7 @@ public class DataMigrationService
                 ScoutGroupId = item.ScoutGroupId.Value,
                 SemesterId = item.SemesterId.Value,
                 Name = item.Name ?? "",
-                DefaultStartTime = ParseTime(item.DefaultStartTime) ?? new TimeOnly(18, 30),
+                DefaultStartTime = DateParsing.ParseTimeOnly(item.DefaultStartTime) ?? new TimeOnly(18, 30),
                 DefaultDurationMinutes = item.DefaultDurationMinutes ?? 90
             });
             count++;
@@ -621,8 +621,8 @@ public class DataMigrationService
                 continue;
             }
 
-            DateOnly meetingDate = (DateOnly)ParseDate(item.MeetingDate)!;
-            TimeOnly startTime = (TimeOnly)ParseTime(item.StartTime)!;
+            DateOnly meetingDate = (DateOnly)DateParsing.ParseDateOnly(item.MeetingDate)!;
+            TimeOnly startTime = (TimeOnly)DateParsing.ParseTimeOnly(item.StartTime)!;
 
             if (!existingMeetings.Add((troopId.Value, meetingDate)))
             {
@@ -967,7 +967,7 @@ public class DataMigrationService
                 IsScoutPart = isScoutPart,
                 BadgePartId = badgePartId,
                 ExaminerName = item.ExaminerName,
-                CompletedDate = ParseDate(item.CompletedDate) ?? DateOnly.FromDateTime(DateTime.Now)
+                CompletedDate = DateParsing.ParseDateOnly(item.CompletedDate) ?? DateOnly.FromDateTime(DateTime.Now)
             });
             count++;
 
@@ -1012,7 +1012,7 @@ public class DataMigrationService
                 PersonId = personId,
                 BadgeId = badgeId,
                 Examiner = item.Examiner,
-                CompletedDate = ParseDate(item.CompletedDate) ?? DateOnly.FromDateTime(DateTime.Now)
+                CompletedDate = DateParsing.ParseDateOnly(item.CompletedDate) ?? DateOnly.FromDateTime(DateTime.Now)
             });
             count++;
         }
@@ -1020,32 +1020,6 @@ public class DataMigrationService
         await SaveAndClearAsync(cancellationToken);
         _logger.LogInformation("Imported {Count} badges completed", count);
         return count;
-    }
-
-    private static DateOnly? ParseDate(string? dateStr)
-    {
-        if (string.IsNullOrEmpty(dateStr))
-            return null;
-        
-        if (DateOnly.TryParse(dateStr, out var date))
-            return date;
-        
-        // Try parsing just the date part
-        if (dateStr.Length >= 10 && DateOnly.TryParse(dateStr[..10], out date))
-            return date;
-        
-        return null;
-    }
-
-    private static TimeOnly? ParseTime(string? timeStr)
-    {
-        if (string.IsNullOrEmpty(timeStr))
-            return null;
-
-        if (TimeOnly.TryParse(timeStr, out var time))
-            return time;
-
-        return null;
     }
 
     /// <summary>

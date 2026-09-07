@@ -881,11 +881,7 @@
 
             if (!_hasAccess)
             {
-                _breadcrumbs = new List<BreadcrumbItem>
-                {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                    new BreadcrumbItem("Ingen behörighet", href: null, disabled: true)
-                };
+                _breadcrumbs = BreadcrumbBuilder.NoAccess();
                 return;
             }
 
@@ -900,12 +896,9 @@
             
             if (_scoutGroup != null && _semester != null)
             {
-                _breadcrumbs = new List<BreadcrumbItem>
-                {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                    new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
-                    new BreadcrumbItem(_semester.DisplayName, href: null, disabled: true)
-                };
+                _breadcrumbs = BreadcrumbBuilder.Create()
+                    .ScoutGroup(_scoutGroup.Name, ScoutGroupId)
+                    .Leaf(_semester.DisplayName);
 
                 // Load troops with members - use a method that loads all data in one query
                 var allTroops = await TroopRepository.GetByScoutGroupAndSemesterWithMembersAsync(ScoutGroupId, SemesterId);

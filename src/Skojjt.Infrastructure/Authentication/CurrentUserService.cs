@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Skojjt.Core.Authentication;
 
@@ -17,6 +16,9 @@ public class CurrentUserService : ICurrentUserService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IAdminModeService _adminModeService;
     private ScoutIdClaims? _cachedClaims;
+    private IReadOnlyList<int>? _cachedAccessibleGroupIds;
+
+    private static readonly HashSet<int> EmptyIntSet = [];
 
     public CurrentUserService(IHttpContextAccessor httpContextAccessor, IAdminModeService adminModeService)
     {
@@ -32,8 +34,6 @@ public class CurrentUserService : ICurrentUserService
     public string? Email => GetCurrentUser()?.Email;
 
     public string? DisplayName => GetCurrentUser()?.DisplayName;
-
-    //public int? PrimaryGroupId => GetCurrentUser()?.GroupId;
 
     public bool IsAdmin => GetCurrentUser()?.IsAdmin ?? false;
 
@@ -82,22 +82,14 @@ public class CurrentUserService : ICurrentUserService
 			return null;
 		}
 
-		//var groupNo = identity.FindFirst(ScoutIdClaimTypes.GroupNo)?.Value ?? "";
-        
-        //var groupIdStr = identity.FindFirst(ScoutIdClaimTypes.GroupId)?.Value ?? "0";
-        //int.TryParse(groupIdStr, out var groupId);
-
         var memberRegistrarGroupsStr = identity.FindFirst(ScoutIdClaimTypes.MemberRegistrarGroups)?.Value ?? "";
-        var memberRegistrarGroups = ParseIntList(memberRegistrarGroupsStr);
+        var memberRegistrarGroups = ParseIntSet(memberRegistrarGroupsStr);
 
         var accessibleGroupsStr = identity.FindFirst(ScoutIdClaimTypes.AccessibleGroups)?.Value ?? "";
-        var accessibleGroups = ParseIntList(accessibleGroupsStr);
+        var accessibleGroups = ParseIntSet(accessibleGroupsStr);
 
         var accessibleTroopsStr = identity.FindFirst(ScoutIdClaimTypes.AccessibleTroops)?.Value ?? "";
-        var accessibleTroops = ParseIntList(accessibleTroopsStr);
-
-        //var groupRolesJson = identity.FindFirst(ScoutIdClaimTypes.GroupRoles)?.Value ?? "{}";
-        //var groupRoles = ParseGroupRoles(groupRolesJson);
+        var accessibleTroops = ParseIntSet(accessibleTroopsStr);
 
         // Check for admin claim
         var isAdminStr = identity.FindFirst(ScoutIdClaimTypes.Admin)?.Value ?? "false";
@@ -111,9 +103,9 @@ public class CurrentUserService : ICurrentUserService
 			//IsMemberRegistrar = memberRegistrarGroups.Contains(groupId),
 			IsAdmin = isAdmin,
 			//GroupRoles = groupRoles,
-			AccessibleGroupIds = accessibleGroups.ToHashSet(),
-			MemberRegistrarGroups = memberRegistrarGroups.ToHashSet(),
-			AccessibleTroopScoutnetIds = accessibleTroops.ToHashSet()
+			AccessibleGroupIds = accessibleGroups,
+			MemberRegistrarGroups = memberRegistrarGroups,
+			AccessibleTroopScoutnetIds = accessibleTroops
 		};
     }
 
@@ -181,7 +173,7 @@ public class CurrentUserService : ICurrentUserService
 	{
 		var user = GetCurrentUser();
 		if (user == null)
-			return new HashSet<int>();
+			return EmptyIntSet;
 		return user.AccessibleTroopScoutnetIds;
 	}
 
@@ -194,7 +186,7 @@ public class CurrentUserService : ICurrentUserService
         var user = GetCurrentUser();
         if (user == null)
             return Array.Empty<int>();
-        return user.AccessibleGroupIds.ToList();
+        return _cachedAccessibleGroupIds ??= [.. user.AccessibleGroupIds];
 	}
 
     /// <summary>
@@ -212,27 +204,21 @@ public class CurrentUserService : ICurrentUserService
         }
     }
 
-    private static List<int> ParseIntList(string commaSeparated)
+    private static HashSet<int> ParseIntSet(string commaSeparated)
     {
         if (string.IsNullOrEmpty(commaSeparated))
             return [];
 
-        return commaSeparated
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(s => int.TryParse(s.Trim(), out var id) ? id : 0)
-            .Where(id => id > 0)
-            .ToList();
-    }
-
-    private static Dictionary<string, List<string>> ParseGroupRoles(string json)
-    {
-        try
+        HashSet<int> result = [];
+        var source = commaSeparated.AsSpan();
+        foreach (var range in source.Split(','))
         {
-            return JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json) ?? new();
+            var token = source[range].Trim();
+            if (!token.IsEmpty && int.TryParse(token, out var id) && id > 0)
+            {
+                result.Add(id);
+            }
         }
-        catch
-        {
-            return new();
-        }
+        return result;
     }
 }

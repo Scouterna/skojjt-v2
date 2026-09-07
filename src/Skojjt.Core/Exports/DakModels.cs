@@ -142,10 +142,7 @@ public class DakDeltagare
     /// </summary>
     public bool IsFemale()
     {
-        if (string.IsNullOrEmpty(Personnummer) || Personnummer.Length < 11)
-            return false;
-        
-        return int.TryParse(Personnummer[^2].ToString(), out var digit) && (digit & 1) == 0;
+        return Utilities.Personnummer.IsFemaleNumber(Personnummer);
     }
 
     /// <summary>

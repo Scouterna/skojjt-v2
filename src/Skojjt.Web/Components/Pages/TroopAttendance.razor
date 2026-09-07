@@ -959,11 +959,7 @@
         if (!_hasAccess)
         {
             _loading = false;
-            _breadcrumbs = new List<BreadcrumbItem>
-            {
-                new("Scoutkårer", href: "/sk"),
-                new("Ingen behörighet", href: null, disabled: true)
-            };
+            _breadcrumbs = BreadcrumbBuilder.NoAccess();
             _initialized = true;
             return;
         }
@@ -1161,13 +1157,10 @@
             
             if (_scoutGroup != null && _semester != null && _troop != null)
             {
-                _breadcrumbs = new List<BreadcrumbItem>
-                {
-                    new("Scoutkårer", href: "/sk"),
-                    new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
-                    new(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
-                    new(_troop.Name, href: null, disabled: true)
-                };
+                _breadcrumbs = BreadcrumbBuilder.Create()
+                    .ScoutGroup(_scoutGroup.Name, ScoutGroupId)
+                    .Semester(_semester.DisplayName, ScoutGroupId, SemesterId)
+                    .Leaf(_troop.Name);
 
                 _troopPersons = _troop.TroopPersons
                     .OrderByDescending(tp => tp.IsLeader)

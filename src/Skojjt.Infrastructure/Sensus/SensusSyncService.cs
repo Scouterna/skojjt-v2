@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Skojjt.Core.Authentication;
 using Skojjt.Core.Interfaces;
 using Skojjt.Core.Services;
+using Skojjt.Core.Utilities;
 
 namespace Skojjt.Infrastructure.Sensus;
 
@@ -200,7 +201,7 @@ public class SensusSyncService : ISensusSyncService
         var schemaByDate = new Dictionary<DateOnly, SensusSchema>();
         foreach (var schema in sensusSchemas)
         {
-            var date = ParseDate(schema.Datum);
+            var date = DateParsing.ParseDateOnly(schema.Datum);
             if (date.HasValue)
             {
                 schemaByDate.TryAdd(date.Value, schema);
@@ -414,14 +415,6 @@ public class SensusSyncService : ISensusSyncService
 
     private static string MaskSensitiveFields(string json) =>
         PasswordRegex.Replace(json, @"""password"":""***""");
-
-    private static DateOnly? ParseDate(string? dateStr)
-    {
-        if (string.IsNullOrWhiteSpace(dateStr)) return null;
-        if (DateOnly.TryParse(dateStr, out var d)) return d;
-        if (DateTime.TryParse(dateStr, out var dt)) return DateOnly.FromDateTime(dt);
-        return null;
-    }
 
     private static List<T> ExtractArray<T>(JsonElement? element)
     {

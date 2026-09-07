@@ -217,7 +217,7 @@
             _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
             if (!_hasAccess)
             {
-                _breadcrumbs = [new("Scoutkårer", href: "/sk"), new("Ingen behörighet", href: null, disabled: true)];
+                _breadcrumbs = BreadcrumbBuilder.NoAccess();
                 return;
             }
 
@@ -225,12 +225,9 @@
             if (_scoutGroup != null)
             {
                 _badges = (await BadgeService.GetBadgesForGroupAsync(ScoutGroupId, _showArchived)).ToList();
-                _breadcrumbs =
-                [
-                    new("Scoutkårer", href: "/sk"),
-                    new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
-                    new("Märken", href: null, disabled: true)
-                ];
+                _breadcrumbs = BreadcrumbBuilder.Create()
+                    .ScoutGroup(_scoutGroup.Name, ScoutGroupId)
+                    .Leaf("Märken");
             }
         }
         finally

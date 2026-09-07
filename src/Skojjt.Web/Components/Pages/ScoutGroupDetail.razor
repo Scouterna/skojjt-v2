@@ -247,11 +247,7 @@
             
             if (!_hasAccess)
             {
-                _breadcrumbs =
-                [
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                    new BreadcrumbItem("Ingen behörighet", href: null, disabled: true)
-                ];
+                _breadcrumbs = BreadcrumbBuilder.NoAccess();
                 return;
             }
 
@@ -264,11 +260,7 @@
 
                 EvaluateStaleImportWarning(_scoutGroup);
 
-                _breadcrumbs =
-                [
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                    new BreadcrumbItem(_scoutGroup.Name, href: null, disabled: true)
-                ];
+                _breadcrumbs = BreadcrumbBuilder.Create().Leaf(_scoutGroup.Name);
             }
         }
         finally

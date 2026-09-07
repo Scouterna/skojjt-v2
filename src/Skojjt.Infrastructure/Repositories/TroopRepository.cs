@@ -15,6 +15,7 @@ public class TroopRepository : Repository<Troop, int>, ITroopRepository
     {
         await using var context = CreateContext();
         return await context.Set<Troop>()
+            .AsNoTrackingWithIdentityResolution()
             .Include(t => t.TroopPersons)
                 .ThenInclude(tp => tp.Person)
             .Include(t => t.Semester)
@@ -27,6 +28,7 @@ public class TroopRepository : Repository<Troop, int>, ITroopRepository
     {
         await using var context = CreateContext();
         return await context.Set<Troop>()
+            .AsNoTrackingWithIdentityResolution()
             .Include(t => t.Meetings.OrderByDescending(m => m.MeetingDate))
                 .ThenInclude(m => m.Attendances)
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
@@ -36,6 +38,7 @@ public class TroopRepository : Repository<Troop, int>, ITroopRepository
     {
         await using var context = CreateContext();
         return await context.Set<Troop>()
+            .AsNoTracking()
             .FirstOrDefaultAsync(t => t.ScoutGroupId == scoutGroupId && t.ScoutnetId == scoutnetId && t.SemesterId == semesterId, cancellationToken);
     }
 
@@ -43,6 +46,7 @@ public class TroopRepository : Repository<Troop, int>, ITroopRepository
     {
         await using var context = CreateContext();
         return await context.Set<Troop>()
+            .AsNoTrackingWithIdentityResolution()
             .Include(t => t.TroopPersons)
                 .ThenInclude(tp => tp.Person)
             .Include(t => t.Semester)
@@ -55,6 +59,7 @@ public class TroopRepository : Repository<Troop, int>, ITroopRepository
     {
         await using var context = CreateContext();
         return await context.Set<Troop>()
+            .AsNoTrackingWithIdentityResolution()
             .Include(t => t.TroopPersons)
             .Where(t => t.ScoutGroupId == scoutGroupId && t.SemesterId == semesterId)
             .OrderBy(t => t.Name)
@@ -65,6 +70,7 @@ public class TroopRepository : Repository<Troop, int>, ITroopRepository
     {
         await using var context = CreateContext();
         return await context.Set<Troop>()
+            .AsNoTrackingWithIdentityResolution()
             .Where(t => t.ScoutGroupId == scoutGroupId && t.SemesterId == semesterId)
             .Include(t => t.TroopPersons)
                 .ThenInclude(tp => tp.Person)
@@ -77,6 +83,7 @@ public class TroopRepository : Repository<Troop, int>, ITroopRepository
     {
         await using var context = CreateContext();
         return await context.Set<Troop>()
+            .AsNoTrackingWithIdentityResolution()
             .Where(t => t.ScoutGroupId == scoutGroupId)
             .Include(t => t.TroopPersons)
             .Include(t => t.Semester)

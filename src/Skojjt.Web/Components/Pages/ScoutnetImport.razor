@@ -452,12 +452,9 @@
                 
                 _selectedSemesterId = currentSemester.Id;
                 
-                _breadcrumbs = new List<BreadcrumbItem>
-                {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                    new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
-                    new BreadcrumbItem("Scoutnet Import", href: null, disabled: true)
-                };
+                _breadcrumbs = BreadcrumbBuilder.Create()
+                    .ScoutGroup(_scoutGroup.Name, ScoutGroupId)
+                    .Leaf("Scoutnet Import");
             }
         }
         finally

@@ -138,23 +138,16 @@
 
         if (!_hasAccess)
         {
-            _breadcrumbs =
-            [
-                new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                new BreadcrumbItem("Ingen behörighet", href: null, disabled: true)
-            ];
+            _breadcrumbs = BreadcrumbBuilder.NoAccess();
             _loading = false;
             return;
         }
 
         _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
 
-        _breadcrumbs =
-        [
-            new BreadcrumbItem("Scoutkårer", "/sk"),
-            new BreadcrumbItem(_scoutGroup?.Name ?? "Scoutkår", $"/sk/{ScoutGroupId}"),
-            new BreadcrumbItem("Grafer", null, disabled: true)
-        ];
+        _breadcrumbs = BreadcrumbBuilder.Create()
+            .ScoutGroup(_scoutGroup?.Name, ScoutGroupId)
+            .Leaf("Grafer");
 
         _attendanceStats = (await AttendanceStatsService.GetStatsByScoutGroupAsync(
             ScoutGroupId)).ToList();

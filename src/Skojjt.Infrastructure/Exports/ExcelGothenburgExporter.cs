@@ -147,20 +147,4 @@ public class ExcelGothenburgExporter : IAttendanceExporter
     {
         return $"{troop.ScoutnetId}-{troop.SemesterId}";
     }
-
-    private static bool IsFemale(string? personnummer)
-    {
-        if (string.IsNullOrEmpty(personnummer) || personnummer.Length < 11)
-            return false;
-        
-        return int.TryParse(personnummer[^2].ToString(), out var digit) && (digit & 1) == 0;
-    }
-
-    private static string GetBirthDateString(string? personnummer)
-    {
-        if (string.IsNullOrEmpty(personnummer) || personnummer.Length < 8)
-            return "";
-        
-        return personnummer[..8];
-    }
 }

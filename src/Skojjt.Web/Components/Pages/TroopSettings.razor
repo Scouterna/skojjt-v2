@@ -196,14 +196,11 @@
             {
                 _defaultStartTime = _troop.DefaultStartTime.ToTimeSpan();
 
-                _breadcrumbs = new List<BreadcrumbItem>
-                {
-                    new("Scoutkårer", href: "/sk"),
-                    new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
-                    new(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
-                    new(_troop.Name, href: Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}")),
-                    new("Inställningar", href: null, disabled: true)
-                };
+                _breadcrumbs = BreadcrumbBuilder.Create()
+                    .ScoutGroup(_scoutGroup.Name, ScoutGroupId)
+                    .Semester(_semester.DisplayName, ScoutGroupId, SemesterId)
+                    .Troop(_troop.Name, ScoutGroupId, SemesterId, TroopScoutnetId)
+                    .Leaf("Inställningar");
             }
         }
         finally

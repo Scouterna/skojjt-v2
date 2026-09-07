@@ -381,22 +381,16 @@
             if (HasTroopContext)
             {
                 _troop = await TroopRepository.GetByScoutnetIdAndSemesterAsync(ScoutGroupId, TroopScoutnetId!.Value, SemesterId!.Value);
-                _breadcrumbs =
-                [
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                    new BreadcrumbItem(_scoutGroup?.Name ?? "Scoutkår", href: $"/sk/{ScoutGroupId}"),
-                    new BreadcrumbItem(_troop?.Name ?? "Avdelning", href: Invariant($"/sk/{ScoutGroupId}/t/{SemesterId}/{TroopScoutnetId}")),
-                    new BreadcrumbItem("Ny medlem", href: null, disabled: true)
-                ];
+                _breadcrumbs = BreadcrumbBuilder.Create()
+                    .ScoutGroup(_scoutGroup?.Name, ScoutGroupId)
+                    .Troop(_troop?.Name, ScoutGroupId, SemesterId!.Value, TroopScoutnetId!.Value)
+                    .Leaf("Ny medlem");
             }
             else
             {
-                _breadcrumbs =
-                [
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                    new BreadcrumbItem(_scoutGroup?.Name ?? "Scoutkår", href: $"/sk/{ScoutGroupId}"),
-                    new BreadcrumbItem("Lägg till medlem", href: null, disabled: true)
-                ];
+                _breadcrumbs = BreadcrumbBuilder.Create()
+                    .ScoutGroup(_scoutGroup?.Name, ScoutGroupId)
+                    .Leaf("Lägg till medlem");
             }
         }
         finally

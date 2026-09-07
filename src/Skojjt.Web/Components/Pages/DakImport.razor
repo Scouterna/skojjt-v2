@@ -262,13 +262,10 @@
             _semester = await SemesterRepository.GetByIdAsync(SemesterId);
             if (_semester is null) return;
 
-            _breadcrumbs =
-            [
-                new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
-                new BreadcrumbItem(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
-                new BreadcrumbItem("DAK-import", href: null, disabled: true)
-            ];
+            _breadcrumbs = BreadcrumbBuilder.Create()
+                .ScoutGroup(_scoutGroup.Name, ScoutGroupId)
+                .Semester(_semester.DisplayName, ScoutGroupId, SemesterId)
+                .Leaf("DAK-import");
 
             await LoadTroops();
         }

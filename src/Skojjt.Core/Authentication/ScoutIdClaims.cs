@@ -22,11 +22,6 @@ public record ScoutIdClaims
     public string DisplayName { get; init; } = string.Empty;
 
     /// <summary>
-    /// Whether the user has member registrar role (role 9) for their group.
-    /// </summary>
-    //public bool IsMemberRegistrar { get; init; }
-
-    /// <summary>
     /// Whether the user is a system administrator.
     /// Determined from the Users table in the database.
     /// </summary>

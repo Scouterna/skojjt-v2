@@ -242,13 +242,10 @@
                     : [];
             }
 
-            _breadcrumbs =
-            [
-                new("Scoutkårer", href: "/sk"),
-                new(_scoutGroup?.Name ?? "Kår", href: $"/sk/{ScoutGroupId}"),
-                new("Märken", href: $"/sk/{ScoutGroupId}/badges"),
-                new(_badge?.Name ?? "Märke", href: null, disabled: true)
-            ];
+            _breadcrumbs = BreadcrumbBuilder.Create()
+                .ScoutGroup(_scoutGroup?.Name ?? "Kår", ScoutGroupId)
+                .Badges(ScoutGroupId)
+                .Leaf(_badge?.Name ?? "Märke");
         }
         finally
         {

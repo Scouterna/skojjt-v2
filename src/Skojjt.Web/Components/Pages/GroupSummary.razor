@@ -217,13 +217,10 @@
 
             if (_scoutGroup != null && _semester != null)
             {
-                _breadcrumbs = new List<BreadcrumbItem>
-                {
-                    new("Scoutkårer", href: "/sk"),
-                    new(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
-                    new(_semester.DisplayName, href: $"/sk/{ScoutGroupId}/t/{SemesterId}"),
-                    new("Föreningsredovisning", href: null, disabled: true)
-                };
+                _breadcrumbs = BreadcrumbBuilder.Create()
+                    .ScoutGroup(_scoutGroup.Name, ScoutGroupId)
+                    .Semester(_semester.DisplayName, ScoutGroupId, SemesterId)
+                    .Leaf("Föreningsredovisning");
 
                 // Load summary data for the semester's year
                 _summaryData = await GroupSummaryService.GetGroupSummaryAsync(

@@ -182,12 +182,9 @@
             
             if (_scoutGroup != null)
             {
-                _breadcrumbs = new List<BreadcrumbItem>
-                {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                    new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
-                    new BreadcrumbItem("Medlemmar", href: null, disabled: true)
-                };
+                _breadcrumbs = BreadcrumbBuilder.Create()
+                    .ScoutGroup(_scoutGroup.Name, ScoutGroupId)
+                    .Leaf("Medlemmar");
 
                 var persons = await PersonRepository.GetByScoutGroupAsync(ScoutGroupId);
                 _allPersons = persons.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ToList();

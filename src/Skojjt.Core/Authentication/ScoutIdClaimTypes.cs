@@ -11,16 +11,6 @@ public static class ScoutIdClaimTypes
     public const string ScoutnetUid = "scoutid/uid";
 
     /// <summary>
-    /// Scoutnet group number.
-    /// </summary>
-    //public const string GroupNo = "scoutid/group_no";
-
-    /// <summary>
-    /// Scoutnet group ID.
-    /// </summary>
-    //public const string GroupId = "scoutid/group_id";
-
-    /// <summary>
     /// Display name from ScoutID.
     /// </summary>
     public const string DisplayName = "scoutid/display_name";
@@ -40,11 +30,6 @@ public static class ScoutIdClaimTypes
     /// Users with troop-level roles only get access to specific troops, not all troops in a group.
     /// </summary>
     public const string AccessibleTroops = "scoutid/accessible_troops";
-
-    /// <summary>
-    /// Role assignments in JSON format.
-    /// </summary>
-    //public const string GroupRoles = "scoutid/group_roles";
 
     /// <summary>
     /// Whether the user is a system administrator.

@@ -221,11 +221,7 @@
 
         if (!_hasAccess)
         {
-            _breadcrumbs =
-            [
-                new BreadcrumbItem("Scoutkårer", "/sk"),
-                new BreadcrumbItem("Ingen behörighet", null, disabled: true)
-            ];
+            _breadcrumbs = BreadcrumbBuilder.NoAccess();
             _loading = false;
             return;
         }
@@ -233,12 +229,9 @@
         _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
         _availableSemesters = (await SemesterRepository.GetByScoutGroupAsync(ScoutGroupId)).ToList();
 
-        _breadcrumbs =
-        [
-            new BreadcrumbItem("Scoutkårer", "/sk"),
-            new BreadcrumbItem(_scoutGroup?.Name ?? "Scoutkår", $"/sk/{ScoutGroupId}"),
-            new BreadcrumbItem("Personflöde", null, disabled: true)
-        ];
+        _breadcrumbs = BreadcrumbBuilder.Create()
+            .ScoutGroup(_scoutGroup?.Name, ScoutGroupId)
+            .Leaf("Personflöde");
 
         _selectedSemesterIds = _availableSemesters
             .Take(4)

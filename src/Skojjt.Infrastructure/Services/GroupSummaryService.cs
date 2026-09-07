@@ -208,14 +208,6 @@ public class GroupSummaryService : IGroupSummaryService
         };
     }
 
-    private static bool IsFemale(string? personnummer)
-    {
-        if (string.IsNullOrEmpty(personnummer) || personnummer.Length < 11)
-            return false;
-
-        return int.TryParse(personnummer[^2].ToString(), out var digit) && (digit & 1) == 0;
-    }
-
     private static bool IsBoardMember(string? groupRoles)
     {
         if (string.IsNullOrEmpty(groupRoles))

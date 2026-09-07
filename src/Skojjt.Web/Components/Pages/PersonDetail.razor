@@ -415,13 +415,10 @@
 
             if (_scoutGroup != null)
             {
-                _breadcrumbs = new List<BreadcrumbItem>
-                {
-                    new BreadcrumbItem("Scoutkårer", href: "/sk"),
-                    new BreadcrumbItem(_scoutGroup.Name, href: $"/sk/{ScoutGroupId}"),
-                    new BreadcrumbItem("Medlemmar", href: $"/sk/{ScoutGroupId}/p"),
-                    new BreadcrumbItem(_person.FullName, href: null, disabled: true)
-                };
+                _breadcrumbs = BreadcrumbBuilder.Create()
+                    .ScoutGroup(_scoutGroup.Name, ScoutGroupId)
+                    .Members(ScoutGroupId)
+                    .Leaf(_person.FullName);
             }
 
             _badgeProgress = await BadgeService.GetPersonBadgesAsync(PersonId);
