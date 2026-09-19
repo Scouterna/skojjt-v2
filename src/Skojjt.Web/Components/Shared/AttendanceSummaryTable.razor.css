@@ -1,0 +1,4 @@
+.attendance-table ::deep th,
+.attendance-table ::deep td {
+    padding: 4px 8px !important;
+}

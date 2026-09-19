@@ -9,6 +9,7 @@
 @inject IScoutGroupRepository ScoutGroupRepository
 @inject IPersonRepository PersonRepository
 @inject IBadgeService BadgeService
+@inject IMyProfileService MyProfileService
 
 <PageTitle>@(_person?.FullName ?? "Person") - Skojjt</PageTitle>
 
@@ -221,46 +222,19 @@
                 </MudPaper>
             </MudItem>
 
-            @* Troop Memberships *@
+            @* Troop memberships & attendance *@
             <MudItem xs="12" md="6">
                 <MudPaper Elevation="2" Class="pa-4">
-                    <div class="d-flex align-center mb-4">
+                    <div class="d-flex align-center mb-4" style="cursor: pointer;" @onclick="() => _attendanceExpanded = !_attendanceExpanded">
                         <MudIcon Icon="@Icons.Material.Filled.Groups" Class="mr-2" Color="Color.Primary" />
-                        <MudText Typo="Typo.h6">Avdelningar</MudText>
+                        <MudText Typo="Typo.h6">Avdelningar & närvaro</MudText>
+                        <MudSpacer />
+                        <MudIcon Icon="@(_attendanceExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" />
                     </div>
-                    
-                    @if (_troopMemberships.Count == 0)
-                    {
-                        <MudText Color="Color.Secondary">Inte medlem i någon avdelning.</MudText>
-                    }
-                    else
-                    {
-                        <MudList T="TroopPerson" Dense="true" Class="py-0">
-                            @foreach (var tp in _troopMemberships)
-                            {
-                                <MudListItem T="TroopPerson" Href="@(Invariant($"/sk/{ScoutGroupId}/t/{tp.Troop.SemesterId}/{tp.Troop.ScoutnetId}"))">
-                                    <div class="d-flex justify-space-between align-center" style="width: 100%;">
-                                        <div>
-                                            <MudText>@tp.Troop.Name</MudText>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                @tp.Troop.Semester?.DisplayName
-                                            </MudText>
-                                        </div>
-                                        <div class="d-flex align-center gap-2">
-                                            @if (!string.IsNullOrEmpty(tp.Patrol))
-                                            {
-                                                <MudChip T="string" Size="Size.Small" Color="Color.Default">@tp.Patrol</MudChip>
-                                            }
-                                            @if (tp.IsLeader)
-                                            {
-                                                <MudChip T="string" Size="Size.Small" Color="Color.Primary">Ledare</MudChip>
-                                            }
-                                        </div>
-                                    </div>
-                                </MudListItem>
-                            }
-                        </MudList>
-                    }
+
+                    <MudCollapse Expanded="_attendanceExpanded">
+                        <AttendanceSummaryTable Rows="_attendanceRows" EmptyText="Inte medlem i någon avdelning." />
+                    </MudCollapse>
                 </MudPaper>
             </MudItem>
 
@@ -272,63 +246,7 @@
                         <MudText Typo="Typo.h6">Märkesframsteg</MudText>
                     </div>
 
-                    @if (_badgeProgress.Count == 0)
-                    {
-                        <MudAlert Severity="Severity.Info" Dense="true">
-                            Inga märken påbörjade.
-                        </MudAlert>
-                    }
-                    else
-                    {
-                        <MudGrid>
-                            @foreach (var badge in _badgeProgress)
-                            {
-                                <MudItem xs="12" sm="6" md="4">
-                                    <MudCard Outlined="true">
-                                        <MudCardHeader>
-                                            <CardHeaderAvatar>
-                                                @if (!string.IsNullOrEmpty(badge.Badge.ImageUrl))
-                                                {
-                                                    <MudAvatar Size="Size.Medium">
-                                                        <MudImage Src="@badge.Badge.ImageUrl" Alt="@badge.Badge.Name" />
-                                                    </MudAvatar>
-                                                }
-                                                else
-                                                {
-                                                    <MudAvatar Color="@(badge.IsCompleted ? Color.Success : Color.Default)" Size="Size.Medium">
-                                                        <MudIcon Icon="@(badge.IsCompleted ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.EmojiEvents)" />
-                                                    </MudAvatar>
-                                                }
-                                            </CardHeaderAvatar>
-                                            <CardHeaderContent>
-                                                <MudLink Href="@($"/sk/{ScoutGroupId}/badges/{badge.Badge.Id}")"
-                                                         Typo="Typo.subtitle1"
-                                                         Color="Color.Inherit"
-                                                         Underline="Underline.Hover">
-                                                    @badge.Badge.Name
-                                                </MudLink>
-                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                    @badge.CompletedParts / @badge.TotalParts delar klara
-                                                </MudText>
-                                            </CardHeaderContent>
-                                        </MudCardHeader>
-                                        <MudCardContent>
-                                            <MudProgressLinear Color="@(badge.IsCompleted ? Color.Success : Color.Primary)"
-                                                               Value="@(badge.TotalParts > 0 ? (double)badge.CompletedParts / badge.TotalParts * 100 : 0)"
-                                                               Rounded="true"
-                                                               Size="Size.Medium" />
-                                            @if (badge.IsCompleted)
-                                            {
-                                                <MudText Typo="Typo.caption" Color="Color.Success" Class="mt-1">
-                                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" /> Klart!
-                                                </MudText>
-                                            }
-                                        </MudCardContent>
-                                    </MudCard>
-                                </MudItem>
-                            }
-                        </MudGrid>
-                    }
+                    <BadgeProgress Badges="_badgeProgress" ScoutGroupId="ScoutGroupId" />
                 </MudPaper>
             </MudItem>
         </MudGrid>
@@ -344,8 +262,10 @@
 
     private ScoutGroup? _scoutGroup;
     private Person? _person;
-    private List<TroopPerson> _troopMemberships = new();
     private IReadOnlyList<BadgePersonSummary> _badgeProgress = [];
+    private IReadOnlyList<PersonAttendanceSummary> _attendance = [];
+    private IReadOnlyList<AttendanceRow> _attendanceRows = [];
+    private bool _attendanceExpanded = true;
     private bool _loading = true;
     private bool _hasAccess;
     private bool _initialized;
@@ -381,8 +301,9 @@
             _hasAccess = false;
             _scoutGroup = null;
             _person = null;
-            _troopMemberships = new();
             _badgeProgress = [];
+            _attendance = [];
+            _attendanceRows = [];
             _breadcrumbs = new();
 
             if (!CurrentUserService.HasGroupAccess(ScoutGroupId)) return;
@@ -410,7 +331,6 @@
 
             _hasAccess = true;
             _person = person;
-            _troopMemberships = memberships;
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
 
             if (_scoutGroup != null)
@@ -422,10 +342,21 @@
             }
 
             _badgeProgress = await BadgeService.GetPersonBadgesAsync(PersonId);
+            _attendance = await MyProfileService.GetAttendanceSummaryAsync(PersonId);
+            _attendanceRows = BuildAttendanceRows();
         }
         finally
         {
             _loading = false;
         }
+    }
+
+    private List<AttendanceRow> BuildAttendanceRows()
+    {
+        // Only link to troops the user is allowed to open, so the UI never
+        // offers a link that leads to a permission error.
+        return AttendanceRow.FromSummaries(
+            _attendance.Where(a => a.ScoutGroupId == ScoutGroupId),
+            a => CurrentUserService.HasTroopAccess(a.ScoutGroupId, a.TroopScoutnetId));
     }
 }

@@ -20,7 +20,7 @@ public interface IMyProfileService
     /// <summary>
     /// Gets attendance summary grouped by troop and semester.
     /// </summary>
-    Task<IReadOnlyList<MyAttendanceSummary>> GetAttendanceSummaryAsync(int personId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PersonAttendanceSummary>> GetAttendanceSummaryAsync(int personId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -36,7 +36,7 @@ public class MyGroupMembership
 /// <summary>
 /// Attendance summary for a single troop/semester combination.
 /// </summary>
-public class MyAttendanceSummary
+public class PersonAttendanceSummary
 {
     public string TroopName { get; set; } = "";
     public int Year { get; set; }
@@ -44,10 +44,35 @@ public class MyAttendanceSummary
     public int AttendedMeetings { get; set; }
 
     /// <summary>
+    /// Scout group the troop belongs to. Used to build the troop link.
+    /// </summary>
+    public int ScoutGroupId { get; set; }
+
+    /// <summary>
+    /// Semester id of the troop. Used to build the troop link.
+    /// </summary>
+    public int SemesterId { get; set; }
+
+    /// <summary>
+    /// Scoutnet id of the troop. Used to build the troop link.
+    /// </summary>
+    public int TroopScoutnetId { get; set; }
+
+    /// <summary>
     /// Number of camp nights (lägernätter) calculated from consecutive hike meeting dates.
     /// N consecutive days = N-1 nights.
     /// </summary>
     public int CampNights { get; set; }
+
+    /// <summary>
+    /// Patrol the person belongs to in this troop, when known.
+    /// </summary>
+    public string? Patrol { get; set; }
+
+    /// <summary>
+    /// Whether the person is a leader in this troop.
+    /// </summary>
+    public bool IsLeader { get; set; }
 
     public string SemesterDisplayName => $"{(IsAutumn ? "HT" : "VT")} {Year}";
 }

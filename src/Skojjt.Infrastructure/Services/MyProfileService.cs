@@ -39,34 +39,120 @@ public class MyProfileService : IMyProfileService
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<MyAttendanceSummary>> GetAttendanceSummaryAsync(int personId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PersonAttendanceSummary>> GetAttendanceSummaryAsync(int personId, CancellationToken cancellationToken = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
-        var attendances = await context.MeetingAttendances
+        // Aggregate the attended-meeting counts on the database instead of pulling every
+        // attendance row into memory. This returns one row per (troop, semester) group.
+        var counts = await context.MeetingAttendances
             .Where(ma => ma.PersonId == personId)
-            .Select(ma => new
+            .GroupBy(ma => new
             {
                 TroopName = ma.Meeting.Troop.Name,
+                ma.Meeting.Troop.ScoutGroupId,
+                ma.Meeting.Troop.SemesterId,
+                TroopScoutnetId = ma.Meeting.Troop.ScoutnetId,
                 ma.Meeting.Troop.Semester.Year,
-                ma.Meeting.Troop.Semester.IsAutumn,
-                ma.Meeting.MeetingDate,
-                ma.Meeting.IsHike
+                ma.Meeting.Troop.Semester.IsAutumn
+            })
+            .Select(g => new
+            {
+                g.Key.TroopName,
+                g.Key.ScoutGroupId,
+                g.Key.SemesterId,
+                g.Key.TroopScoutnetId,
+                g.Key.Year,
+                g.Key.IsAutumn,
+                AttendedMeetings = g.Count()
             })
             .ToListAsync(cancellationToken);
 
-        return attendances
-            .GroupBy(x => new { x.TroopName, x.Year, x.IsAutumn })
-            .Select(g => new MyAttendanceSummary
+        // Camp nights need per-date logic that cannot run in SQL, but only hike meetings
+        // are relevant, so fetch just those dates (a much smaller set).
+        var hikeDates = await context.MeetingAttendances
+            .Where(ma => ma.PersonId == personId && ma.Meeting.IsHike)
+            .Select(ma => new
             {
-                TroopName = g.Key.TroopName,
-                Year = g.Key.Year,
-                IsAutumn = g.Key.IsAutumn,
-                AttendedMeetings = g.Count(),
-                CampNights = CalculateCampNights(g.Where(a => a.IsHike).Select(a => a.MeetingDate))
+                ma.Meeting.Troop.ScoutGroupId,
+                ma.Meeting.Troop.SemesterId,
+                TroopScoutnetId = ma.Meeting.Troop.ScoutnetId,
+                ma.Meeting.MeetingDate
             })
+            .ToListAsync(cancellationToken);
+
+        var campNightsByGroup = hikeDates
+            .GroupBy(x => new { x.ScoutGroupId, x.SemesterId, x.TroopScoutnetId })
+            .ToDictionary(g => g.Key, g => CalculateCampNights(g.Select(a => a.MeetingDate)));
+
+        // Troop memberships (including troops the person belongs to but has no attendance in,
+        // e.g. leader/admin troops) so they appear as 0/0 rows alongside attended troops.
+        var memberships = await context.TroopPersons
+            .Where(tp => tp.PersonId == personId)
+            .Select(tp => new
+            {
+                TroopName = tp.Troop.Name,
+                tp.Troop.ScoutGroupId,
+                tp.Troop.SemesterId,
+                TroopScoutnetId = tp.Troop.ScoutnetId,
+                tp.Troop.Semester.Year,
+                tp.Troop.Semester.IsAutumn,
+                tp.Patrol,
+                tp.IsLeader
+            })
+            .ToListAsync(cancellationToken);
+
+        var membershipByTroop = memberships
+            .GroupBy(m => new { m.ScoutGroupId, m.SemesterId, m.TroopScoutnetId })
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var results = counts
+            .Select(c =>
+            {
+                membershipByTroop.TryGetValue(
+                    new { c.ScoutGroupId, c.SemesterId, c.TroopScoutnetId },
+                    out var membership);
+
+                return new PersonAttendanceSummary
+                {
+                    TroopName = c.TroopName,
+                    Year = c.Year,
+                    IsAutumn = c.IsAutumn,
+                    ScoutGroupId = c.ScoutGroupId,
+                    SemesterId = c.SemesterId,
+                    TroopScoutnetId = c.TroopScoutnetId,
+                    AttendedMeetings = c.AttendedMeetings,
+                    CampNights = campNightsByGroup.TryGetValue(new { c.ScoutGroupId, c.SemesterId, c.TroopScoutnetId }, out var nights) ? nights : 0,
+                    Patrol = membership?.Patrol,
+                    IsLeader = membership?.IsLeader ?? false
+                };
+            })
+            .ToList();
+
+        var attendedTroops = counts
+            .Select(c => new { c.ScoutGroupId, c.SemesterId, c.TroopScoutnetId })
+            .ToHashSet();
+
+        results.AddRange(membershipByTroop
+            .Where(kvp => !attendedTroops.Contains(kvp.Key))
+            .Select(kvp => new PersonAttendanceSummary
+            {
+                TroopName = kvp.Value.TroopName,
+                Year = kvp.Value.Year,
+                IsAutumn = kvp.Value.IsAutumn,
+                ScoutGroupId = kvp.Value.ScoutGroupId,
+                SemesterId = kvp.Value.SemesterId,
+                TroopScoutnetId = kvp.Value.TroopScoutnetId,
+                AttendedMeetings = 0,
+                CampNights = 0,
+                Patrol = kvp.Value.Patrol,
+                IsLeader = kvp.Value.IsLeader
+            }));
+
+        return results
             .OrderByDescending(r => r.Year)
             .ThenByDescending(r => r.IsAutumn)
+            .ThenBy(r => r.TroopName)
             .ToList();
     }
 

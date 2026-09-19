@@ -1,0 +1,77 @@
+@using Skojjt.Core.Services
+
+@if (Badges.Count == 0)
+{
+    <MudAlert Severity="Severity.Info" Dense="true">
+        Inga märken påbörjade.
+    </MudAlert>
+}
+else
+{
+    <MudGrid>
+        @foreach (var badge in Badges)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Outlined="true">
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            @if (!string.IsNullOrEmpty(badge.Badge.ImageUrl))
+                            {
+                                <MudAvatar Size="Size.Medium">
+                                    <MudImage Src="@badge.Badge.ImageUrl" Alt="@badge.Badge.Name" />
+                                </MudAvatar>
+                            }
+                            else
+                            {
+                                <MudAvatar Color="@(badge.IsCompleted ? Color.Success : Color.Default)" Size="Size.Medium">
+                                    <MudIcon Icon="@(badge.IsCompleted ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.EmojiEvents)" />
+                                </MudAvatar>
+                            }
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            @if (ScoutGroupId.HasValue)
+                            {
+                                <MudLink Href="@($"/sk/{ScoutGroupId}/badges/{badge.Badge.Id}")"
+                                         Typo="Typo.subtitle1"
+                                         Color="Color.Inherit"
+                                         Underline="Underline.Hover">
+                                    @badge.Badge.Name
+                                </MudLink>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.subtitle1">@badge.Badge.Name</MudText>
+                            }
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @badge.CompletedParts / @badge.TotalParts delar klara
+                            </MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudProgressLinear Color="@(badge.IsCompleted ? Color.Success : Color.Primary)"
+                                           Value="@(badge.TotalParts > 0 ? (double)badge.CompletedParts / badge.TotalParts * 100 : 0)"
+                                           Rounded="true"
+                                           Size="Size.Medium" />
+                        @if (badge.IsCompleted)
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Success" Class="mt-1">
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" /> Klart!
+                            </MudText>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    [Parameter]
+    public IReadOnlyList<BadgePersonSummary> Badges { get; set; } = [];
+
+    /// <summary>
+    /// When set, badge names link to the group's badge page. When null, they render as plain text.
+    /// </summary>
+    [Parameter]
+    public int? ScoutGroupId { get; set; }
+}

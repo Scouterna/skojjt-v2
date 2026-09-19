@@ -102,44 +102,19 @@
                 </MudPaper>
             </MudItem>
 
-            @* Attendance Summary *@
+            @* Troop memberships & attendance *@
             <MudItem xs="12" md="6">
                 <MudPaper Elevation="2" Class="pa-4">
-                    <div class="d-flex align-center mb-4">
-                        <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Class="mr-2" Color="Color.Primary" />
-                        <MudText Typo="Typo.h6">Närvarosammanfattning</MudText>
+                    <div class="d-flex align-center mb-4" style="cursor: pointer;" @onclick="() => _attendanceExpanded = !_attendanceExpanded">
+                        <MudIcon Icon="@Icons.Material.Filled.Groups" Class="mr-2" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6">Avdelningar & närvaro</MudText>
+                        <MudSpacer />
+                        <MudIcon Icon="@(_attendanceExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" />
                     </div>
 
-                    @if (_attendance.Count == 0)
-                    {
-                        <MudAlert Severity="Severity.Info" Dense="true">
-                            Ingen närvaro registrerad.
-                        </MudAlert>
-                    }
-                    else
-                    {
-                        <MudSimpleTable Dense="true" Hover="true" Bordered="true">
-                            <thead>
-                                <tr>
-                                    <th>Avdelning</th>
-                                    <th>Termin</th>
-                                    <th style="text-align: right;">Möten</th>
-                                    <th style="text-align: right;">Lägernätter</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var row in _attendance)
-                                {
-                                    <tr>
-                                        <td>@row.TroopName</td>
-                                        <td>@row.SemesterDisplayName</td>
-                                        <td style="text-align: right;">@row.AttendedMeetings</td>
-                                        <td style="text-align: right;">@row.CampNights</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </MudSimpleTable>
-                    }
+                    <MudCollapse Expanded="_attendanceExpanded">
+                        <AttendanceSummaryTable Rows="_attendanceRows" EmptyText="Inte medlem i någon avdelning." />
+                    </MudCollapse>
                 </MudPaper>
             </MudItem>
 
@@ -151,58 +126,7 @@
                         <MudText Typo="Typo.h6">Märkesframsteg</MudText>
                     </div>
 
-                    @if (_badgeProgress.Count == 0)
-                    {
-                        <MudAlert Severity="Severity.Info" Dense="true">
-                            Inga märken påbörjade.
-                        </MudAlert>
-                    }
-                    else
-                    {
-                        <MudGrid>
-                            @foreach (var badge in _badgeProgress)
-                            {
-                                <MudItem xs="12" sm="6" md="4">
-                                    <MudCard Outlined="true">
-                                        <MudCardHeader>
-                                            <CardHeaderAvatar>
-                                                @if (!string.IsNullOrEmpty(badge.Badge.ImageUrl))
-                                                {
-                                                    <MudAvatar Size="Size.Medium">
-                                                        <MudImage Src="@badge.Badge.ImageUrl" Alt="@badge.Badge.Name" />
-                                                    </MudAvatar>
-                                                }
-                                                else
-                                                {
-                                                    <MudAvatar Color="@(badge.IsCompleted ? Color.Success : Color.Default)" Size="Size.Medium">
-                                                        <MudIcon Icon="@(badge.IsCompleted ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.EmojiEvents)" />
-                                                    </MudAvatar>
-                                                }
-                                            </CardHeaderAvatar>
-                                            <CardHeaderContent>
-                                                <MudText Typo="Typo.subtitle1">@badge.Badge.Name</MudText>
-                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                    @badge.CompletedParts / @badge.TotalParts delar klara
-                                                </MudText>
-                                            </CardHeaderContent>
-                                        </MudCardHeader>
-                                        <MudCardContent>
-                                            <MudProgressLinear Color="@(badge.IsCompleted ? Color.Success : Color.Primary)"
-                                                               Value="@(badge.TotalParts > 0 ? (double)badge.CompletedParts / badge.TotalParts * 100 : 0)"
-                                                               Rounded="true"
-                                                               Size="Size.Medium" />
-                                            @if (badge.IsCompleted)
-                                            {
-                                                <MudText Typo="Typo.caption" Color="Color.Success" Class="mt-1">
-                                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" /> Klart!
-                                                </MudText>
-                                            }
-                                        </MudCardContent>
-                                    </MudCard>
-                                </MudItem>
-                            }
-                        </MudGrid>
-                    }
+                    <BadgeProgress Badges="_badgeProgress" />
                 </MudPaper>
             </MudItem>
         </MudGrid>
@@ -212,9 +136,10 @@
 @code {
     private Person? _person;
     private IReadOnlyList<MyGroupMembership> _groups = [];
-    private IReadOnlyList<MyAttendanceSummary> _attendance = [];
+    private IReadOnlyList<AttendanceRow> _attendanceRows = [];
     private IReadOnlyList<BadgePersonSummary> _badgeProgress = [];
     private bool _loading = true;
+    private bool _attendanceExpanded = true;
     private readonly List<BreadcrumbItem> _breadcrumbs = [new("Min sida", null, disabled: true, icon: Icons.Material.Filled.Person)];
 
     protected override async Task OnInitializedAsync()
@@ -236,7 +161,10 @@
             }
 
             _groups = await MyProfileService.GetGroupMembershipsAsync(personId);
-            _attendance = await MyProfileService.GetAttendanceSummaryAsync(personId);
+            var attendance = await MyProfileService.GetAttendanceSummaryAsync(personId);
+            _attendanceRows = AttendanceRow.FromSummaries(
+                attendance,
+                a => CurrentUserService.HasTroopAccess(a.ScoutGroupId, a.TroopScoutnetId));
             _badgeProgress = await BadgeService.GetPersonBadgesAsync(personId);
         }
         finally

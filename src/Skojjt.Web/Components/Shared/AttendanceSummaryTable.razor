@@ -1,0 +1,66 @@
+@if (Rows.Count == 0)
+{
+    <MudAlert Severity="Severity.Info" Dense="true">
+        @EmptyText
+    </MudAlert>
+}
+else
+{
+    <div class="attendance-table">
+        <MudSimpleTable Dense="true" Hover="true" Bordered="true" Style="overflow-x: auto;">
+            <thead>
+                <tr>
+                    <th>Avdelning</th>
+                    <th>Termin</th>
+                    <th style="text-align: right;">Möten</th>
+                    <th style="text-align: right;">Nätter</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Rows)
+                {
+                    <tr>
+                        <td>
+                            <div class="d-flex align-center gap-2">
+                                @if (!string.IsNullOrEmpty(row.Href))
+                                {
+                                    <MudLink Href="@row.Href">@row.TroopName</MudLink>
+                                }
+                                else
+                                {
+                                    <span>@row.TroopName</span>
+                                }
+                                @if (!string.IsNullOrEmpty(row.Patrol))
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@row.Patrol</MudChip>
+                                }
+                                @if (row.IsLeader)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Primary">Ledare</MudChip>
+                                }
+                            </div>
+                        </td>
+                        <td>@row.SemesterDisplayName</td>
+                        <td style="text-align: right;">@row.AttendedMeetings</td>
+                        <td style="text-align: right;">@row.CampNights</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2"><strong>Totalt</strong></td>
+                    <td style="text-align: right;"><strong>@Rows.Sum(r => r.AttendedMeetings)</strong></td>
+                    <td style="text-align: right;"><strong>@Rows.Sum(r => r.CampNights)</strong></td>
+                </tr>
+            </tfoot>
+        </MudSimpleTable>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public IReadOnlyList<AttendanceRow> Rows { get; set; } = [];
+
+    [Parameter]
+    public string EmptyText { get; set; } = "Ingen närvaro registrerad.";
+}
