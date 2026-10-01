@@ -303,7 +303,7 @@ public class LagerbidragExporter : ILagerbidragExporter
     private static Task<ExportResult> ExportStockholmAsync(LagerbidragData data, RegionLimits limits, CancellationToken cancellationToken)
     {
         // For Stockholm, we also generate an HTML report (original used docx template)
-        var html = GenerateStockholmHtml(data);
+        var html = GenerateStockholmHtml(data, limits);
         var bytes = System.Text.Encoding.UTF8.GetBytes(html);
         var fileName = $"Lagerbidrag_{data.Site}_{data.DateFrom:yyyy-MM-dd}_{data.DateTo:yyyy-MM-dd}.html";
 
@@ -353,7 +353,7 @@ public class LagerbidragExporter : ILagerbidragExporter
         return sb.ToString();
     }
 
-    private static string GenerateStockholmHtml(LagerbidragData data)
+    private static string GenerateStockholmHtml(LagerbidragData data, RegionLimits limits)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("<!DOCTYPE html>");
@@ -386,7 +386,7 @@ public class LagerbidragExporter : ILagerbidragExporter
         sb.AppendLine("<table><thead><tr><th>Nr</th><th>Namn</th><th>Postadress</th><th>Födelseår</th><th>Antal dagar</th></tr></thead><tbody>");
         
         var i = 1;
-        foreach (var person in data.Persons.Take(data.YoungPersonsCount))
+        foreach (var person in data.Persons.Where(p => p.Age >= limits.MinAge && p.Age <= limits.MaxAge))
         {
             sb.AppendLine($"<tr><td>{i++}</td><td>{person.Name}</td><td>{person.PostalAddress}</td><td>{person.BirthYear}</td><td>{person.Days}</td></tr>");
         }
