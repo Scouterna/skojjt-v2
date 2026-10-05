@@ -120,3 +120,6 @@ Skojjt is a **Blazor Server** attendance tracking system for Swedish scout group
 
 ## Person Flow Graph
 - Camp troops (TroopType = Camp) should not be included in the person flow graph.
+
+## Badge Thumbnail Generation
+- Keep **SixLabors.ImageSharp** on **3.1.x** (currently **3.1.12**) in **BadgeThumbnailGenerator**; do not upgrade to **4.x**, which adds a build-time license key check (Six Labors Split License).
