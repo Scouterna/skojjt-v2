@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using MudBlazor;
 using MudBlazor.Services;
+using OpenTelemetry.Trace;
 using Skojjt.Core.Authentication;
 using Skojjt.Core.Interfaces;
 using Skojjt.Core.Services;
@@ -35,7 +36,9 @@ builder.WebHost.ConfigureKestrel(options =>
 
 // Add Application Insights for production telemetry (exceptions, requests, dependencies)
 builder.Services.AddApplicationInsightsTelemetry();
-builder.Services.AddSingleton<Microsoft.ApplicationInsights.Extensibility.ITelemetryInitializer, UserTelemetryInitializer>();
+builder.Services.AddSingleton<UserTelemetryInitializer>();
+builder.Services.ConfigureOpenTelemetryTracerProvider((sp, tracing) =>
+    tracing.AddProcessor(sp.GetRequiredService<UserTelemetryInitializer>()));
 
 // Log startup diagnostics
 var startupLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("Startup");
@@ -561,6 +564,16 @@ app.MapGet("/sitemap.xml", (HttpContext ctx, DocumentationService docs) =>
 
     return Results.Content(sb.ToString(), "application/xml; charset=utf-8");
 }).AllowAnonymous();
+
+// Commonly probed well-known URLs that would otherwise return 404.
+// No Android app is associated with this site, so return an empty statement list.
+app.MapGet("/.well-known/assetlinks.json", () => Results.Content("[]", "application/json"))
+    .AllowAnonymous();
+
+// Older iOS versions request the "-precomposed" variant; serve the regular icon.
+app.MapGet("/apple-touch-icon-precomposed.png", (IWebHostEnvironment env) =>
+        Results.File(env.WebRootFileProvider.GetFileInfo("apple-touch-icon.png").CreateReadStream(), "image/png"))
+    .AllowAnonymous();
 
 // Map API controllers
 app.MapControllers();
