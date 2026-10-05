@@ -1,5 +1,5 @@
-using Microsoft.ApplicationInsights.Channel;
-using Microsoft.ApplicationInsights.Extensibility;
+using System.Diagnostics;
+using OpenTelemetry;
 using Skojjt.Core.Authentication;
 
 namespace Skojjt.Web.Services;
@@ -8,9 +8,12 @@ namespace Skojjt.Web.Services;
 /// Sets the Application Insights authenticated user ID from ScoutID claims
 /// so the Users report correctly counts unique users in Blazor Server,
 /// where most interactions happen over a single SignalR connection.
+/// The Azure Monitor exporter maps the <c>enduser.id</c> tag to the authenticated user ID.
 /// </summary>
-public class UserTelemetryInitializer : ITelemetryInitializer
+public class UserTelemetryInitializer : BaseProcessor<Activity>
 {
+    private const string EndUserIdTag = "enduser.id";
+
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public UserTelemetryInitializer(IHttpContextAccessor httpContextAccessor)
@@ -18,7 +21,7 @@ public class UserTelemetryInitializer : ITelemetryInitializer
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public void Initialize(ITelemetry telemetry)
+    public override void OnEnd(Activity activity)
     {
         var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext?.User?.Identity is not { IsAuthenticated: true })
@@ -27,7 +30,7 @@ public class UserTelemetryInitializer : ITelemetryInitializer
         var uid = httpContext.User.FindFirst(ScoutIdClaimTypes.ScoutnetUid)?.Value;
         if (!string.IsNullOrEmpty(uid))
         {
-            telemetry.Context.User.AuthenticatedUserId = uid;
+            activity.SetTag(EndUserIdTag, uid);
         }
     }
 }
