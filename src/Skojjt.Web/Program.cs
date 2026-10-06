@@ -35,7 +35,11 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 // Add Application Insights for production telemetry (exceptions, requests, dependencies)
-builder.Services.AddApplicationInsightsTelemetry();
+if (!string.IsNullOrWhiteSpace(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"])
+    || !string.IsNullOrWhiteSpace(builder.Configuration["ApplicationInsights:ConnectionString"]))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
 builder.Services.AddSingleton<UserTelemetryInitializer>();
 builder.Services.ConfigureOpenTelemetryTracerProvider((sp, tracing) =>
     tracing.AddProcessor(sp.GetRequiredService<UserTelemetryInitializer>()));
@@ -331,6 +335,16 @@ else
             {
                 var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
                 logger.LogError(context.Exception, "ScoutID authentication failed");
+                return Task.CompletedTask;
+            },
+            OnRedirectToIdentityProviderForSignOut = context =>
+            {
+                // Tokens are not saved (SaveTokens = false), so no id_token_hint is sent.
+                // Keycloak then requires client_id alongside post_logout_redirect_uri.
+                if (string.IsNullOrEmpty(context.ProtocolMessage.IdTokenHint))
+                {
+                    context.ProtocolMessage.ClientId = context.Options.ClientId;
+                }
                 return Task.CompletedTask;
             }
         };
