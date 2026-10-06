@@ -42,6 +42,13 @@ public static class SamlAuthenticationExtensions
             options.SPOptions.EntityId = new EntityId(spEntityId);
             options.SPOptions.ReturnUrl = new Uri("/", UriKind.Relative);
 
+            // Unsolicited responses are already allowed (AllowUnsolicitedAuthnResponse below).
+            // If the browser still holds a pending request-state cookie from an earlier
+            // SP-initiated login (e.g. multiple tabs, back button, IdP-initiated login after an
+            // abandoned attempt), an unsolicited response without InResponseTo would otherwise
+            // throw Saml2ResponseFailedValidationException and result in HTTP 500.
+            options.SPOptions.Compatibility.IgnoreMissingInResponseTo = true;
+
             // Identity Provider configuration
             var idpEntityId = samlSection["IdpEntityId"]
                 ?? throw new InvalidOperationException("ScoutIdSaml:IdpEntityId is required when SAML is enabled");
