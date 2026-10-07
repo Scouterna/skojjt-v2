@@ -106,6 +106,14 @@
                                     Visa
                                 </MudButton>
                                 <MudSpacer />
+                                @if (_canEdit)
+                                {
+                                    <MudTooltip Text="Ändra bild">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Image"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => OpenEditImageDialog(badge))" />
+                                    </MudTooltip>
+                                }
                                 <MudTooltip Text="@(badge.IsArchived ? "Avarkivera" : "Arkivera")">
                                     <MudIconButton Icon="@(badge.IsArchived ? Icons.Material.Filled.Unarchive : Icons.Material.Filled.Archive)"
                                                    Size="Size.Small"
@@ -183,6 +191,14 @@
                 <MudButton OnClick="@(() => _showTemplateDialog = false)">Stäng</MudButton>
             </DialogActions>
         </MudDialog>
+
+        @if (_canEdit)
+        {
+            <EditBadgeImageDialog @bind-Visible="_showEditImageDialog"
+                                  ScoutGroupId="ScoutGroupId"
+                                  Badge="_editImageBadge"
+                                  OnSaved="LoadData" />
+        }
     }
 </MudContainer>
 
@@ -201,6 +217,9 @@
     private string _newBadgeName = "";
     private string? _newBadgeDescription;
     private string? _newBadgeImageUrl;
+    private bool _canEdit;
+    private bool _showEditImageDialog;
+    private Badge? _editImageBadge;
     private List<BreadcrumbItem> _breadcrumbs = [];
     private DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
 
@@ -215,6 +234,7 @@
         try
         {
             _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
+            _canEdit = CurrentUserService.IsMemberRegistrar(ScoutGroupId);
             if (!_hasAccess)
             {
                 _breadcrumbs = BreadcrumbBuilder.NoAccess();
@@ -254,6 +274,12 @@
         {
             Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
         }
+    }
+
+    private void OpenEditImageDialog(Badge badge)
+    {
+        _editImageBadge = badge;
+        _showEditImageDialog = true;
     }
 
     private async Task CreateBadge()

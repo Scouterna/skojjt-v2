@@ -397,6 +397,19 @@ public class BadgeService : IBadgeService
         _logger.LogInformation("Badge {BadgeId} archived={IsArchived}", badgeId, isArchived);
     }
 
+    public async Task UpdateImageUrlAsync(int scoutGroupId, int badgeId, string? imageUrl, CancellationToken cancellationToken = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+        var badge = await context.Badges.FirstOrDefaultAsync(b => b.Id == badgeId && b.ScoutGroupId == scoutGroupId, cancellationToken)
+            ?? throw new ArgumentException($"Badge {badgeId} not found in group {scoutGroupId}");
+
+        badge.ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
+        await context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Badge {BadgeId} image URL updated", badgeId);
+    }
+
     public async Task<IReadOnlyList<Badge>> GetTroopBadgesAsync(int troopId, CancellationToken cancellationToken = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);

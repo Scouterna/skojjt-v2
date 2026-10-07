@@ -1,0 +1,76 @@
+@using Skojjt.Core.Entities
+@using Skojjt.Core.Services
+@using Skojjt.Shared
+@inject IBadgeService BadgeService
+@inject ISnackbar Snackbar
+
+<MudDialog Visible="Visible" VisibleChanged="VisibleChanged" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Ändra bild - @Badge?.Name</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_imageUrl" Label="Bild-URL" Clearable="true"
+                      HelperText="Lämna tomt för att ta bort bilden" Class="mb-2" />
+        @if (!string.IsNullOrWhiteSpace(_imageUrl))
+        {
+            <div style="max-width:100%;overflow:hidden">
+                <MudImage Src="@ImageUrlHelper.ResolveImageUrl(_imageUrl.Trim())" Alt="Förhandsvisning"
+                          Height="96" ObjectFit="ObjectFit.Contain" Style="max-width:100%" />
+            </div>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Disabled="_saving">Avbryt</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save" Disabled="_saving">Spara</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter, EditorRequired] public int ScoutGroupId { get; set; }
+    [Parameter] public Badge? Badge { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+    private string? _imageUrl;
+    private bool _saving;
+    private bool _wasVisible;
+
+    protected override void OnParametersSet()
+    {
+        if (Visible && !_wasVisible)
+        {
+            _imageUrl = Badge?.ImageUrl;
+        }
+        _wasVisible = Visible;
+    }
+
+    private Task Close() => VisibleChanged.InvokeAsync(false);
+
+    private async Task Save()
+    {
+        if (Badge == null) return;
+
+        _saving = true;
+        try
+        {
+            await BadgeService.UpdateImageUrlAsync(ScoutGroupId, Badge.Id, ImageUrlHelper.ResolveImageUrl(_imageUrl?.Trim()));
+            Snackbar.Add($"Bilden för {Badge.Name} uppdaterad", Severity.Success);
+            await VisibleChanged.InvokeAsync(false);
+            await OnSaved.InvokeAsync();
+        }
+        catch (ArgumentException)
+        {
+            Snackbar.Add("Märket kunde inte hittas.", Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -57,6 +57,12 @@
             {
                 <MudChip T="string" Color="Color.Warning">Arkiverad</MudChip>
             }
+            @if (_canEdit)
+            {
+                <MudTooltip Text="Ändra bild">
+                    <MudIconButton Icon="@Icons.Material.Filled.Image" OnClick="OpenEditImageDialog" />
+                </MudTooltip>
+            }
         </div>
 
         @* Parts Tables *@
@@ -198,6 +204,14 @@
                 </MudButton>
             </DialogActions>
         </MudDialog>
+
+        @if (_canEdit)
+        {
+            <EditBadgeImageDialog @bind-Visible="_showEditImageDialog"
+                                  ScoutGroupId="ScoutGroupId"
+                                  Badge="_badge"
+                                  OnSaved="LoadData" />
+        }
     }
 </MudContainer>
 
@@ -219,7 +233,11 @@
     private string _addPartShort = "";
     private string? _addPartLong;
 
-    protected override async Task OnInitializedAsync()
+    // Edit image dialog state
+    private bool _canEdit;
+    private bool _showEditImageDialog;
+
+    protected override async Task OnParametersSetAsync()
     {
         await LoadData();
     }
@@ -227,13 +245,22 @@
     private async Task LoadData()
     {
         _loading = true;
+        _scoutGroup = null;
+        _badge = null;
+        _troopBadges = [];
+        _breadcrumbs = [];
         try
         {
             _hasAccess = CurrentUserService.HasGroupAccess(ScoutGroupId);
+            _canEdit = CurrentUserService.IsMemberRegistrar(ScoutGroupId);
             if (!_hasAccess) return;
 
             _scoutGroup = await ScoutGroupRepository.GetByIdAsync(ScoutGroupId);
             _badge = await BadgeService.GetBadgeWithPartsAsync(BadgeId);
+            if (_badge != null && _badge.ScoutGroupId != ScoutGroupId)
+            {
+                _badge = null;
+            }
 
             if (_badge != null)
             {
@@ -259,6 +286,11 @@
         _addPartShort = "";
         _addPartLong = null;
         _showAddPartDialog = true;
+    }
+
+    private void OpenEditImageDialog()
+    {
+        _showEditImageDialog = true;
     }
 
     private async Task AddPart()

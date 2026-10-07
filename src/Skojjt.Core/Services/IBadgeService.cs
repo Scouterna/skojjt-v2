@@ -54,6 +54,11 @@ public interface IBadgeService
     Task SetArchivedAsync(int badgeId, bool isArchived, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Updates the image URL of a badge belonging to the given scout group.
+    /// </summary>
+    Task UpdateImageUrlAsync(int scoutGroupId, int badgeId, string? imageUrl, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets the badges currently assigned to a troop.
     /// </summary>
     Task<IReadOnlyList<Badge>> GetTroopBadgesAsync(int troopId, CancellationToken cancellationToken = default);

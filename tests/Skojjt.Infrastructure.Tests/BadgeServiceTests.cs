@@ -497,6 +497,44 @@ public class BadgeServiceTests : IDisposable
         Assert.AreEqual("/img/test.png", persisted.ImageUrl);
     }
 
+    // --- UpdateImageUrlAsync ---
+
+    [TestMethod]
+    public async Task UpdateImageUrlAsync_UpdatesImageUrl()
+    {
+        using var ctx = new SkojjtDbContext(_options);
+        var badge = CreateTestBadgeWithParts(ctx);
+
+        await _service.UpdateImageUrlAsync(badge.ScoutGroupId, badge.Id, " /img/new.png ");
+
+        using var verifyCtx = new SkojjtDbContext(_options);
+        var persisted = await verifyCtx.Badges.FindAsync(badge.Id);
+        Assert.AreEqual("/img/new.png", persisted!.ImageUrl);
+    }
+
+    [TestMethod]
+    public async Task UpdateImageUrlAsync_EmptyClearsImageUrl()
+    {
+        using var ctx = new SkojjtDbContext(_options);
+        var badge = CreateTestBadgeWithParts(ctx);
+
+        await _service.UpdateImageUrlAsync(badge.ScoutGroupId, badge.Id, string.Empty);
+
+        using var verifyCtx = new SkojjtDbContext(_options);
+        var persisted = await verifyCtx.Badges.FindAsync(badge.Id);
+        Assert.IsNull(persisted!.ImageUrl);
+    }
+
+    [TestMethod]
+    public async Task UpdateImageUrlAsync_WrongGroup_Throws()
+    {
+        using var ctx = new SkojjtDbContext(_options);
+        var badge = CreateTestBadgeWithParts(ctx);
+
+        await Assert.ThrowsExactlyAsync<ArgumentException>(
+            () => _service.UpdateImageUrlAsync(badge.ScoutGroupId + 1, badge.Id, "/img/x.png"));
+    }
+
     // --- SetArchivedAsync ---
 
     [TestMethod]
