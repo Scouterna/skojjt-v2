@@ -13,7 +13,19 @@ public class BidragsSummering
     /// <summary>
     /// Total grant amount for all qualifying meetings.
     /// </summary>
-    public decimal TotaltBelopp => TotaltBeloppFlickor + TotaltBeloppPojkar;
+    public decimal TotaltBelopp => TotaltBeloppFlickor + TotaltBeloppPojkar + TotaltBeloppLedare + TotaltBeloppSammankomster;
+
+    /// <summary>
+    /// Total fixed per-meeting grant amount.
+    /// </summary>
+    public decimal TotaltBeloppSammankomster => SammankomstBerakningar
+        .Where(s => s.ArBidragsberattigad).Sum(s => s.BeloppSammankomst);
+
+    /// <summary>
+    /// Total grant amount for leaders.
+    /// </summary>
+    public decimal TotaltBeloppLedare => SammankomstBerakningar
+        .Where(s => s.ArBidragsberattigad).Sum(s => s.BeloppLedare);
 
     /// <summary>
     /// Total eligible female participant attendances across all qualifying meetings.

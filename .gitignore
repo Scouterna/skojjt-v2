@@ -78,7 +78,7 @@ ENV/
 env.bak/
 venv.bak/
 
-## Sensitive / personal data — do NOT commit
+## Sensitive / personal data â€” do NOT commit
 claims.txt
 memberlist_*.json
 scoutnet_memberlist_*.json

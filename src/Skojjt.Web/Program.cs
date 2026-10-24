@@ -133,7 +133,9 @@ builder.Services.AddSignalR(options =>
 
     // Allow clients 60 seconds (default 30) to respond to keep-alive before
     // the server considers them disconnected. Helps on flaky mobile networks.
-    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+    // Raised to 120s to tolerate the page's JS thread being blocked by native
+    // dialogs (file picker) or debugger pauses; must be >= client serverTimeout.
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(120);
 
     // Allow larger payloads for batch attendance updates.
     options.MaximumReceiveMessageSize = 128 * 1024; // 128 KB
@@ -203,6 +205,9 @@ builder.Services.AddSingleton<DocumentationService>();
 
 // Register interest badge (intressemärken) catalog service
 builder.Services.AddSingleton<InterestBadgeCatalogService>();
+
+// Register aktivitetsbidrag catalog (wwwroot/data/aktivitetsbidrag.json)
+builder.Services.AddSingleton<Skojjt.Core.Interfaces.IAktivitetsbidragCatalog, AktivitetsbidragCatalogService>();
 
 // Configure authentication based on environment and configuration
 var useDevAuth = builder.Environment.IsDevelopment() &&

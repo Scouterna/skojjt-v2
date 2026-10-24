@@ -96,16 +96,42 @@ public static class AktivitetsbidragValidator
 
         // Count eligible participants
         int flickor = 0, pojkar = 0;
+        decimal beloppFlickor = 0m, beloppPojkar = 0m;
+        int? maxDeltagare = settings.MaxAntalDeltagare;
+        if (settings.MaxDeltagarePerLedare is int perLedare)
+        {
+            var ledarTak = perLedare * qualifiedLeaders;
+            maxDeltagare = maxDeltagare is int m ? Math.Min(m, ledarTak) : ledarTak;
+        }
+
         foreach (var deltagare in sammankomst.Deltagare)
         {
             var person = ResolvePersonFromRegister(deltagare, allPersons);
             if (!IsEligibleParticipant(person, settings, terminsAr, issues, path))
                 continue;
 
+            if (maxDeltagare is int max && flickor + pojkar >= max)
+            {
+                issues.Add(new DakParseIssue
+                {
+                    Severity = DakIssueSeverity.Info,
+                    Message = $"Deltagare '{person.Uid}' räknas inte — max {max} bidragsberättigade deltagare per sammankomst.",
+                    XmlPath = path,
+                });
+                continue;
+            }
+
+            var belopp = settings.BeloppFor(person.IsFemale(), person.AgeThisSemester(terminsAr));
             if (person.IsFemale())
+            {
                 flickor++;
+                beloppFlickor += belopp;
+            }
             else
+            {
                 pojkar++;
+                beloppPojkar += belopp;
+            }
         }
 
         var totalEligible = flickor + pojkar;
@@ -132,8 +158,11 @@ public static class AktivitetsbidragValidator
             ArBidragsberattigad = true,
             AntalFlickor = flickor,
             AntalPojkar = pojkar,
-            BeloppFlickor = flickor * settings.BeloppPerFlicka,
-            BeloppPojkar = pojkar * settings.BeloppPerPojke,
+            BeloppFlickor = beloppFlickor,
+            BeloppPojkar = beloppPojkar,
+            BeloppLedare = settings.BeloppPerLedare *
+                (settings.MaxAntalLedareMedBidrag is int maxLedare ? Math.Min(maxLedare, qualifiedLeaders) : qualifiedLeaders),
+                            BeloppSammankomst = settings.BeloppPerSammankomst,
         };
     }
 

@@ -147,6 +147,15 @@
         // Total ~50 retries ≈ 24s + 160s = ~3 minutes of retrying.
         Blazor.start({
             circuit: {
+                // Native modal dialogs (e.g. the file picker on /dak-analys) and debugger
+                // pauses can block the page's JS thread. With the default 30s client-side
+                // server timeout the connection drops, and MudBlazor's resize listener then
+                // throws "Cannot send data if the connection is not in the 'Connected' State".
+                // Matches the server's ClientTimeoutInterval (120s) in Program.cs.
+                configureSignalR: function (builder) {
+                    builder.withServerTimeout(120000);
+                    builder.withKeepAliveInterval(15000);
+                },
                 reconnectionOptions: {
                     maxRetries: 50,
                     retryIntervalMilliseconds: (previousAttempts, maxRetries) => {
@@ -175,6 +184,31 @@
         }).observe(document.getElementById('components-reconnect-modal'), {
             attributes: true, attributeFilter: ['class']
         });
+    </script>
+    <script>
+        // On full-page navigation (e.g. OIDC login redirect) Blazor closes the circuit
+        // while MudBlazor's throttled resize handler may still fire and call into .NET,
+        // causing "Cannot send data if the connection is not in the 'Connected' State".
+        // Stop all MudBlazor resize listeners and pending timers as the page unloads.
+        (function () {
+            let stopped = false;
+            function stopMudResizeListeners() {
+                if (stopped) return;
+                stopped = true;
+                try {
+                    const listeners = window.mudResizeListenerFactory?.listeners;
+                    if (!listeners) return;
+                    for (const key of Object.keys(listeners)) {
+                        const l = listeners[key];
+                        if (!l) continue;
+                        if (l.throttleResizeHandlerId) clearTimeout(l.throttleResizeHandlerId);
+                        l.cancelListener?.();
+                    }
+                } catch (e) { }
+            }
+            window.addEventListener('beforeunload', stopMudResizeListeners);
+            window.addEventListener('pagehide', stopMudResizeListeners);
+        })();
     </script>
     <script>
         if ('serviceWorker' in navigator) {
