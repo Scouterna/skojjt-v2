@@ -1,3 +1,5 @@
 [submodule "scoutid-keycloak-provider"]
 	path = external/scoutid-keycloak-provider
 	url = https://github.com/Scouterna/scoutid-keycloak-provider.git
+[submodule "external/scoutid-keycloak-provider"]
+	branch = main
