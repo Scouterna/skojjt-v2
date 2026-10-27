@@ -2,23 +2,39 @@
 @using Skojjt.Core.Exports
 @using Skojjt.Core.Exports.Validation
 @using Skojjt.Core.Services
+@using Skojjt.Core.Interfaces
 @rendermode InteractiveServer
 @inject IDakAnalysisService DakAnalysisService
+@inject IAktivitetsbidragCatalog AktivitetsbidragCatalog
 @inject ISnackbar Snackbar
 
-<PageTitle>DAK-analys - Skojjt</PageTitle>
+<PageTitle>Kontrollera närvarokort - Skojjt</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
-    <MudText Typo="Typo.h4" Class="mb-2">DAK XML-analys</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-        Läs in, validera och jämför DAK-filer. Beräkna förväntat aktivitetsbidrag.
+    <MudText Typo="Typo.h4" Class="mb-2">Kontrollera närvarokort</MudText>
+    <MudText Typo="Typo.body1" Class="mb-2">
+        Här kan du kontrollera en närvarofil (DAK-fil) innan du skickar in den till kommunen,
+        och se ungefär hur mycket aktivitetsbidrag den ger.
     </MudText>
+    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-4">
+        <MudText Typo="Typo.body2"><b>Så här gör du:</b></MudText>
+        <ol class="ml-4">
+            <li>Exportera närvarokortet som DAK-fil (XML) från avdelningens närvarosida i Skojjt.</li>
+            <li>Välj filen under <b>Fil 1</b>. Filen kontrolleras direkt och eventuella fel visas.</li>
+            <li>Kontrollera att rätt kommun är vald under <b>Bidragsinställningar</b> (väljs automatiskt utifrån filen) och tryck på <b>Beräkna bidrag</b>.</li>
+            <li>Valfritt: välj en annan fil under <b>Fil 2</b>, till exempel en tidigare inskickad fil, för att se skillnaderna.</li>
+        </ol>
+        <MudText Typo="Typo.caption">
+            Beloppet är en uppskattning baserad på kommunens regler. Det faktiska bidraget bestäms av kommunen.
+            Filen sparas inte i Skojjt.
+        </MudText>
+    </MudAlert>
 
     @* File upload section *@
     <MudGrid>
         <MudItem xs="12" md="6">
             <MudPaper Elevation="2" Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-2">Fil 1 (primär)</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2">Fil 1 – närvarokort att kontrollera</MudText>
                 <MudFileUpload T="IBrowserFile" Accept=".xml" FilesChanged="OnFile1Changed" MaximumFileCount="1">
                     <CustomContent Context="fileUpload">
                         <MudButton Variant="Variant.Outlined" Color="Color.Primary"
@@ -32,7 +48,7 @@
         </MudItem>
         <MudItem xs="12" md="6">
             <MudPaper Elevation="2" Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-2">Fil 2 (jämför mot)</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2">Fil 2 – jämför med (valfri)</MudText>
                 <MudFileUpload T="IBrowserFile" Accept=".xml" FilesChanged="OnFile2Changed" MaximumFileCount="1">
                     <CustomContent Context="fileUpload">
                         <MudButton Variant="Variant.Outlined" Color="Color.Secondary"
@@ -54,7 +70,7 @@
                 <MudItem xs="12" md="6">
                     <MudSelect T="string" Label="Bidragsinställningar" @bind-Value="_selectedSettingsKey"
                                Variant="Variant.Outlined" Dense="true">
-                        @foreach (var s in AktivitetsbidragKnownSettings.All)
+                        @foreach (var s in _availableSettings)
                         {
                             <MudSelectItem Value="@s.Namn">@s.Namn</MudSelectItem>
                         }
@@ -220,6 +236,22 @@
             <MudText Typo="Typo.h6" Class="mb-2">
                 Aktivitetsbidrag — @_bidragResult.Summering.Settings.Namn
             </MudText>
+            @if (!_bidragResult.Summering.Settings.HarKandaBelopp)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-2">
+                    Kommunen saknar kända fasta belopp (@_bidragResult.Summering.Settings.Berakningstyp). Endast reglerna valideras — beloppen nedan är inte det faktiska bidraget.
+                </MudAlert>
+            }
+            @if (!string.IsNullOrEmpty(_bidragResult.Summering.Settings.Anmarkning))
+            {
+                <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                    @_bidragResult.Summering.Settings.Anmarkning
+                    @if (!string.IsNullOrEmpty(_bidragResult.Summering.Settings.SystemMottagare))
+                    {
+                        <text> Mottagande system: @_bidragResult.Summering.Settings.SystemMottagare.</text>
+                    }
+                </MudAlert>
+            }
 
             @* Summary cards *@
             <MudGrid Class="mb-4">
@@ -237,16 +269,26 @@
                 </MudItem>
                 <MudItem xs="6" md="3">
                     <MudPaper Elevation="0" Class="pa-3" Style="text-align:center">
-                        <MudText Typo="Typo.h6">@_bidragResult.Summering.TotaltAntalFlickor st × @_bidragResult.Summering.Settings.BeloppPerFlicka kr</MudText>
+                        <MudText Typo="Typo.h6">@_bidragResult.Summering.TotaltAntalFlickor st@(_bidragResult.Summering.Settings.AldersBelopp.Count == 0 ? $" × {_bidragResult.Summering.Settings.BeloppPerFlicka} kr" : string.Empty)</MudText>
                         <MudText Typo="Typo.caption">Flickor = @_bidragResult.Summering.TotaltBeloppFlickor.ToString("N2") kr</MudText>
                     </MudPaper>
                 </MudItem>
                 <MudItem xs="6" md="3">
                     <MudPaper Elevation="0" Class="pa-3" Style="text-align:center">
-                        <MudText Typo="Typo.h6">@_bidragResult.Summering.TotaltAntalPojkar st × @_bidragResult.Summering.Settings.BeloppPerPojke kr</MudText>
+                        <MudText Typo="Typo.h6">@_bidragResult.Summering.TotaltAntalPojkar st@(_bidragResult.Summering.Settings.AldersBelopp.Count == 0 ? $" × {_bidragResult.Summering.Settings.BeloppPerPojke} kr" : string.Empty)</MudText>
                         <MudText Typo="Typo.caption">Pojkar = @_bidragResult.Summering.TotaltBeloppPojkar.ToString("N2") kr</MudText>
                     </MudPaper>
                 </MudItem>
+                @if (_bidragResult.Summering.TotaltBeloppLedare > 0 || _bidragResult.Summering.TotaltBeloppSammankomster > 0)
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.caption">
+                            Ledarbidrag = @_bidragResult.Summering.TotaltBeloppLedare.ToString("N2") kr,
+                            sammankomstbidrag = @_bidragResult.Summering.TotaltBeloppSammankomster.ToString("N2") kr
+                            (@_bidragResult.Summering.Settings.BeloppPerSammankomst.ToString("N2") kr per godkänd sammankomst)
+                        </MudText>
+                    </MudItem>
+                }
             </MudGrid>
 
             @* Per-meeting table *@
@@ -316,8 +358,26 @@
     private DakParseResult? _parseResult2;
     private DakComparisonResult? _comparisonResult;
     private AktivitetsbidragResult? _bidragResult;
-    private string _selectedSettingsKey = AktivitetsbidragKnownSettings.Goteborg2026.Namn;
+    private string _selectedSettingsKey = string.Empty;
     private int _terminsAr = DateTime.Now.Year;
+    private IReadOnlyList<AktivitetsbidragSettings> _availableSettings = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _availableSettings = (await AktivitetsbidragCatalog.GetAllAsync())
+                .Where(s => s.HarKandaBelopp)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            // Don't let a broken catalog kill the circuit.
+            _availableSettings = [];
+            Snackbar.Add($"Kunde inte läsa bidragsinställningar: {ex.Message}", Severity.Error);
+        }
+        _selectedSettingsKey = _availableSettings.FirstOrDefault()?.Namn ?? string.Empty;
+    }
 
     private async Task OnFile1Changed(IBrowserFile? file)
     {
@@ -335,6 +395,12 @@
             ms.Position = 0;
 
             _parseResult1 = DakAnalysisService.Parse(ms, file.Name);
+            var forstaSammankomst = _parseResult1.Data?.Kort.Sammankomster.MinBy(s => s.Datum);
+            if (forstaSammankomst is not null)
+            {
+                _terminsAr = forstaSammankomst.Datum.Year;
+            }
+            SelectSettingsForKommun(_parseResult1.Data?.KommunId);
 
             if (_parseResult1.Success)
                 Snackbar.Add($"Fil inläst: {_parseResult1.Data!.Kort.Sammankomster.Count} sammankomster", Severity.Success);
@@ -381,11 +447,28 @@
         }
     }
 
+    private void SelectSettingsForKommun(string? kommunId)
+    {
+        var match = string.IsNullOrEmpty(kommunId)
+            ? null
+            : _availableSettings.FirstOrDefault(s => s.KommunId == kommunId && s.Ar == _terminsAr)
+              ?? _availableSettings.Where(s => s.KommunId == kommunId).OrderByDescending(s => s.Ar).FirstOrDefault();
+        if (match is not null)
+        {
+            _selectedSettingsKey = match.Namn;
+        }
+        else if (!string.IsNullOrEmpty(kommunId))
+        {
+            Snackbar.Add($"Inga kända bidragsbelopp för kommun {kommunId} — välj inställningar manuellt.", Severity.Info);
+        }
+    }
+
     private void RunValidation()
     {
         if (_parseResult1?.Data is null) return;
 
-        var settings = AktivitetsbidragKnownSettings.All.FirstOrDefault(s => s.Namn == _selectedSettingsKey);
+        var settings = _availableSettings.FirstOrDefault(s => s.Namn == _selectedSettingsKey)
+                    ?? AktivitetsbidragSettings.Find(_availableSettings, _parseResult1.Data.KommunId, _terminsAr);
         _bidragResult = DakAnalysisService.Validate(_parseResult1.Data, settings, _terminsAr);
     }
 

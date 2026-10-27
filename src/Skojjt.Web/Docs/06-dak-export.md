@@ -21,22 +21,25 @@ DAK-filen innehåller:
 
 ## Bidragsberäkning
 
-Aktivitetsbidraget beräknas baserat på antal deltagare per sammankomst, uppdelat på kön:
+Regler och belopp för aktivitetsbidrag (LOK-stöd) skiljer sig mellan kommuner och år. Skojjt har en katalog med kända kommuners regler. Beroende på kommun kan bidraget beräknas på:
 
-| Kön | Belopp (2026, Göteborg) |
-|---|---|
-| Flickor/kvinnor | 9,89 kr per deltagare och sammankomst |
-| Pojkar/män | 8,02 kr per deltagare och sammankomst |
+- belopp per deltagare och sammankomst, ibland uppdelat på kön (t.ex. Göteborg 2026: 9,89 kr för flickor/kvinnor och 8,02 kr för pojkar/män) eller på ålder
+- belopp per ledare (ofta med ett tak för antal ledare)
+- ett fast belopp per godkänd sammankomst
 
-> **OBS:** Bidragsnivåerna varierar mellan kommuner och kan ändras mellan år.
+Katalogen innehåller också villkor för en godkänd sammankomst, t.ex. ålder på deltagare och ledare, minsta antal deltagare och ledare samt minsta längd. Vissa kommuner fördelar en rörlig pott; då kan Skojjt kontrollera villkoren men inte räkna ut något exakt belopp.
+
+> **OBS:** Delar av katalogen har samlats in automatiskt från kommunernas webbplatser och kan innehålla fel. Kontrollera alltid mot din kommuns regler. Saknas din kommun eller är något fel – kontakta Skojjts utvecklare så rättar vi katalogen.
 
 ## DAK-analys
 
-Skojjt har ett inbyggt verktyg för att **analysera DAK-filer**. Nås via menyn **DAK-analys**. Här kan du:
+Skojjt har ett inbyggt verktyg för att **analysera DAK-filer**. Nås via menyn **Kontrollera närvarokort**. Här kan du:
 
 - Ladda upp och **validera** en DAK XML-fil
 - Jämföra **två filer** för att se skillnader
-- Beräkna **förväntat bidrag** baserat på aktuella bidragsnivåer
+- Beräkna **förväntat bidrag** enligt kommunens regler
+
+Kommunen väljs automatiskt utifrån kommunkoden i DAK-filen, och året hämtas från filens första sammankomst. Båda kan ändras manuellt. Finns inga regler för just det året används de senaste kända reglerna för kommunen.
 
 ## Krav för DAK
 

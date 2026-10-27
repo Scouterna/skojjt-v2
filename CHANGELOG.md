@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.5.16] - 2026-10-24
+* Samlade in bidragsregler för fler kommuner och år. Skojjt kan nu beräkna förväntat bidrag för fler kommuner än tidigare. Se hjälpsidan [DAK-export och -import](/hjalp/06-dak-export) för mer information.
+
 ## [2.5.11] - 2026-09-02
 * Namnen på avdelningssidan scrollade med möten vilket gjorde det lite svårt att registrera närvaro med många framtida möten förbokade.
 * Ny knapp för att dölja alla framtida möten på avdelningssidan, vilket borde göra det enklare om man lägger in möten i förväg.

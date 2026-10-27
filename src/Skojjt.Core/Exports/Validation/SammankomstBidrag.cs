@@ -48,7 +48,20 @@ public class SammankomstBidrag
     /// <summary>
     /// Total grant amount for this meeting.
     /// </summary>
-    public decimal Belopp => BeloppFlickor + BeloppPojkar;
+    /// <summary>
+    /// Grant amount for leaders.
+    /// </summary>
+    public decimal BeloppLedare { get; init; }
+
+    /// <summary>
+    /// Fixed grant amount for the meeting itself.
+    /// </summary>
+    public decimal BeloppSammankomst { get; init; }
+
+    /// <summary>
+    /// Total grant amount for this meeting.
+    /// </summary>
+    public decimal Belopp => BeloppFlickor + BeloppPojkar + BeloppLedare + BeloppSammankomst;
 
     /// <summary>
     /// Total number of eligible participants.
