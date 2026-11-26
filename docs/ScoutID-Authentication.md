@@ -162,38 +162,48 @@ In development mode, a simulated ScoutID service allows testing without connecti
 
 ## ScoutID Claims
 
-When a user authenticates, the ScoutID Keycloak provider issues the claims listed below. To receive the Scoutnet-specific attributes the client must request the `scoutnet` client scope (e.g. `scope=openid scoutnet`). See the provider's [README](https://github.com/Scouterna/scoutid-keycloak-provider) for the full list of mappers.
+When a user authenticates, ScoutID Keycloak issues the claims below. Skojjt requests `openid profile email scoutnet-memberships`. The roles that grant access are only in `scoutnet-memberships`, and Keycloak rejects the login with `invalid_scope` unless that scope is assigned to the client. The canonical claim reference is [`keycloak-config/03-scopes.yaml`](../external/scoutid-keycloak-provider/keycloak-config/03-scopes.yaml) in the provider repo, with a full example in [`config_support/id_token_example.json`](../external/scoutid-keycloak-provider/config_support/id_token_example.json).
 
-### Standard OIDC Claims
-| Claim | Description | Example |
-|-------|-------------|---------|
-| `sub` | Subject (Keycloak user identifier, or Scoutnet member number if mapped) | `"12345"` |
-| `name` | Display name | `"Anna Andersson"` |
-| `email` | Email address | `"anna@example.com"` |
-| `birthdate` | Date of birth (mapped from `scoutnet_dob`) | `"1985-04-12"` |
-| `picture` | Profile picture URL | `"https://..."` |
+### Claims Skojjt uses
+| Claim | Scope | Description | Example |
+|-------|-------|-------------|---------|
+| `scoutnet_member_no` | `profile` | Scoutnet member number. Used as the Skojjt user ID. | `"9876543"` |
+| `sub` | `openid` | Keycloak UUID by default; only the member number if the client has a "sub member_no" mapper. Fallback user ID when `scoutnet_member_no` is missing. | `"abc12345-…"` |
+| `name` | `profile` | Display name | `"Anna Andersson"` |
+| `email` | `email` | Email address (required by `CurrentUserService`) | `"anna@example.com"` |
+| `memberships` | `scoutnet-memberships` | JSON object with all Scoutnet roles (see below) | `{ "groups": { … } }` |
 
-### ScoutID / Scoutnet Claims (from the `scoutnet` client scope)
-| Claim | Description | Example |
-|-------|-------------|---------|
-| `scoutnet_member_no` | Scoutnet member number | `"12345"` |
-| `scoutnet_primary_group_no` | Primary scout group number | `"123"` |
-| `scoutnet_primary_group_name` | Primary scout group name | `"Exempel Scoutkår"` |
-| `scoutnet_roles` | Multi-valued list of role strings (see below) | `["group:1001:member_registrar", "troop:9876:leader"]` |
-| `scoutnet_troops` | JSON object describing the user's troops | `{ ... }` |
-| `scoutnet_definitions` | JSON dictionary with translations / lookup tables | `{ ... }` |
-| `scouterna_email` | Scouterna-issued email address | `"anna@scouterna.se"` |
-| `group_emails_json` | JSON object with group mailing addresses | `{ ... }` |
+Other claims (`preferred_username` = `<member_no>@scoutnet`, `primary_group_no`, `group_emails_json`, `scouterna_email`, …) are ignored and trimmed from the auth ticket.
 
-### Role Claim Format
+### The `memberships` claim
 
-Roles are emitted as strings inside `scoutnet_roles` (and exposed via the standard `role` claim type). Skojjt understands these formats:
+`memberships` is a JSON object keyed by entity type. Each type maps a Scoutnet entity ID to an entry with a `roles` array of `{"id": <int>, "key": "<string>", "name"?: "<string>"}`:
+
+```json
+{
+  "groups":   { "999":   { "name": "Exempel Scoutkår", "is_primary": true, "roles": [{"id": 9, "key": "member_registrar"}] } },
+  "troops":   { "12345": { "name": "Spårarna", "groupId": 999,  "roles": [{"id": 4, "key": "vice_leader"}] },
+                "12346": {                     "groupId": null, "roles": [{"id": 11, "key": "leader"}] } },
+  "patrols":  { },
+  "organisations": { "692": { "roles": [{"id": 68, "key": "scoutid_admin"}] } },
+  "regions": {}, "districts": {}, "corps": {}, "networks": {}
+}
+```
+
+- Troop `groupId` is only known for troops the user is a *member* of. When it is `null`, Skojjt resolves the troop's group from its own database.
+- If the payload would exceed Keycloak's 2048-character attribute limit, ScoutID keeps only `groups` and adds `"error": "memberships_truncated: …"`. Skojjt logs a warning; troop-level roles are lost for that user.
+
+Parsing is done by `ScoutIdMembershipsParser`, which turns each role into a `type:id:key` string (e.g. `organisation:692:scoutid_admin`). This is the same format as the legacy SAML `role` attribute, so both generations go through the same logic.
+
+### Role Format
+
+Skojjt interprets roles as these `type:id:key` patterns:
 
 | Pattern | Meaning |
 |---------|---------|
 | `group:<group_id>:<role_name>` | Role granted at the scout group level |
-| `troop:<troop_scoutnet_id>:<role_name>` | Role granted for a single troop (resolved to its parent group via DB lookup) |
-| `organisation:<org_id>:scoutid_admin` | ScoutID system administrator |
+| `troop:<troop_scoutnet_id>:<role_name>` | Role granted for a single troop (group from `groupId` or a DB lookup) |
+| `organisation:<org_id>:scoutid_admin` | ScoutID system administrator (configurable via `Skojjt:AdminScoutnetRole`) |
 
 Recognized role names (see `ScoutIdClaimsTransformation`):
 
@@ -211,7 +221,7 @@ After claims transformation (`ScoutIdClaimsTransformation`), the following custo
 
 | Claim Type | Description |
 |------------|-------------|
-| `scoutid/uid` | Scoutnet user ID (from the OIDC `sub` / name identifier) |
+| `scoutid/uid` | Scoutnet member number (OIDC `scoutnet_member_no`, else `sub`; SAML `uid`) |
 | `scoutid/display_name` | Display name |
 | `scoutid/accessible_groups` | Comma-separated list of scout group IDs the user can access |
 | `scoutid/accessible_troops` | Comma-separated list of troop Scoutnet IDs the user can access (for troop-level roles) |
@@ -284,21 +294,35 @@ Implementation: [`SamlAuthenticationExtensions`](../src/Skojjt.Infrastructure/Au
 
 ### New ScoutID Configuration — Keycloak / OIDC (`ScoutId`)
 
-ScoutID Keycloak is hosted as a Keycloak realm. `Authority` should point at that realm and `Scope` must include `scoutnet` to receive the Scoutnet-specific claims.
+ScoutID Keycloak is hosted as a Keycloak realm. `Authority` points at that realm, and `Scope` must include `scoutnet-memberships` to receive the roles.
+
+| Environment | Authority |
+|-------------|-----------|
+| Production | `https://id.scouterna.se/realms/scoutid` |
+| ScoutID dev | `https://dev1.id.scouterna.se/realms/scoutid` |
+| Local Docker (`external/scoutid-keycloak-provider`) | `http://localhost:8080/realms/master` |
 
 ```json
 {
   "ScoutIdSaml": { "Enabled": false },
   "ScoutId": {
-    "Authority": "https://scoutid.scout.se/realms/scoutid",
-    "ClientId": "your-client-id",
-    "ClientSecret": "your-client-secret",
-    "Scope": "openid scoutnet"
+    "Authority": "https://id.scouterna.se/realms/scoutid",
+    "ClientId": "skojjt-v2",
+    "ClientSecret": "<from App Service settings / user-secrets, never in appsettings>",
+    "Scope": "openid profile email scoutnet-memberships"
   }
 }
 ```
 
-The client must be registered in the ScoutID Keycloak realm with the `scoutnet` client scope assigned (Default or Optional). See [scoutid-keycloak-provider/docs/client_config_guide.md](https://github.com/Scouterna/scoutid-keycloak-provider/tree/main/docs) for the full client setup.
+Clients are registered by the ScoutID team (scoutid@scouterna.se); see the [ScoutID wiki](https://github.com/Scouterna/scoutid-keycloak/wiki). Ask for:
+
+- A confidential client with the standard (authorization code) flow. Skojjt sends PKCE S256.
+- The `profile`, `email` and `scoutnet-memberships` client scopes assigned.
+- Valid redirect URI `https://<host>/signin-oidc` and post-logout redirect URI `https://<host>/*`.
+
+A "sub member_no" mapper is optional, because Skojjt reads `scoutnet_member_no` directly.
+
+**Cutover from SAML:** set `ScoutIdSaml:Enabled` to `false` and provide `ScoutId:ClientSecret` (App Service setting `ScoutId__ClientSecret`). Auth tickets are held in an in-memory store, so the restart signs everyone out and they log in again through ScoutID Keycloak. Both paths produce the same `scoutid/*` claims, so nothing else changes for users.
 
 ### Development Configuration
 
@@ -361,7 +385,8 @@ src/
 ├── Skojjt.Infrastructure/
 │   └── Authentication/
 │       ├── CurrentUserService.cs       # Implementation of ICurrentUserService
-│       ├── ScoutIdClaimsTransformation.cs  # Transforms OIDC claims
+│       ├── ScoutIdClaimsTransformation.cs  # Condenses OIDC/SAML claims into scoutid/* claims
+│       ├── ScoutIdMembershipsParser.cs # Parses the Keycloak memberships JSON + legacy role strings
 │       ├── IScoutIdSimulator.cs        # Interface for simulated service
 │       └── FakeScoutIdService.cs       # Development/test implementation
 │
@@ -454,7 +479,8 @@ GET /auth/logout ? OpenIdConnect signout ? ScoutID logout ? Cookie cleared
 |-------|-------|------------|
 | `UnauthorizedAccessException` | User lacks group access | Check `AccessibleGroupIds` |
 | Authentication redirect loop | Missing/invalid ScoutID config | Verify configuration |
-| Claims missing after login | OIDC scope not configured | Add `scoutid` scope |
+| User logs in but has no groups | `memberships` claim missing | Request `scoutnet-memberships` and make sure it is assigned to the client |
+| `error=invalid_scope` on callback | A requested scope is not assigned to the Keycloak client | Assign `scoutnet-memberships` (Default or Optional) to the client |
 
 ## Migrating from V1 (Skojjt Version 1)
 

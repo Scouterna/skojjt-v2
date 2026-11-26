@@ -10,8 +10,8 @@ namespace Skojjt.Infrastructure.Authentication;
 ///
 /// ScoutID SimpleSAML provides attributes as flat names (uid, email, displayName, role, etc.)
 /// rather than OID URNs. The role attribute values use the format "group:{groupId}:{roleName}"
-/// (e.g. "group:1137:leader", "organisation:692:scoutid_admin") which is the same format
-/// used by the Keycloak-based OIDC ScoutID.
+/// (e.g. "group:1137:leader", "organisation:692:scoutid_admin"). The Keycloak-based OIDC ScoutID
+/// instead sends a JSON <c>memberships</c> claim; both are parsed by <see cref="ScoutIdMembershipsParser"/>.
 ///
 /// See ScoutnetAuth.php in the ScoutID source for the full attribute list.
 /// </summary>

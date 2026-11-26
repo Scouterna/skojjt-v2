@@ -7,25 +7,32 @@ using Skojjt.Infrastructure.Data;
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Security.Claims;
-using System.Text.RegularExpressions;
+using System.Text.Json;
 
 namespace Skojjt.Infrastructure.Authentication;
 
 /// <summary>
-/// Transforms ScoutID claims from the OIDC token into application-specific claims.
-/// This runs after authentication and adds custom claims based on ScoutID data.
-/// When group information is not provided by ScoutID, it looks up the user's group
-/// membership from the database based on their member number.
+/// Transforms ScoutID claims into the compact application claims (<c>scoutid/*</c>).
+/// Roles are read from either ScoutID generation:
+/// <list type="bullet">
+///   <item>Keycloak ScoutID (OIDC): the JSON <c>memberships</c> claim (scope <c>scoutnet-memberships</c>).</item>
+///   <item>Legacy SimpleSAML ScoutID (SAML): flat <c>role</c> claims like "group:1137:leader".</item>
+/// </list>
+/// Troop roles whose scout group is not given by ScoutID are resolved via the database.
 /// </summary>
 public class ScoutIdClaimsTransformation : IClaimsTransformation
 {
+    /// <summary>
+    /// Keycloak ScoutID claim holding the Scoutnet member number. Preferred over <c>sub</c>, which is a
+    /// Keycloak UUID unless the client has a "sub member_no" mapper.
+    /// </summary>
+    public const string ScoutnetMemberNoClaimType = "scoutnet_member_no";
+
     private readonly IDbContextFactory<SkojjtDbContext> _contextFactory;
     private readonly ILogger<ScoutIdClaimsTransformation> _logger;
     private readonly HashSet<string> _adminUids;
     private readonly string _adminScoutnetRole;
     private const string DefaultAdminScoutnetRole = "organisation:692:scoutid_admin";
-    private static readonly Regex s_regexGroup = new(@"group:(\d+):(.+)", RegexOptions.Compiled);
-    private static readonly Regex s_regexTroop = new(@"troop:(\d+):(.+)", RegexOptions.Compiled);
     private static readonly ConcurrentDictionary<int, int> s_troopToGroupCache = new();
 
     /// <summary>
@@ -114,6 +121,10 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
         "profile", "picture", "website", "gender", "birthdate", "zoneinfo",
         "locale", "updated_at", "email_verified", "phone_number", "phone_number_verified",
         "address",
+        // Keycloak ScoutID claims, condensed into scoutid/* or unused. memberships alone
+        // can be up to 2 KB of JSON.
+        ScoutIdMembershipsParser.ClaimType, ScoutnetMemberNoClaimType, "group_emails_json",
+        "primary_group_name", "primary_group_no", "scouterna_email", "alt_email",
     };
 
     /// <summary>
@@ -121,11 +132,12 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
     /// produced, so the persisted auth ticket stays small and request headers can't overflow
     /// (HTTP 431). Two categories are trimmed:
     /// <list type="number">
-    ///   <item>Raw ScoutID role claims — any claim whose value starts with <c>group:</c>,
+    ///   <item>Raw legacy ScoutID role claims — any claim whose value starts with <c>group:</c>,
     ///   <c>troop:</c>, or <c>organisation:</c> (e.g. "troop:999:other_leader"). This also
     ///   removes the duplicate <see cref="ClaimTypes.Role"/> copies of those values, which are
     ///   the dominant cost for a user who leads many troops.</item>
-    ///   <item>Unused OIDC protocol/profile claims (<see cref="s_trimmableClaimTypes"/>).</item>
+    ///   <item>Unused OIDC protocol/profile claims and the raw Keycloak ScoutID claims such as
+    ///   <c>memberships</c> (<see cref="s_trimmableClaimTypes"/>).</item>
     /// </list>
     /// The synthesized <see cref="ClaimTypes.Role"/> values ("Admin", "MemberRegistrar"), the
     /// identity claims (uid, email, name), and the compact <c>scoutid/*</c> claims are preserved
@@ -150,24 +162,29 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
 
     private async Task<bool> ExtractSignInAttributesAsync(ClaimsIdentity identity)
     {
-        var nameIdentifier = identity.FindFirst(ClaimTypes.NameIdentifier);
-        var nameClaim = identity.FindFirst("name");
+        // Keycloak ScoutID: scoutnet_member_no is the stable Scoutnet ID; sub is a Keycloak UUID
+        // unless the client maps sub to the member number. Legacy SAML / dev: NameIdentifier is the uid.
+        var memberNo = identity.FindFirst(ScoutnetMemberNoClaimType)?.Value;
+        var nameIdentifier = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var uid = !string.IsNullOrWhiteSpace(memberNo) ? memberNo : nameIdentifier;
+        var name = identity.FindFirst("name")?.Value;
 
-        // Log what we found for debugging
-        _logger.LogDebug("ExtractSignInAttributes - nameIdentifier: {NameId}, name: {Name}",
-            nameIdentifier?.Value, nameClaim?.Value);
+        _logger.LogDebug("ExtractSignInAttributes - scoutnet_member_no: {MemberNo}, nameIdentifier: {NameId}, name: {Name}",
+            memberNo, nameIdentifier, name);
 
-        // Simplified check - don't rely on Subject.IsAuthenticated which may be null 
+        // Simplified check - don't rely on Subject.IsAuthenticated which may be null
         // when claims are deserialized from cookie
-        if (nameIdentifier == null || nameClaim == null)
+        if (string.IsNullOrEmpty(uid) || name == null)
         {
             _logger.LogWarning("Could not extract ScoutID attributes from claims - missing required claims");
             return false;
         }
-        var uid = nameIdentifier.Value;
-        var name = nameClaim.Value;
 
-        bool isAdmin = (identity.FindFirst(claim => claim.Value == _adminScoutnetRole) != null);
+        var roles = CollectRoles(identity);
+
+        // Match parsed roles only, never arbitrary claim values: profile claims such as given_name
+        // are user-editable in Scoutnet and must not be able to grant admin.
+        bool isAdmin = roles.Any(r => string.Equals(r.ToRoleString(), _adminScoutnetRole, StringComparison.Ordinal));
         _logger.LogDebug("Admin check: looking for '{AdminClaim}', found: {IsAdmin}", _adminScoutnetRole, isAdmin);
 
         // Also grant admin to users whose Scoutnet UID is configured in Skojjt:AdminUids.
@@ -180,40 +197,34 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
         HashSet<string> memberRegistrarGroups = new();
         HashSet<string> accessibleTroops = new();
 
-        // Collect troop Scoutnet IDs that need group lookup
-        List<(int TroopScoutnetId, string RoleName)> troopRoles = [];
+        // Troop roles whose scout group ScoutID did not provide; resolved via the database.
+        List<(int TroopScoutnetId, string RoleName)> unresolvedTroopRoles = [];
 
-        foreach (var role in identity.FindAll(claim => claim.Type.EndsWith("role") && claim.Value != null))
+        foreach (var role in roles)
         {
-            var groupMatch = s_regexGroup.Match(role.Value);
-            if (groupMatch.Success)
+            switch (role.EntityType)
             {
-                // Extract group information from the role claim
-                var groupId = groupMatch.Groups[1].Value;
-                var roleName = groupMatch.Groups[2].Value;
-                if (s_accessGrantingRoles.Contains(roleName))
-                {
-                    accessibleGroups.Add(groupId);
-                }
+                case "group":
+                    ApplyGroupRole(role.EntityId, role.RoleKey, accessibleGroups, memberRegistrarGroups);
+                    break;
 
-                if (roleName == "member_registrar")
-                {
-                    memberRegistrarGroups.Add(groupId);
-                }
-                continue;
-            }
-
-            var troopMatch = s_regexTroop.Match(role.Value);
-            if (troopMatch.Success && int.TryParse(troopMatch.Groups[1].Value, out var troopScoutnetId))
-            {
-                troopRoles.Add((troopScoutnetId, troopMatch.Groups[2].Value));
+                case "troop" when int.TryParse(role.EntityId, out var troopScoutnetId):
+                    if (role.GroupId is int groupId)
+                    {
+                        ApplyTroopRole(troopScoutnetId, groupId, role.RoleKey, accessibleGroups, memberRegistrarGroups, accessibleTroops);
+                    }
+                    else
+                    {
+                        unresolvedTroopRoles.Add((troopScoutnetId, role.RoleKey));
+                    }
+                    break;
             }
         }
 
-        // Resolve troop-to-group mappings for any troop-based role claims
-        if (troopRoles.Count > 0)
+        // Resolve troop-to-group mappings for troop roles without a known group
+        if (unresolvedTroopRoles.Count > 0)
         {
-            await ResolveTroopGroupMappingsAsync(troopRoles, accessibleGroups, memberRegistrarGroups, accessibleTroops);
+            await ResolveTroopGroupMappingsAsync(unresolvedTroopRoles, accessibleGroups, memberRegistrarGroups, accessibleTroops);
         }
 
         // Add basic claims
@@ -286,23 +297,84 @@ public class ScoutIdClaimsTransformation : IClaimsTransformation
         {
             if (s_troopToGroupCache.TryGetValue(troopScoutnetId, out var scoutGroupId))
             {
-                var groupIdStr = scoutGroupId.ToString();
-                if (s_accessGrantingRoles.Contains(roleName))
-                {
-                    accessibleGroups.Add(groupIdStr);
-                    accessibleTroops.Add(troopScoutnetId.ToString());
-                    _logger.LogDebug("Mapped troop {TroopScoutnetId} to group {GroupId} for role {Role}", troopScoutnetId, groupIdStr, roleName);
-                }
-
-                if (roleName == "member_registrar")
-                {
-                    memberRegistrarGroups.Add(groupIdStr);
-                }
+                ApplyTroopRole(troopScoutnetId, scoutGroupId, roleName, accessibleGroups, memberRegistrarGroups, accessibleTroops);
             }
             else
             {
                 _logger.LogWarning("Could not resolve scout group for troop Scoutnet ID {TroopScoutnetId}", troopScoutnetId);
             }
+        }
+    }
+
+    /// <summary>
+    /// Gathers the user's Scoutnet roles from the Keycloak <c>memberships</c> claim and from
+    /// legacy SAML <c>role</c> claims. Normally only one source is present.
+    /// </summary>
+    private List<ScoutIdRoleAssignment> CollectRoles(ClaimsIdentity identity)
+    {
+        var roles = new List<ScoutIdRoleAssignment>();
+
+        foreach (var claim in identity.FindAll(ScoutIdMembershipsParser.ClaimType))
+        {
+            try
+            {
+                var memberships = ScoutIdMembershipsParser.Parse(claim.Value);
+                if (memberships.Error != null)
+                {
+                    // e.g. "memberships_truncated": only group roles were kept, troop roles are missing.
+                    _logger.LogWarning("ScoutID memberships claim reports an error: {Error}", memberships.Error);
+                }
+                roles.AddRange(memberships.Roles);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Could not parse ScoutID memberships claim as JSON");
+            }
+        }
+
+        foreach (var claim in identity.FindAll(c => c.Type.EndsWith("role", StringComparison.Ordinal)))
+        {
+            if (ScoutIdMembershipsParser.TryParseLegacyRole(claim.Value, out var role))
+            {
+                roles.Add(role);
+            }
+        }
+
+        _logger.LogDebug("ScoutID roles: {Roles}", string.Join(", ", roles.Select(r => r.ToRoleString())));
+        return roles;
+    }
+
+    private static void ApplyGroupRole(
+        string groupId,
+        string roleName,
+        HashSet<string> accessibleGroups,
+        HashSet<string> memberRegistrarGroups)
+    {
+        if (s_accessGrantingRoles.Contains(roleName))
+        {
+            accessibleGroups.Add(groupId);
+        }
+
+        if (roleName == "member_registrar")
+        {
+            memberRegistrarGroups.Add(groupId);
+        }
+    }
+
+    private void ApplyTroopRole(
+        int troopScoutnetId,
+        int scoutGroupId,
+        string roleName,
+        HashSet<string> accessibleGroups,
+        HashSet<string> memberRegistrarGroups,
+        HashSet<string> accessibleTroops)
+    {
+        ApplyGroupRole(scoutGroupId.ToString(), roleName, accessibleGroups, memberRegistrarGroups);
+
+        if (s_accessGrantingRoles.Contains(roleName))
+        {
+            accessibleTroops.Add(troopScoutnetId.ToString());
+            _logger.LogDebug("Mapped troop {TroopScoutnetId} to group {GroupId} for role {Role}", troopScoutnetId, scoutGroupId, roleName);
         }
     }
 }

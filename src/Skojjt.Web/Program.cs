@@ -301,10 +301,12 @@ else
         }
         else
         {
-            // Default OIDC scopes
+            // Default OIDC scopes. scoutnet-memberships carries the roles that grant access;
+            // without it every user logs in with no groups.
             options.Scope.Add("openid");
             options.Scope.Add("profile");
             options.Scope.Add("email");
+            options.Scope.Add("scoutnet-memberships");
         }
 
         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
@@ -454,8 +456,8 @@ app.UseStaleAuthCookieGuard();
 // Redirect non-canonical hostnames (e.g. skojjt.azurewebsites.net) to the
 // canonical domain (skojjt.scouterna.net). This runs early so SAML/auth
 // callbacks always use the domain registered in ScoutID.
-// Health check and SAML callback paths are excluded — a 301 on a POST would
-// cause browsers to drop the SAML response body, silently breaking login.
+// Health check and SAML/OIDC callback paths are excluded — a 301 on a POST would
+// cause browsers to drop the SAML response / OIDC form_post body, silently breaking login.
 var canonicalHostname = app.Configuration["CanonicalHostname"];
 if (!string.IsNullOrEmpty(canonicalHostname))
 {
@@ -464,7 +466,9 @@ if (!string.IsNullOrEmpty(canonicalHostname))
         var host = context.Request.Host.Host;
         if (!string.Equals(host, canonicalHostname, StringComparison.OrdinalIgnoreCase)
             && !context.Request.Path.StartsWithSegments("/healthz")
-            && !context.Request.Path.StartsWithSegments("/Saml2"))
+            && !context.Request.Path.StartsWithSegments("/Saml2")
+            && !context.Request.Path.StartsWithSegments("/signin-oidc")
+            && !context.Request.Path.StartsWithSegments("/signout-callback-oidc"))
         {
             var url = $"{context.Request.Scheme}://{canonicalHostname}{context.Request.Path}{context.Request.QueryString}";
             context.Response.Redirect(url, permanent: true);
