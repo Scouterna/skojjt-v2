@@ -62,8 +62,7 @@ else
                     <MudTextField @bind-Value="_meeting.Location"
                                   Label="Plats"
                                   Variant="Variant.Outlined"
-                                  Required="true"
-                                  RequiredError="Ange en plats"
+                                  MaxLength="50"
                                   Disabled="@IsLocked" />
                 </MudItem>
 
@@ -78,14 +77,17 @@ else
                 </MudItem>
 
                 <MudItem xs="12" sm="6" md="4">
-                    <MudTimePicker @bind-Time="_startTime"
+                    <MudTimePicker Time="_startTime"
+                                   TimeChanged="OnStartTimeChanged"
                                    Label="Starttid"
                                    Variant="Variant.Outlined"
                                    Disabled="@IsLocked" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6" md="4">
-                    <MudNumericField @bind-Value="_meeting.DurationMinutes"
+                    <MudNumericField T="int"
+                                     Value="_meeting.DurationMinutes"
+                                     ValueChanged="OnDurationChanged"
                                      Label="Längd (minuter)"
                                      Variant="Variant.Outlined"
                                      Min="1"
@@ -93,7 +95,8 @@ else
                 </MudItem>
 
                 <MudItem xs="12" sm="6" md="4">
-                    <MudTimePicker @bind-Time="_endTime"
+                    <MudTimePicker Time="_endTime"
+                                   TimeChanged="OnEndTimeChanged"
                                    Label="Sluttid (för att räkna ut längd)"
                                    Variant="Variant.Outlined"
                                    Disabled="@IsLocked" />
@@ -197,13 +200,48 @@ else
         await LoadMeeting();
     }
 
-    protected override void OnParametersSet()
+    /// <summary>
+    /// Start time changed: keep the duration and move the end time.
+    /// </summary>
+    private void OnStartTimeChanged(TimeSpan? value)
     {
-        // Recalculate end time when start time or duration changes
-        if (_startTime.HasValue && _meeting != null)
+        _startTime = value;
+        UpdateEndTime();
+    }
+
+    /// <summary>
+    /// Duration changed: move the end time.
+    /// </summary>
+    private void OnDurationChanged(int value)
+    {
+        if (_meeting == null) return;
+        _meeting.DurationMinutes = Math.Max(1, value);
+        UpdateEndTime();
+    }
+
+    /// <summary>
+    /// End time changed: recalculate the duration from start to end.
+    /// An end time before the start time is treated as after midnight.
+    /// </summary>
+    private void OnEndTimeChanged(TimeSpan? value)
+    {
+        _endTime = value;
+        if (_meeting == null || !_startTime.HasValue || !value.HasValue) return;
+
+        var duration = value.Value - _startTime.Value;
+        if (duration <= TimeSpan.Zero)
         {
-            _endTime = _startTime.Value.Add(TimeSpan.FromMinutes(_meeting.DurationMinutes));
+            duration += TimeSpan.FromDays(1);
         }
+        _meeting.DurationMinutes = Math.Max(1, (int)duration.TotalMinutes);
+    }
+
+    private void UpdateEndTime()
+    {
+        if (_meeting == null || !_startTime.HasValue) return;
+        var end = _startTime.Value.Add(TimeSpan.FromMinutes(_meeting.DurationMinutes));
+        // Wrap past midnight so the time picker gets a valid time of day
+        _endTime = TimeSpan.FromMinutes(end.TotalMinutes % (24 * 60));
     }
 
     private async Task LoadMeeting()
@@ -217,7 +255,7 @@ else
                 _meeting = meeting;
                 _meetingDate = meeting.MeetingDate.ToDateTime(TimeOnly.MinValue);
                 _startTime = meeting.StartTime.ToTimeSpan();
-                _endTime = _startTime?.Add(TimeSpan.FromMinutes(meeting.DurationMinutes));
+                UpdateEndTime();
                 
                 _attendees = meeting.Attendances
                     .Select(a => a.Person)
