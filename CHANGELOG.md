@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.5.17] - 2026-11-27
+* Uppdateringar för nya scoutid (json claims)
+* Bugfix: Det gick inte att ändra mötestiden.
+
 ## [2.5.16] - 2026-10-24
 * Samlade in bidragsregler för fler kommuner och år. Skojjt kan nu beräkna förväntat bidrag för fler kommuner än tidigare. Se hjälpsidan [DAK-export och -import](/hjalp/06-dak-export) för mer information.
 
